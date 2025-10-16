@@ -652,11 +652,32 @@ def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocatio
     payload = InsuranceStateInput.model_validate(arguments)
     state = payload.state
     if state:
+        # State captured: return structured content but explicitly override meta
+        # to suppress the widget in this response.
         return {
             "structured_content": {"state": state},
             "response_text": f"Captured {state} as the customer's state.",
+            "meta": {
+                # Turn off widget production for this result
+                "openai/resultCanProduceWidget": False,
+                "openai/widgetAccessible": False,
+                # IMPORTANT: do NOT include "openai.com/widget" here
+            },
         }
-    return {"structured_content": {}}
+
+    # No state yet: return the widget meta so the client can render the picker
+    widget = WIDGETS_BY_ID[INSURANCE_STATE_WIDGET_IDENTIFIER]
+    return {
+        "structured_content": {},
+        "response_text": (
+            "Let's confirm the customer's state before we continue with their insurance quote."
+        ),
+        "meta": {
+            **_tool_meta(widget),
+            "openai.com/widget": _embedded_widget_resource(widget).model_dump(mode="json"),
+        },
+    }
+
 
 
 async def _fetch_personal_auto_products(arguments: Mapping[str, Any]) -> ToolInvocationResult:
