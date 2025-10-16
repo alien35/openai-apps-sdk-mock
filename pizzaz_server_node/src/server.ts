@@ -174,21 +174,11 @@ const widgets: PizzazWidget[] = [
   },
 ];
 
-const widgetsById = new Map<string, PizzazWidget>();
 const widgetsByUri = new Map<string, PizzazWidget>();
 
 widgets.forEach((widget) => {
-  widgetsById.set(widget.id, widget);
   widgetsByUri.set(widget.templateUri, widget);
 });
-
-const tools: Tool[] = widgets.map((widget) => ({
-  name: widget.id,
-  description: widget.toolDescription ?? widget.title,
-  inputSchema: widget.inputSchema,
-  title: widget.title,
-  _meta: widgetMeta(widget)
-}));
 
 const resources: Resource[] = widgets.map((widget) => ({
   uri: widget.templateUri,
@@ -209,11 +199,15 @@ const resourceTemplates: ResourceTemplate[] = widgets.map((widget) => ({
 type ToolHandlerResult = {
   structuredContent?: Record<string, unknown>;
   responseText?: string;
+  content?: { type: "text"; text: string }[];
+  meta?: Record<string, unknown>;
 };
 
-const toolHandlers = new Map<string, (args: unknown) => ToolHandlerResult>();
+type ToolHandler = (args: unknown) => ToolHandlerResult | Promise<ToolHandlerResult>;
 
-const defaultPizzaToolHandler = (args: unknown): ToolHandlerResult => {
+const toolHandlers = new Map<string, ToolHandler>();
+
+const defaultPizzaToolHandler: ToolHandler = (args: unknown) => {
   const parsed = pizzaToolInputParser.parse(args ?? {});
   return {
     structuredContent: {
@@ -233,6 +227,163 @@ toolHandlers.set("insurance-state-selector", (args: unknown) => {
   }
 
   return { structuredContent: {} };
+});
+
+type RegisteredTool = {
+  tool: Tool;
+  handler: ToolHandler;
+  defaultResponseText: string;
+  defaultMeta?: Record<string, unknown>;
+};
+
+const toolRegistry = new Map<string, RegisteredTool>();
+
+function registerTool(definition: RegisteredTool) {
+  toolRegistry.set(definition.tool.name, definition);
+}
+
+widgets.forEach((widget) => {
+  const meta = widgetMeta(widget);
+  registerTool({
+    tool: {
+      name: widget.id,
+      description: widget.toolDescription ?? widget.title,
+      inputSchema: widget.inputSchema,
+      title: widget.title,
+      _meta: meta,
+    },
+    handler: toolHandlers.get(widget.id) ?? defaultPizzaToolHandler,
+    defaultResponseText: widget.responseText,
+    defaultMeta: meta,
+  });
+});
+
+const personalAutoProductsInputSchema = {
+  type: "object",
+  properties: {
+    state: {
+      type: "string",
+      description:
+        "Two-letter U.S. state or District of Columbia abbreviation (for example, \"CA\").",
+      minLength: 2,
+      maxLength: 2,
+      pattern: "^[A-Za-z]{2}$",
+    },
+  },
+  required: ["state"],
+  additionalProperties: false,
+} as const;
+
+const personalAutoProductsInputParser = z
+  .object({
+    state: z
+      .string()
+      .trim()
+      .min(2)
+      .max(2)
+      .regex(/^[A-Za-z]{2}$/)
+      .transform((value) => value.toUpperCase()),
+  })
+  .strict();
+
+const PERSONAL_AUTO_PRODUCTS_ENDPOINT =
+  "https://gateway.pre.zrater.io/api/v1/linesOfBusiness/personalAuto/states";
+
+async function fetchPersonalAutoProducts(
+  args: unknown
+): Promise<ToolHandlerResult> {
+  const parsed = personalAutoProductsInputParser.parse(args ?? {});
+  const state = parsed.state;
+
+  const url = `${PERSONAL_AUTO_PRODUCTS_ENDPOINT}/${encodeURIComponent(
+    state
+  )}/activeProducts`;
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        Cookie: "BCSI-CS-7883f85839ae9af9=1",
+        "User-Agent": "insomnia/11.1.0",
+        "x-api-key": "e57528b0-95b4-4efe-8870-caa0f8a95143",
+      },
+    });
+  } catch (error) {
+    throw new Error(
+      `Failed to fetch personal auto products: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+
+  if (response.status === 404) {
+    return {
+      structuredContent: {
+        state,
+        status: response.status,
+        products: [],
+      },
+      responseText: `No active personal auto products found for ${state}.`,
+    };
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `Personal auto products request failed with status ${response.status}`
+    );
+  }
+
+  let rawBody = "";
+  try {
+    rawBody = await response.text();
+  } catch (error) {
+    throw new Error(
+      `Failed to read personal auto products response: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+
+  let parsedBody: unknown = [];
+  if (rawBody.trim().length > 0) {
+    try {
+      parsedBody = JSON.parse(rawBody);
+    } catch (error) {
+      throw new Error(
+        `Failed to parse personal auto products response: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  const products = Array.isArray(parsedBody) ? parsedBody : [];
+  const message = products.length
+    ? `Found ${products.length} active personal auto product${
+        products.length === 1 ? "" : "s"
+      } for ${state}.`
+    : `No active personal auto products found for ${state}.`;
+
+  return {
+    structuredContent: {
+      state,
+      status: response.status,
+      products,
+    },
+    responseText: message,
+  };
+}
+
+registerTool({
+  tool: {
+    name: "fetch-personal-auto-products",
+    title: "Fetch personal auto products",
+    description: "Retrieve active personal auto insurance products for a given state.",
+    inputSchema: personalAutoProductsInputSchema,
+  },
+  handler: fetchPersonalAutoProducts,
+  defaultResponseText: "Retrieved personal auto product availability.",
 });
 
 function createPizzazServer(): Server {
@@ -277,31 +428,41 @@ function createPizzazServer(): Server {
   }));
 
   server.setRequestHandler(ListToolsRequestSchema, async (_request: ListToolsRequest) => ({
-    tools
+    tools: Array.from(toolRegistry.values()).map((entry) => entry.tool),
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest) => {
-    const widget = widgetsById.get(request.params.name);
+    const registration = toolRegistry.get(request.params.name);
 
-    if (!widget) {
+    if (!registration) {
       throw new Error(`Unknown tool: ${request.params.name}`);
     }
 
-    const handler = toolHandlers.get(widget.id) ?? defaultPizzaToolHandler;
-    const { structuredContent, responseText } = handler(
-      request.params.arguments ?? {}
-    );
+    const handlerResult = await registration.handler(request.params.arguments ?? {});
+    const structuredContent = handlerResult?.structuredContent ?? {};
+    const responseText = handlerResult?.responseText ?? registration.defaultResponseText;
+    const content = handlerResult?.content ?? [
+      {
+        type: "text" as const,
+        text: responseText,
+      },
+    ];
+    const meta = handlerResult?.meta ?? registration.defaultMeta;
 
-    return {
-      content: [
-        {
-          type: "text",
-          text: responseText ?? widget.responseText,
-        },
-      ],
-      structuredContent: structuredContent ?? {},
-      _meta: widgetMeta(widget),
+    const response: {
+      content: typeof content;
+      structuredContent: typeof structuredContent;
+      _meta?: Record<string, unknown>;
+    } = {
+      content,
+      structuredContent,
     };
+
+    if (meta) {
+      response._meta = meta;
+    }
+
+    return response;
   });
 
   return server;
