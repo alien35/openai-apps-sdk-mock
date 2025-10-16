@@ -11,11 +11,13 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 import mcp.types as types
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+
+from .insurance_state_widget import INSURANCE_STATE_WIDGET_HTML
 
 
 @dataclass(frozen=True)
@@ -27,6 +29,37 @@ class PizzazWidget:
     invoked: str
     html: str
     response_text: str
+    input_schema: Dict[str, Any]
+    tool_description: Optional[str] = None
+
+
+PIZZA_TOOL_INPUT_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "pizzaTopping": {
+            "type": "string",
+            "description": "Topping to mention when rendering the widget.",
+        }
+    },
+    "required": ["pizzaTopping"],
+    "additionalProperties": False,
+}
+
+
+INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "state": {
+            "type": "string",
+            "description": "Two-letter U.S. state or District of Columbia abbreviation (for example, \"CA\").",
+            "minLength": 2,
+            "maxLength": 2,
+            "pattern": "^[A-Za-z]{2}$",
+        }
+    },
+    "required": [],
+    "additionalProperties": False,
+}
 
 
 widgets: List[PizzazWidget] = [
@@ -44,6 +77,7 @@ widgets: List[PizzazWidget] = [
             "ecosystem-built-assets/pizzaz-0038.js\"></script>"
         ),
         response_text="Rendered a pizza map!",
+        input_schema=PIZZA_TOOL_INPUT_SCHEMA,
     ),
     PizzazWidget(
         identifier="pizza-carousel",
@@ -59,6 +93,7 @@ widgets: List[PizzazWidget] = [
             "ecosystem-built-assets/pizzaz-carousel-0038.js\"></script>"
         ),
         response_text="Rendered a pizza carousel!",
+        input_schema=PIZZA_TOOL_INPUT_SCHEMA,
     ),
     PizzazWidget(
         identifier="pizza-albums",
@@ -74,6 +109,7 @@ widgets: List[PizzazWidget] = [
             "ecosystem-built-assets/pizzaz-albums-0038.js\"></script>"
         ),
         response_text="Rendered a pizza album!",
+        input_schema=PIZZA_TOOL_INPUT_SCHEMA,
     ),
     PizzazWidget(
         identifier="pizza-list",
@@ -89,6 +125,7 @@ widgets: List[PizzazWidget] = [
             "ecosystem-built-assets/pizzaz-list-0038.js\"></script>"
         ),
         response_text="Rendered a pizza list!",
+        input_schema=PIZZA_TOOL_INPUT_SCHEMA,
     ),
     PizzazWidget(
         identifier="pizza-video",
@@ -104,6 +141,19 @@ widgets: List[PizzazWidget] = [
             "ecosystem-built-assets/pizzaz-video-0038.js\"></script>"
         ),
         response_text="Rendered a pizza video!",
+        input_schema=PIZZA_TOOL_INPUT_SCHEMA,
+    ),
+    PizzazWidget(
+        identifier="insurance-state-selector",
+        title="Collect insurance state",
+        template_uri="ui://widget/insurance-state.html",
+        invoking="Collecting a customer's state",
+        invoked="Captured the customer's state",
+        html=INSURANCE_STATE_WIDGET_HTML,
+        response_text="Let's confirm the customer's state before we continue with their insurance quote.",
+        input_schema=INSURANCE_STATE_INPUT_SCHEMA,
+        tool_description=
+            "Collects the customer's U.S. state so the assistant can surface insurance options that apply there.",
     ),
 ]
 
@@ -127,25 +177,42 @@ class PizzaInput(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
 
+class InsuranceStateInput(BaseModel):
+    """Schema for the insurance state selector tool."""
+
+    state: Optional[str] = Field(
+        default=None,
+        min_length=2,
+        max_length=2,
+        pattern=r"^[A-Za-z]{2}$",
+        description="Two-letter U.S. state or District of Columbia abbreviation (for example, \"CA\").",
+    )
+
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("state", mode="before")
+    @classmethod
+    def _strip_state(cls, value: Optional[str]) -> Optional[str]:
+        if value is None or not isinstance(value, str):
+            return value
+        return value.strip()
+
+    @field_validator("state")
+    @classmethod
+    def _normalize_state(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            return value
+        return value.upper()
+
+
 mcp = FastMCP(
     name="pizzaz-python",
     sse_path="/mcp",
     message_path="/mcp/messages",
     stateless_http=True,
 )
-
-
-TOOL_INPUT_SCHEMA: Dict[str, Any] = {
-    "type": "object",
-    "properties": {
-        "pizzaTopping": {
-            "type": "string",
-            "description": "Topping to mention when rendering the widget.",
-        }
-    },
-    "required": ["pizzaTopping"],
-    "additionalProperties": False,
-}
 
 
 def _resource_description(widget: PizzazWidget) -> str:
@@ -160,9 +227,9 @@ def _tool_meta(widget: PizzazWidget) -> Dict[str, Any]:
         "openai/widgetAccessible": True,
         "openai/resultCanProduceWidget": True,
         "annotations": {
-          "destructiveHint": False,
-          "openWorldHint": False,
-          "readOnlyHint": True,
+            "destructiveHint": False,
+            "openWorldHint": False,
+            "readOnlyHint": True,
         }
     }
 
@@ -185,8 +252,8 @@ async def _list_tools() -> List[types.Tool]:
         types.Tool(
             name=widget.identifier,
             title=widget.title,
-            description=widget.title,
-            inputSchema=deepcopy(TOOL_INPUT_SCHEMA),
+            description=widget.tool_description or widget.title,
+            inputSchema=deepcopy(widget.input_schema),
             _meta=_tool_meta(widget),
         )
         for widget in widgets
@@ -261,8 +328,14 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
         )
 
     arguments = req.params.arguments or {}
+
+    if widget.identifier == "insurance-state-selector":
+        model: type[BaseModel] = InsuranceStateInput
+    else:
+        model = PizzaInput
+
     try:
-        payload = PizzaInput.model_validate(arguments)
+        payload = model.model_validate(arguments)
     except ValidationError as exc:
         return types.ServerResult(
             types.CallToolResult(
@@ -276,7 +349,14 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
             )
         )
 
-    topping = payload.pizza_topping
+    if widget.identifier == "insurance-state-selector":
+        structured_content, response_text = _handle_insurance_state_tool(
+            payload  # type: ignore[arg-type]
+        )
+    else:
+        structured_content, response_text = _handle_pizza_tool(
+            payload  # type: ignore[arg-type]
+        )
     widget_resource = _embedded_widget_resource(widget)
     meta: Dict[str, Any] = {
         "openai.com/widget": widget_resource.model_dump(mode="json"),
@@ -292,13 +372,26 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
             content=[
                 types.TextContent(
                     type="text",
-                    text=widget.response_text,
+                    text=response_text or widget.response_text,
                 )
             ],
-            structuredContent={"pizzaTopping": topping},
+            structuredContent=structured_content,
             _meta=meta,
         )
     )
+
+
+def _handle_pizza_tool(payload: PizzaInput) -> Tuple[Dict[str, Any], Optional[str]]:
+    return {"pizzaTopping": payload.pizza_topping}, None
+
+
+def _handle_insurance_state_tool(
+    payload: InsuranceStateInput,
+) -> Tuple[Dict[str, Any], Optional[str]]:
+    state = payload.state
+    if state:
+        return {"state": state}, f"Captured {state} as the customer's state."
+    return {}, None
 
 
 mcp._mcp_server.request_handlers[types.CallToolRequest] = _call_tool_request
