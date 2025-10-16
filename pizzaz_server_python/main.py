@@ -11,8 +11,22 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TypedDict,
+)
+import inspect
+import json
 
+import httpx
 import mcp.types as types
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
@@ -31,6 +45,37 @@ class PizzazWidget:
     response_text: str
     input_schema: Dict[str, Any]
     tool_description: Optional[str] = None
+
+
+class ToolInvocationResult(TypedDict, total=False):
+    """Result structure returned by tool handlers."""
+
+    structured_content: Dict[str, Any]
+    response_text: str
+    content: Sequence[types.Content]
+    meta: Dict[str, Any]
+
+
+ToolHandler = Callable[[Mapping[str, Any]], ToolInvocationResult | Awaitable[ToolInvocationResult]]
+
+
+@dataclass(frozen=True)
+class ToolRegistration:
+    """Registry entry for a tool."""
+
+    tool: types.Tool
+    handler: ToolHandler
+    default_response_text: str
+    default_meta: Optional[Dict[str, Any]] = None
+
+
+TOOL_REGISTRY: Dict[str, ToolRegistration] = {}
+
+
+def register_tool(registration: ToolRegistration) -> None:
+    """Register a tool so it can be listed and invoked."""
+
+    TOOL_REGISTRY[registration.tool.name] = registration
 
 
 PIZZA_TOOL_INPUT_SCHEMA: Dict[str, Any] = {
@@ -59,6 +104,36 @@ INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
     },
     "required": [],
     "additionalProperties": False,
+}
+
+
+PERSONAL_AUTO_PRODUCTS_INPUT_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "state": {
+            "type": "string",
+            "description": (
+                "Two-letter U.S. state or District of Columbia abbreviation (for example, \"CA\")."
+            ),
+            "minLength": 2,
+            "maxLength": 2,
+            "pattern": "^[A-Za-z]{2}$",
+        }
+    },
+    "required": ["state"],
+    "additionalProperties": False,
+}
+
+
+PERSONAL_AUTO_PRODUCTS_ENDPOINT = (
+    "https://gateway.pre.zrater.io/api/v1/linesOfBusiness/personalAuto/states"
+)
+
+PERSONAL_AUTO_PRODUCTS_HEADERS = {
+    "Accept": "application/json",
+    "Cookie": "BCSI-CS-7883f85839ae9af9=1",
+    "User-Agent": "insomnia/11.1.0",
+    "x-api-key": "e57528b0-95b4-4efe-8870-caa0f8a95143",
 }
 
 
@@ -226,6 +301,105 @@ class InsuranceStateInput(BaseModel):
         return value.upper()
 
 
+class PersonalAutoProductsInput(BaseModel):
+    """Schema for the personal auto products tool."""
+
+    state: str = Field(
+        min_length=2,
+        max_length=2,
+        pattern=r"^[A-Za-z]{2}$",
+        description="Two-letter U.S. state or District of Columbia abbreviation (for example, \"CA\").",
+    )
+
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("state", mode="before")
+    @classmethod
+    def _strip_state(cls, value: Any) -> Any:
+        if not isinstance(value, str):
+            return value
+        return value.strip()
+
+    @field_validator("state")
+    @classmethod
+    def _normalize_state(cls, value: Any) -> Any:
+        if not isinstance(value, str):
+            return value
+        return value.upper()
+
+
+def _default_pizza_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocationResult:
+    payload = PizzaInput.model_validate(arguments)
+    return {"structured_content": {"pizzaTopping": payload.pizza_topping}}
+
+
+def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocationResult:
+    payload = InsuranceStateInput.model_validate(arguments)
+    state = payload.state
+    if state:
+        return {
+            "structured_content": {"state": state},
+            "response_text": f"Captured {state} as the customer's state.",
+        }
+    return {"structured_content": {}}
+
+
+async def _fetch_personal_auto_products(arguments: Mapping[str, Any]) -> ToolInvocationResult:
+    payload = PersonalAutoProductsInput.model_validate(arguments)
+    state = payload.state
+    url = (
+        f"{PERSONAL_AUTO_PRODUCTS_ENDPOINT}/{state}/activeProducts"
+    )
+
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
+            response = await client.get(url, headers=PERSONAL_AUTO_PRODUCTS_HEADERS)
+    except httpx.HTTPError as exc:
+        raise RuntimeError(
+            f"Failed to fetch personal auto products: {exc}"
+        ) from exc
+
+    status_code = response.status_code
+
+    if status_code == 404:
+        message = f"No active personal auto products found for {state}."
+        return {
+            "structured_content": {"state": state, "status": status_code, "products": []},
+            "response_text": message,
+        }
+
+    if response.is_error:
+        raise RuntimeError(
+            f"Personal auto products request failed with status {status_code}"
+        )
+
+    raw_body = response.text
+    parsed_body: Any = []
+    if raw_body.strip():
+        try:
+            parsed_body = response.json()
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise RuntimeError(
+                f"Failed to parse personal auto products response: {exc}"
+            ) from exc
+
+    products = parsed_body if isinstance(parsed_body, list) else []
+    message = (
+        f"Found {len(products)} active personal auto product{'s' if len(products) != 1 else ''} for {state}."
+        if products
+        else f"No active personal auto products found for {state}."
+    )
+
+    return {
+        "structured_content": {
+            "state": state,
+            "status": status_code,
+            "products": products,
+        },
+        "response_text": message,
+    }
+
+
 mcp = FastMCP(
     name="pizzaz-python",
     sse_path="/mcp",
@@ -265,18 +439,59 @@ def _embedded_widget_resource(widget: PizzazWidget) -> types.EmbeddedResource:
     )
 
 
-@mcp._mcp_server.list_tools()
-async def _list_tools() -> List[types.Tool]:
-    return [
-        types.Tool(
+def _register_default_tools() -> None:
+    for widget in widgets:
+        handler = (
+            _insurance_state_tool_handler
+            if widget.identifier == INSURANCE_STATE_WIDGET_IDENTIFIER
+            else _default_pizza_tool_handler
+        )
+
+        meta = _tool_meta(widget)
+
+        tool = types.Tool(
             name=widget.identifier,
             title=widget.title,
             description=widget.tool_description or widget.title,
             inputSchema=deepcopy(widget.input_schema),
-            _meta=_tool_meta(widget),
+            _meta=meta,
         )
-        for widget in widgets
-    ]
+
+        widget_resource = _embedded_widget_resource(widget)
+        default_meta = {
+            **meta,
+            "openai.com/widget": widget_resource.model_dump(mode="json"),
+        }
+
+        register_tool(
+            ToolRegistration(
+                tool=tool,
+                handler=handler,
+                default_response_text=widget.response_text,
+                default_meta=default_meta,
+            )
+        )
+
+    register_tool(
+        ToolRegistration(
+            tool=types.Tool(
+                name="fetch-personal-auto-products",
+                title="Fetch personal auto products",
+                description="Retrieve active personal auto insurance products for a given state.",
+                inputSchema=deepcopy(PERSONAL_AUTO_PRODUCTS_INPUT_SCHEMA),
+            ),
+            handler=_fetch_personal_auto_products,
+            default_response_text="Retrieved personal auto product availability.",
+        )
+    )
+
+
+_register_default_tools()
+
+
+@mcp._mcp_server.list_tools()
+async def _list_tools() -> List[types.Tool]:
+    return [deepcopy(registration.tool) for registration in TOOL_REGISTRY.values()]
 
 
 @mcp._mcp_server.list_resources()
@@ -332,8 +547,8 @@ async def _handle_read_resource(req: types.ReadResourceRequest) -> types.ServerR
 
 
 async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
-    widget = WIDGETS_BY_ID.get(req.params.name)
-    if widget is None:
+    registration = TOOL_REGISTRY.get(req.params.name)
+    if registration is None:
         return types.ServerResult(
             types.CallToolResult(
                 content=[
@@ -346,15 +561,12 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
             )
         )
 
-    arguments = req.params.arguments or {}
-
-    if widget.identifier == "insurance-state-selector":
-        model: type[BaseModel] = InsuranceStateInput
-    else:
-        model = PizzaInput
+    arguments: Mapping[str, Any] = req.params.arguments or {}
 
     try:
-        payload = model.model_validate(arguments)
+        handler_result = registration.handler(arguments)
+        if inspect.isawaitable(handler_result):
+            handler_result = await handler_result
     except ValidationError as exc:
         return types.ServerResult(
             types.CallToolResult(
@@ -367,52 +579,36 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
                 isError=True,
             )
         )
+    except Exception as exc:  # pragma: no cover - defensive safety net
+        return types.ServerResult(
+            types.CallToolResult(
+                content=[
+                    types.TextContent(
+                        type="text",
+                        text=f"Tool execution error: {exc}",
+                    )
+                ],
+                isError=True,
+            )
+        )
 
-    if widget.identifier == "insurance-state-selector":
-        structured_content, response_text = _handle_insurance_state_tool(
-            payload  # type: ignore[arg-type]
-        )
-    else:
-        structured_content, response_text = _handle_pizza_tool(
-            payload  # type: ignore[arg-type]
-        )
-    widget_resource = _embedded_widget_resource(widget)
-    meta: Dict[str, Any] = {
-        "openai.com/widget": widget_resource.model_dump(mode="json"),
-        "openai/outputTemplate": widget.template_uri,
-        "openai/toolInvocation/invoking": widget.invoking,
-        "openai/toolInvocation/invoked": widget.invoked,
-        "openai/widgetAccessible": True,
-        "openai/resultCanProduceWidget": True,
-    }
+    handler_payload: ToolInvocationResult = handler_result or {}
+    structured_content = handler_payload.get("structured_content") or {}
+    response_text = (
+        handler_payload.get("response_text") or registration.default_response_text
+    )
+    content = handler_payload.get("content")
+    if content is None:
+        content = [types.TextContent(type="text", text=response_text)]
+    meta = handler_payload.get("meta") or registration.default_meta
 
     return types.ServerResult(
         types.CallToolResult(
-            content=[
-                types.TextContent(
-                    type="text",
-                    text=response_text or widget.response_text,
-                )
-            ],
+            content=list(content),
             structuredContent=structured_content,
             _meta=meta,
         )
     )
-
-
-def _handle_pizza_tool(payload: PizzaInput) -> Tuple[Dict[str, Any], Optional[str]]:
-    return {"pizzaTopping": payload.pizza_topping}, None
-
-
-def _handle_insurance_state_tool(
-    payload: InsuranceStateInput,
-) -> Tuple[Dict[str, Any], Optional[str]]:
-    state = payload.state
-    if state:
-        return {"state": state}, f"Captured {state} as the customer's state."
-    return {}, None
-
-
 mcp._mcp_server.request_handlers[types.CallToolRequest] = _call_tool_request
 mcp._mcp_server.request_handlers[types.ReadResourceRequest] = _handle_read_resource
 
