@@ -19,6 +19,7 @@ import {
   type Tool
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import { INSURANCE_STATE_WIDGET_HTML } from "./insurance-state-widget.js";
 
 type PizzazWidget = {
   id: string;
@@ -28,6 +29,8 @@ type PizzazWidget = {
   invoked: string;
   html: string;
   responseText: string;
+  inputSchema: Tool["inputSchema"];
+  toolDescription?: string;
 };
 
 function widgetMeta(widget: PizzazWidget) {
@@ -39,6 +42,51 @@ function widgetMeta(widget: PizzazWidget) {
     "openai/resultCanProduceWidget": true
   } as const;
 }
+
+const pizzaToolInputSchema = {
+  type: "object",
+  properties: {
+    pizzaTopping: {
+      type: "string",
+      description: "Topping to mention when rendering the widget.",
+    },
+  },
+  required: ["pizzaTopping"],
+  additionalProperties: false,
+} as const;
+
+const pizzaToolInputParser = z.object({
+  pizzaTopping: z.string(),
+});
+
+const insuranceStateInputSchema = {
+  type: "object",
+  properties: {
+    state: {
+      type: "string",
+      description:
+        "Two-letter U.S. state or District of Columbia abbreviation (for example, \"CA\").",
+      minLength: 2,
+      maxLength: 2,
+      pattern: "^[A-Za-z]{2}$",
+    },
+  },
+  required: [],
+  additionalProperties: false,
+} as const;
+
+const insuranceStateParser = z
+  .object({
+    state: z
+      .string()
+      .trim()
+      .min(2)
+      .max(2)
+      .regex(/^[A-Za-z]{2}$/)
+      .transform((value) => value.toUpperCase())
+      .optional(),
+  })
+  .strict();
 
 const widgets: PizzazWidget[] = [
   {
@@ -52,7 +100,8 @@ const widgets: PizzazWidget[] = [
 <link rel="stylesheet" href="https://persistent.oaistatic.com/ecosystem-built-assets/pizzaz-0038.css">
 <script type="module" src="https://persistent.oaistatic.com/ecosystem-built-assets/pizzaz-0038.js"></script>
     `.trim(),
-    responseText: "Rendered a pizza map!"
+    responseText: "Rendered a pizza map!",
+    inputSchema: pizzaToolInputSchema,
   },
   {
     id: "pizza-carousel",
@@ -65,7 +114,8 @@ const widgets: PizzazWidget[] = [
 <link rel="stylesheet" href="https://persistent.oaistatic.com/ecosystem-built-assets/pizzaz-carousel-0038.css">
 <script type="module" src="https://persistent.oaistatic.com/ecosystem-built-assets/pizzaz-carousel-0038.js"></script>
     `.trim(),
-    responseText: "Rendered a pizza carousel!"
+    responseText: "Rendered a pizza carousel!",
+    inputSchema: pizzaToolInputSchema,
   },
   {
     id: "pizza-albums",
@@ -78,7 +128,8 @@ const widgets: PizzazWidget[] = [
 <link rel="stylesheet" href="https://persistent.oaistatic.com/ecosystem-built-assets/pizzaz-albums-0038.css">
 <script type="module" src="https://persistent.oaistatic.com/ecosystem-built-assets/pizzaz-albums-0038.js"></script>
     `.trim(),
-    responseText: "Rendered a pizza album!"
+    responseText: "Rendered a pizza album!",
+    inputSchema: pizzaToolInputSchema,
   },
   {
     id: "pizza-list",
@@ -91,7 +142,8 @@ const widgets: PizzazWidget[] = [
 <link rel="stylesheet" href="https://persistent.oaistatic.com/ecosystem-built-assets/pizzaz-list-0038.css">
 <script type="module" src="https://persistent.oaistatic.com/ecosystem-built-assets/pizzaz-list-0038.js"></script>
     `.trim(),
-    responseText: "Rendered a pizza list!"
+    responseText: "Rendered a pizza list!",
+    inputSchema: pizzaToolInputSchema,
   },
   {
     id: "pizza-video",
@@ -104,8 +156,22 @@ const widgets: PizzazWidget[] = [
 <link rel="stylesheet" href="https://persistent.oaistatic.com/ecosystem-built-assets/pizzaz-video-0038.css">
 <script type="module" src="https://persistent.oaistatic.com/ecosystem-built-assets/pizzaz-video-0038.js"></script>
     `.trim(),
-    responseText: "Rendered a pizza video!"
-  }
+    responseText: "Rendered a pizza video!",
+    inputSchema: pizzaToolInputSchema,
+  },
+  {
+    id: "insurance-state-selector",
+    title: "Collect insurance state",
+    templateUri: "ui://widget/insurance-state.html",
+    invoking: "Collecting a customer's state",
+    invoked: "Captured the customer's state",
+    html: INSURANCE_STATE_WIDGET_HTML,
+    responseText:
+      "Let's confirm the customer's state before we continue with their insurance quote.",
+    toolDescription:
+      "Collects the customer's U.S. state so the assistant can surface insurance options that apply there.",
+    inputSchema: insuranceStateInputSchema,
+  },
 ];
 
 const widgetsById = new Map<string, PizzazWidget>();
@@ -116,26 +182,10 @@ widgets.forEach((widget) => {
   widgetsByUri.set(widget.templateUri, widget);
 });
 
-const toolInputSchema = {
-  type: "object",
-  properties: {
-    pizzaTopping: {
-      type: "string",
-      description: "Topping to mention when rendering the widget."
-    }
-  },
-  required: ["pizzaTopping"],
-  additionalProperties: false
-} as const;
-
-const toolInputParser = z.object({
-  pizzaTopping: z.string()
-});
-
 const tools: Tool[] = widgets.map((widget) => ({
   name: widget.id,
-  description: widget.title,
-  inputSchema: toolInputSchema,
+  description: widget.toolDescription ?? widget.title,
+  inputSchema: widget.inputSchema,
   title: widget.title,
   _meta: widgetMeta(widget)
 }));
@@ -155,6 +205,35 @@ const resourceTemplates: ResourceTemplate[] = widgets.map((widget) => ({
   mimeType: "text/html+skybridge",
   _meta: widgetMeta(widget)
 }));
+
+type ToolHandlerResult = {
+  structuredContent?: Record<string, unknown>;
+  responseText?: string;
+};
+
+const toolHandlers = new Map<string, (args: unknown) => ToolHandlerResult>();
+
+const defaultPizzaToolHandler = (args: unknown): ToolHandlerResult => {
+  const parsed = pizzaToolInputParser.parse(args ?? {});
+  return {
+    structuredContent: {
+      pizzaTopping: parsed.pizzaTopping,
+    },
+  };
+};
+
+toolHandlers.set("insurance-state-selector", (args: unknown) => {
+  const parsed = insuranceStateParser.parse(args ?? {});
+
+  if (parsed.state) {
+    return {
+      structuredContent: { state: parsed.state },
+      responseText: `Captured ${parsed.state} as the customer's state.`,
+    };
+  }
+
+  return { structuredContent: {} };
+});
 
 function createPizzazServer(): Server {
   const server = new Server(
@@ -208,19 +287,20 @@ function createPizzazServer(): Server {
       throw new Error(`Unknown tool: ${request.params.name}`);
     }
 
-    const args = toolInputParser.parse(request.params.arguments ?? {});
+    const handler = toolHandlers.get(widget.id) ?? defaultPizzaToolHandler;
+    const { structuredContent, responseText } = handler(
+      request.params.arguments ?? {}
+    );
 
     return {
       content: [
         {
           type: "text",
-          text: widget.responseText
-        }
+          text: responseText ?? widget.responseText,
+        },
       ],
-      structuredContent: {
-        pizzaTopping: args.pizzaTopping
-      },
-      _meta: widgetMeta(widget)
+      structuredContent: structuredContent ?? {},
+      _meta: widgetMeta(widget),
     };
   });
 
