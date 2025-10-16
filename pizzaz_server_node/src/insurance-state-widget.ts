@@ -238,16 +238,56 @@ export const INSURANCE_STATE_WIDGET_HTML = String.raw`
     box-shadow: none;
   }
 
+  .insurance-widget__results {
+    margin-top: 24px;
+    padding: 16px;
+    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.04);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  .insurance-widget__results-message {
+    margin: 0;
+    font-size: 14px;
+    color: rgba(15, 23, 42, 0.8);
+  }
+
+  .insurance-widget__products-heading {
+    margin: 16px 0 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(15, 23, 42, 0.9);
+  }
+
+  .insurance-widget__products {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .insurance-widget__product {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(59, 130, 246, 0.12);
+    color: rgba(37, 99, 235, 0.95);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .insurance-widget__product small {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(37, 99, 235, 0.75);
+  }
+
   .insurance-widget__footnote {
     margin: 0;
     font-size: 12px;
     color: rgba(15, 23, 42, 0.5);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .insurance-widget__footnote {
-      color: rgba(148, 163, 184, 0.65);
-    }
   }
 
   .insurance-widget__empty {
@@ -258,6 +298,32 @@ export const INSURANCE_STATE_WIDGET_HTML = String.raw`
   }
 
   @media (prefers-color-scheme: dark) {
+    .insurance-widget__results {
+      background: rgba(148, 163, 184, 0.12);
+      border-color: rgba(148, 163, 184, 0.24);
+    }
+
+    .insurance-widget__results-message {
+      color: rgba(226, 232, 240, 0.85);
+    }
+
+    .insurance-widget__products-heading {
+      color: rgba(226, 232, 240, 0.9);
+    }
+
+    .insurance-widget__product {
+      background: rgba(37, 99, 235, 0.2);
+      color: rgba(191, 219, 254, 0.95);
+    }
+
+    .insurance-widget__product small {
+      color: rgba(191, 219, 254, 0.8);
+    }
+
+    .insurance-widget__footnote {
+      color: rgba(148, 163, 184, 0.65);
+    }
+
     .insurance-widget__empty {
       color: rgba(226, 232, 240, 0.6);
     }
@@ -369,6 +435,23 @@ export const INSURANCE_STATE_WIDGET_HTML = String.raw`
     const selection = document.createElement("div");
     selection.className = "insurance-widget__selection";
 
+    const results = document.createElement("div");
+    results.className = "insurance-widget__results";
+    results.setAttribute("role", "status");
+    const resultsMessage = document.createElement("p");
+    resultsMessage.className = "insurance-widget__results-message";
+    resultsMessage.textContent = "Choose your state to see available insurance products.";
+    const productsHeading = document.createElement("h3");
+    productsHeading.className = "insurance-widget__products-heading";
+    productsHeading.textContent = "What kind of insurance are you looking for?";
+    productsHeading.hidden = true;
+    const productList = document.createElement("div");
+    productList.className = "insurance-widget__products";
+    productList.hidden = true;
+    results.appendChild(resultsMessage);
+    results.appendChild(productsHeading);
+    results.appendChild(productList);
+
     const confirm = document.createElement("button");
     confirm.type = "button";
     confirm.className = "insurance-widget__confirm";
@@ -390,6 +473,7 @@ export const INSURANCE_STATE_WIDGET_HTML = String.raw`
     container.appendChild(searchBlock);
     container.appendChild(options);
     container.appendChild(selection);
+    container.appendChild(results);
     container.appendChild(confirm);
     container.appendChild(footnote);
 
@@ -397,6 +481,8 @@ export const INSURANCE_STATE_WIDGET_HTML = String.raw`
 
     let selectedCode = null;
     let isSending = false;
+    const productCache = new Map();
+    let currentRequestId = 0;
 
     function getStateByCode(code) {
       if (!code) return null;
@@ -424,6 +510,15 @@ export const INSURANCE_STATE_WIDGET_HTML = String.raw`
           button.classList.toggle("is-selected", isSelected);
           button.setAttribute("aria-selected", isSelected ? "true" : "false");
         });
+
+      if (state) {
+        loadProductsForState(state.code, state.name);
+      } else {
+        resultsMessage.textContent = "Choose your state to see available insurance products.";
+        productsHeading.hidden = true;
+        productList.hidden = true;
+        productList.innerHTML = "";
+      }
     }
 
     function pushWidgetState(code) {
@@ -436,6 +531,120 @@ export const INSURANCE_STATE_WIDGET_HTML = String.raw`
       } catch (error) {
         console.warn("Failed to persist widget state", error);
       }
+    }
+
+    function requestProducts(stateCode) {
+      const cached = productCache.get(stateCode);
+      if (cached) {
+        return Promise.resolve(cached);
+      }
+
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.withCredentials = true;
+
+        xhr.addEventListener("readystatechange", function () {
+          if (this.readyState === this.DONE) {
+            if (this.status === 200) {
+              try {
+                const parsed = JSON.parse(this.responseText || "[]");
+                const payload = { status: 200, products: parsed };
+                productCache.set(stateCode, payload);
+                resolve(payload);
+              } catch (error) {
+                reject(error);
+              }
+            } else if (this.status === 404) {
+              const notFound = { status: 404, products: [] };
+              productCache.set(stateCode, notFound);
+              resolve(notFound);
+            } else {
+              reject(new Error("Request failed with status " + this.status));
+            }
+          }
+        });
+
+        xhr.addEventListener("error", () => {
+          reject(new Error("Network error while fetching products"));
+        });
+
+        xhr.open(
+          "GET",
+          "https://gateway.pre.zrater.io/api/v1/linesOfBusiness/personalAuto/states/" +
+            encodeURIComponent(stateCode) +
+            "/activeProducts"
+        );
+        xhr.setRequestHeader("cookie", "BCSI-CS-7883f85839ae9af9=1");
+        xhr.setRequestHeader("User-Agent", "insomnia/11.1.0");
+        xhr.setRequestHeader("x-api-key", "e57528b0-95b4-4efe-8870-caa0f8a95143");
+
+        xhr.send(null);
+      });
+    }
+
+    function renderProducts(products) {
+      productList.innerHTML = "";
+
+      if (!products.length) {
+        productsHeading.hidden = true;
+        productList.hidden = true;
+        return;
+      }
+
+      productsHeading.hidden = false;
+      productList.hidden = false;
+
+      products.forEach((product) => {
+        const pill = document.createElement("div");
+        pill.className = "insurance-widget__product";
+        const name = document.createElement("span");
+        name.textContent = product.productName || "Unnamed product";
+        const carrier = document.createElement("small");
+        carrier.textContent = product.carrierName || "";
+        pill.appendChild(name);
+        if (carrier.textContent) {
+          pill.appendChild(carrier);
+        }
+        productList.appendChild(pill);
+      });
+    }
+
+    function loadProductsForState(stateCode, stateName) {
+      const requestId = ++currentRequestId;
+      resultsMessage.textContent = "Checking available coverage in " + stateName + "…";
+      productsHeading.hidden = true;
+      productList.hidden = true;
+      productList.innerHTML = "";
+
+      requestProducts(stateCode)
+        .then((result) => {
+          if (requestId !== currentRequestId) {
+            return;
+          }
+
+          if (result.status === 200 && result.products.length) {
+            resultsMessage.textContent =
+              "Great! Here are the active products we can explore in " + stateName + ".";
+            renderProducts(result.products);
+          } else if (result.status === 404 || !result.products.length) {
+            resultsMessage.textContent =
+              "We couldn't find any active products in " +
+              stateName +
+              ". Try another state or ask the assistant for help.";
+            renderProducts([]);
+          }
+        })
+        .catch((error) => {
+          if (requestId !== currentRequestId) {
+            return;
+          }
+          console.warn("Failed to fetch products", error);
+          resultsMessage.textContent =
+            "We ran into an issue checking products. Please try again or pick a different state.";
+          productsHeading.hidden = true;
+          productList.hidden = true;
+          productList.innerHTML = "";
+        });
     }
 
     function renderOptions() {
