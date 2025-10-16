@@ -1,11 +1,8 @@
-"""Pizzaz demo MCP server implemented with the Python FastMCP helper.
+"""Insurance MCP server implemented with the Python FastMCP helper.
 
-The server mirrors the Node example in this repository and exposes
-widget-backed tools that render the Pizzaz UI bundle. Each handler returns the
-HTML shell via an MCP resource and echoes the selected topping as structured
-content so the ChatGPT client can hydrate the widget. The module also wires the
-handlers into an HTTP/SSE stack so you can run the server with uvicorn on port
-8000, matching the Node transport behavior."""
+The server focuses exclusively on insurance workflows. It registers tools for
+collecting quoting details and exposes the insurance state selector widget as a
+reusable resource so the ChatGPT client can render it inline."""
 
 from __future__ import annotations
 
@@ -36,7 +33,7 @@ from .insurance_state_widget import INSURANCE_STATE_WIDGET_HTML
 
 
 @dataclass(frozen=True)
-class PizzazWidget:
+class WidgetDefinition:
     identifier: str
     title: str
     template_uri: str
@@ -85,19 +82,6 @@ def _model_schema(model: Type[BaseModel]) -> Dict[str, Any]:
     return cast(Dict[str, Any], model.model_json_schema(by_alias=True))
 
 
-PIZZA_TOOL_INPUT_SCHEMA: Dict[str, Any] = {
-    "type": "object",
-    "properties": {
-        "pizzaTopping": {
-            "type": "string",
-            "description": "Topping to mention when rendering the widget.",
-        }
-    },
-    "required": ["pizzaTopping"],
-    "additionalProperties": False,
-}
-
-
 INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -144,88 +128,8 @@ PERSONAL_AUTO_PRODUCTS_HEADERS = {
 }
 
 
-WIDGETS: Tuple[PizzazWidget, ...] = (
-    PizzazWidget(
-        identifier="pizza-map",
-        title="Show Pizza Map",
-        template_uri="ui://widget/pizza-map.html",
-        invoking="Hand-tossing a map",
-        invoked="Served a fresh map",
-        html=(
-            "<div id=\"pizzaz-root\"></div>\n"
-            "<link rel=\"stylesheet\" href=\"https://persistent.oaistatic.com/"
-            "ecosystem-built-assets/pizzaz-0038.css\">\n"
-            "<script type=\"module\" src=\"https://persistent.oaistatic.com/"
-            "ecosystem-built-assets/pizzaz-0038.js\"></script>"
-        ),
-        response_text="Rendered a pizza map!",
-        input_schema=PIZZA_TOOL_INPUT_SCHEMA,
-    ),
-    PizzazWidget(
-        identifier="pizza-carousel",
-        title="Show Pizza Carousel",
-        template_uri="ui://widget/pizza-carousel.html",
-        invoking="Carousel some spots",
-        invoked="Served a fresh carousel",
-        html=(
-            "<div id=\"pizzaz-carousel-root\"></div>\n"
-            "<link rel=\"stylesheet\" href=\"https://persistent.oaistatic.com/"
-            "ecosystem-built-assets/pizzaz-carousel-0038.css\">\n"
-            "<script type=\"module\" src=\"https://persistent.oaistatic.com/"
-            "ecosystem-built-assets/pizzaz-carousel-0038.js\"></script>"
-        ),
-        response_text="Rendered a pizza carousel!",
-        input_schema=PIZZA_TOOL_INPUT_SCHEMA,
-    ),
-    PizzazWidget(
-        identifier="pizza-albums",
-        title="Show Pizza Album",
-        template_uri="ui://widget/pizza-albums.html",
-        invoking="Hand-tossing an album",
-        invoked="Served a fresh album",
-        html=(
-            "<div id=\"pizzaz-albums-root\"></div>\n"
-            "<link rel=\"stylesheet\" href=\"https://persistent.oaistatic.com/"
-            "ecosystem-built-assets/pizzaz-albums-0038.css\">\n"
-            "<script type=\"module\" src=\"https://persistent.oaistatic.com/"
-            "ecosystem-built-assets/pizzaz-albums-0038.js\"></script>"
-        ),
-        response_text="Rendered a pizza album!",
-        input_schema=PIZZA_TOOL_INPUT_SCHEMA,
-    ),
-    PizzazWidget(
-        identifier="pizza-list",
-        title="Show Pizza List",
-        template_uri="ui://widget/pizza-list.html",
-        invoking="Hand-tossing a list",
-        invoked="Served a fresh list",
-        html=(
-            "<div id=\"pizzaz-list-root\"></div>\n"
-            "<link rel=\"stylesheet\" href=\"https://persistent.oaistatic.com/"
-            "ecosystem-built-assets/pizzaz-list-0038.css\">\n"
-            "<script type=\"module\" src=\"https://persistent.oaistatic.com/"
-            "ecosystem-built-assets/pizzaz-list-0038.js\"></script>"
-        ),
-        response_text="Rendered a pizza list!",
-        input_schema=PIZZA_TOOL_INPUT_SCHEMA,
-    ),
-    PizzazWidget(
-        identifier="pizza-video",
-        title="Show Pizza Video",
-        template_uri="ui://widget/pizza-video.html",
-        invoking="Hand-tossing a video",
-        invoked="Served a fresh video",
-        html=(
-            "<div id=\"pizzaz-video-root\"></div>\n"
-            "<link rel=\"stylesheet\" href=\"https://persistent.oaistatic.com/"
-            "ecosystem-built-assets/pizzaz-video-0038.css\">\n"
-            "<script type=\"module\" src=\"https://persistent.oaistatic.com/"
-            "ecosystem-built-assets/pizzaz-video-0038.js\"></script>"
-        ),
-        response_text="Rendered a pizza video!",
-        input_schema=PIZZA_TOOL_INPUT_SCHEMA,
-    ),
-    PizzazWidget(
+WIDGETS: Tuple[WidgetDefinition, ...] = (
+    WidgetDefinition(
         identifier="insurance-state-selector",
         title="Collect insurance state",
         template_uri="ui://widget/insurance-state.html",
@@ -239,7 +143,7 @@ WIDGETS: Tuple[PizzazWidget, ...] = (
     ),
 )
 
-widgets: Tuple[PizzazWidget, ...] = WIDGETS
+widgets: Tuple[WidgetDefinition, ...] = WIDGETS
 
 INSURANCE_STATE_WIDGET_IDENTIFIER = "insurance-state-selector"
 INSURANCE_STATE_WIDGET_TEMPLATE_URI = "ui://widget/insurance-state.html"
@@ -248,8 +152,12 @@ INSURANCE_STATE_WIDGET_TEMPLATE_URI = "ui://widget/insurance-state.html"
 MIME_TYPE = "text/html+skybridge"
 
 
-WIDGETS_BY_ID: Dict[str, PizzazWidget] = {widget.identifier: widget for widget in widgets}
-WIDGETS_BY_URI: Dict[str, PizzazWidget] = {widget.template_uri: widget for widget in widgets}
+WIDGETS_BY_ID: Dict[str, WidgetDefinition] = {
+    widget.identifier: widget for widget in widgets
+}
+WIDGETS_BY_URI: Dict[str, WidgetDefinition] = {
+    widget.template_uri: widget for widget in widgets
+}
 
 if INSURANCE_STATE_WIDGET_IDENTIFIER not in WIDGETS_BY_ID:
     msg = (
@@ -264,18 +172,6 @@ if INSURANCE_STATE_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
         f"expected '{INSURANCE_STATE_WIDGET_TEMPLATE_URI}' in widgets"
     )
     raise RuntimeError(msg)
-
-
-class PizzaInput(BaseModel):
-    """Schema for pizza tools."""
-
-    pizza_topping: str = Field(
-        ...,
-        alias="pizzaTopping",
-        description="Topping to mention when rendering the widget.",
-    )
-
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
 
 class InsuranceStateInput(BaseModel):
@@ -752,11 +648,6 @@ class PersonalAutoRateRequest(BaseModel):
     _strip_policy_type = field_validator("policy_type", mode="before")(_strip_string)
 
 
-def _default_pizza_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocationResult:
-    payload = PizzaInput.model_validate(arguments)
-    return {"structured_content": {"pizzaTopping": payload.pizza_topping}}
-
-
 def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocationResult:
     payload = InsuranceStateInput.model_validate(arguments)
     state = payload.state
@@ -972,18 +863,18 @@ async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvoc
 
 
 mcp = FastMCP(
-    name="pizzaz-python",
+    name="insurance-python",
     sse_path="/mcp",
     message_path="/mcp/messages",
     stateless_http=True,
 )
 
 
-def _resource_description(widget: PizzazWidget) -> str:
+def _resource_description(widget: WidgetDefinition) -> str:
     return f"{widget.title} widget markup"
 
 
-def _tool_meta(widget: PizzazWidget) -> Dict[str, Any]:
+def _tool_meta(widget: WidgetDefinition) -> Dict[str, Any]:
     return {
         "openai/outputTemplate": widget.template_uri,
         "openai/toolInvocation/invoking": widget.invoking,
@@ -998,7 +889,7 @@ def _tool_meta(widget: PizzazWidget) -> Dict[str, Any]:
     }
 
 
-def _embedded_widget_resource(widget: PizzazWidget) -> types.EmbeddedResource:
+def _embedded_widget_resource(widget: WidgetDefinition) -> types.EmbeddedResource:
     return types.EmbeddedResource(
         type="resource",
         resource=types.TextResourceContents(
@@ -1012,11 +903,7 @@ def _embedded_widget_resource(widget: PizzazWidget) -> types.EmbeddedResource:
 
 def _register_default_tools() -> None:
     for widget in widgets:
-        handler = (
-            _insurance_state_tool_handler
-            if widget.identifier == INSURANCE_STATE_WIDGET_IDENTIFIER
-            else _default_pizza_tool_handler
-        )
+        handler = _insurance_state_tool_handler
 
         meta = _tool_meta(widget)
 
@@ -1286,4 +1173,4 @@ except Exception:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("pizzaz_server_python.main:app", host="0.0.0.0", port=8000)
+    uvicorn.run("insurance_server_python.main:app", host="0.0.0.0", port=8000)
