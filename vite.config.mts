@@ -212,7 +212,11 @@ export default defineConfig(({}) => ({
     port: 4444,
     strictPort: true,
     cors: true,
-  },
+    host: true,
+  
+    // 👇 allow all hosts in dev mode
+    allowedHosts: true,
+  },  
   esbuild: {
     jsx: "automatic",
     jsxImportSource: "react",
