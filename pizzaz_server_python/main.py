@@ -62,7 +62,7 @@ INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
 }
 
 
-widgets: List[PizzazWidget] = [
+WIDGETS: Tuple[PizzazWidget, ...] = (
     PizzazWidget(
         identifier="pizza-map",
         title="Show Pizza Map",
@@ -155,7 +155,12 @@ widgets: List[PizzazWidget] = [
         tool_description=
             "Collects the customer's U.S. state so the assistant can surface insurance options that apply there.",
     ),
-]
+)
+
+widgets: Tuple[PizzazWidget, ...] = WIDGETS
+
+INSURANCE_STATE_WIDGET_IDENTIFIER = "insurance-state-selector"
+INSURANCE_STATE_WIDGET_TEMPLATE_URI = "ui://widget/insurance-state.html"
 
 
 MIME_TYPE = "text/html+skybridge"
@@ -163,6 +168,20 @@ MIME_TYPE = "text/html+skybridge"
 
 WIDGETS_BY_ID: Dict[str, PizzazWidget] = {widget.identifier: widget for widget in widgets}
 WIDGETS_BY_URI: Dict[str, PizzazWidget] = {widget.template_uri: widget for widget in widgets}
+
+if INSURANCE_STATE_WIDGET_IDENTIFIER not in WIDGETS_BY_ID:
+    msg = (
+        "Insurance state selector widget must be registered; "
+        f"expected identifier '{INSURANCE_STATE_WIDGET_IDENTIFIER}' in widgets"
+    )
+    raise RuntimeError(msg)
+
+if INSURANCE_STATE_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
+    msg = (
+        "Insurance state selector widget must expose the correct template URI; "
+        f"expected '{INSURANCE_STATE_WIDGET_TEMPLATE_URI}' in widgets"
+    )
+    raise RuntimeError(msg)
 
 
 class PizzaInput(BaseModel):
