@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass
+from datetime import date, datetime, timezone
 from typing import (
     Any,
     Awaitable,
@@ -191,6 +192,245 @@ def _strip_string(value: Any) -> Any:
     return value
 
 
+def _normalize_none_string(value: Optional[str]) -> Optional[str]:
+    if value is None or not isinstance(value, str):
+        return value
+    stripped = value.strip()
+    if not stripped:
+        return None
+    lowered = stripped.lower()
+    if lowered in {"none", "no", "n/a", "na", "not applicable"}:
+        return "None"
+    return stripped
+
+
+def _normalize_yes_no_boolean(value: Any) -> Any:
+    if value is None or isinstance(value, bool):
+        return value
+    if not isinstance(value, str):
+        return value
+    stripped = value.strip().lower()
+    if stripped in {"yes", "y", "true"}:
+        return True
+    if stripped in {"no", "n", "false"}:
+        return False
+    return value
+
+
+def _normalize_money_string(value: Any) -> Any:
+    if value is None or not isinstance(value, str):
+        return value
+    stripped = value.strip()
+    if not stripped:
+        return None
+    normalized_none = _normalize_none_string(stripped)
+    if normalized_none == "None":
+        return "None"
+    cleaned = stripped.replace("$", "").replace(",", "")
+    if cleaned.lower().endswith("k"):
+        try:
+            base = float(cleaned[:-1])
+        except ValueError:
+            return cleaned
+        return str(int(base * 1000))
+    return cleaned
+
+
+def _normalize_slash_limit(value: Any) -> Any:
+    if value is None or not isinstance(value, str):
+        return value
+    stripped = value.strip()
+    if not stripped:
+        return None
+    normalized_none = _normalize_none_string(stripped)
+    if normalized_none == "None":
+        return "None"
+    cleaned = stripped.replace("$", "").replace(",", "")
+    cleaned = cleaned.replace(" ", "")
+    translations = {
+        "15/30": "15000/30000",
+        "15/30/5": "15000/30000/5000",
+        "25/50": "25000/50000",
+        "25/50/15": "25000/50000/15000",
+        "30/60": "30000/60000",
+        "50/100": "50000/100000",
+        "50/100/50": "50000/100000/50000",
+        "100/300": "100000/300000",
+        "100/300/50": "100000/300000/50000",
+    }
+    lowered = cleaned.lower()
+    if lowered in translations:
+        return translations[lowered]
+    return cleaned
+
+
+def _normalize_vehicle_usage(value: Any) -> Any:
+    if value is None or not isinstance(value, str):
+        return value
+    stripped = value.strip()
+    if not stripped:
+        return None
+    lowered = stripped.lower()
+    usage_map = {
+        "commute": "Work School",
+        "work": "Work School",
+        "work/school": "Work School",
+        "work school": "Work School",
+        "school": "Work School",
+        "business": "Business",
+        "commercial": "Business",
+        "rideshare": "Rideshare",
+        "pleasure": "Pleasure",
+        "personal": "Pleasure",
+        "farm": "Farm",
+        "artisan": "Artisan",
+    }
+    return usage_map.get(lowered, stripped)
+
+
+def _normalize_purchase_type(value: Any) -> Any:
+    if value is None or not isinstance(value, str):
+        return value
+    stripped = value.strip()
+    if not stripped:
+        return None
+    mapping = {
+        "new": "New",
+        "used": "Used",
+        "leased": "Leased",
+        "certified pre-owned": "Used",
+    }
+    return mapping.get(stripped.lower(), stripped)
+
+
+def _normalize_policy_term(value: Any) -> Any:
+    if value is None or not isinstance(value, str):
+        return value
+    stripped = value.strip()
+    if not stripped:
+        return None
+    normalized = stripped.replace("-", "").replace(" ", "")
+    mapping = {
+        "6month": "6Month",
+        "6months": "6Month",
+        "sixmonth": "6Month",
+        "semiannual": "SemiAnnual",
+        "semiann": "SemiAnnual",
+        "semiannualterm": "SemiAnnual",
+        "annual": "Annual",
+        "12month": "Annual",
+        "12months": "Annual",
+    }
+    return mapping.get(normalized.lower(), stripped)
+
+
+def _normalize_bump_limits(value: Any) -> Any:
+    if value is None or not isinstance(value, str):
+        return value
+    stripped = value.strip()
+    if not stripped:
+        return None
+    mapping = {
+        "bump": "Bump",
+        "bumpup": "Bump Up",
+        "bump up": "Bump Up",
+        "keep": "Keep",
+        "keepasquoted": "Keep",
+    }
+    return mapping.get(stripped.lower(), stripped)
+
+
+def _normalize_payment_method(value: Any) -> Any:
+    if value is None or not isinstance(value, str):
+        return value
+    stripped = value.strip()
+    if not stripped:
+        return None
+    mapping = {
+        "eft": "Electronic Funds Transfer",
+        "electronic funds transfer": "Electronic Funds Transfer",
+        "ach": "Electronic Funds Transfer",
+        "credit": "Credit Card",
+        "credit card": "Credit Card",
+        "debit": "Debit Card",
+        "debit card": "Debit Card",
+        "cash": "Cash",
+        "check": "Check",
+        "installments": "Installments",
+        "pay in full": "Pay In Full",
+        "payinfull": "Pay In Full",
+    }
+    lowered = stripped.lower()
+    return mapping.get(lowered, stripped)
+
+
+def _normalize_policy_type(value: Any) -> Any:
+    if value is None or not isinstance(value, str):
+        return value
+    stripped = value.strip()
+    if not stripped:
+        return None
+    mapping = {
+        "standard": "Standard",
+        "preferred": "Preferred",
+        "nonstandard": "Non-Standard",
+        "non standard": "Non-Standard",
+    }
+    return mapping.get(stripped.lower(), stripped)
+
+
+def _normalize_effective_date(value: Any) -> Any:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        dt = value
+    elif isinstance(value, date):
+        dt = datetime.combine(value, datetime.min.time())
+    elif isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        normalized = text.replace("Z", "+00:00")
+        try:
+            dt = datetime.fromisoformat(normalized)
+        except ValueError:
+            pass
+        else:
+            if dt.tzinfo:
+                dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+            return dt.strftime("%Y-%m-%dT%H:%M:%S")
+        for fmt in (
+            "%Y-%m-%d",
+            "%m/%d/%Y",
+            "%Y/%m/%d",
+            "%B %d, %Y",
+            "%b %d, %Y",
+        ):
+            try:
+                parsed = datetime.strptime(text, fmt)
+            except ValueError:
+                continue
+            dt = parsed
+            break
+        else:
+            return text
+    else:
+        return value
+
+    if dt.tzinfo:
+        dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def _normalize_vin(value: Any) -> Any:
+    if value is None or not isinstance(value, str):
+        return value
+    stripped = value.strip()
+    if not stripped:
+        return None
+    return stripped.upper()
+
+
 class AddressInput(BaseModel):
     street1: str = Field(..., alias="Street1")
     street2: Optional[str] = Field(default=None, alias="Street2")
@@ -355,9 +595,14 @@ class FinancialResponsibilityInformationInput(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
+    _normalize_sr22 = field_validator("sr22", mode="before")(
+        _normalize_yes_no_boolean
+    )
     _strip_reason = field_validator("sr22_reason", mode="before")(_strip_string)
     _strip_state = field_validator("sr22_state", mode="before")(_strip_string)
-    _strip_date = field_validator("sr22_date", mode="before")(_strip_string)
+    _normalize_date = field_validator("sr22_date", mode="before")(
+        _normalize_effective_date
+    )
 
     @field_validator("sr22_state")
     @classmethod
@@ -426,14 +671,24 @@ class VehicleCoverageInformationInput(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
-    _strip_collision = field_validator(
+    _normalize_collision = field_validator(
         "collision_deductible", mode="before"
-    )(_strip_string)
-    _strip_comprehensive = field_validator(
+    )(_normalize_money_string)
+    _normalize_comprehensive = field_validator(
         "comprehensive_deductible", mode="before"
-    )(_strip_string)
-    _strip_rental = field_validator("rental_limit", mode="before")(_strip_string)
-    _strip_towing = field_validator("towing_limit", mode="before")(_strip_string)
+    )(_normalize_money_string)
+    _normalize_rental = field_validator("rental_limit", mode="before")(
+        _normalize_money_string
+    )
+    _normalize_gap = field_validator("gap_coverage", mode="before")(
+        _normalize_yes_no_boolean
+    )
+    _normalize_safety_glass = field_validator(
+        "safety_glass_coverage", mode="before"
+    )(_normalize_yes_no_boolean)
+    _normalize_towing = field_validator("towing_limit", mode="before")(
+        _normalize_money_string
+    )
 
 
 class VehicleInput(BaseModel):
@@ -461,13 +716,24 @@ class VehicleInput(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
-    _strip_vin = field_validator("vin", mode="before")(_strip_string)
+    _normalize_vin_field = field_validator("vin", mode="before")(_normalize_vin)
     _strip_make = field_validator("make", mode="before")(_strip_string)
     _strip_model = field_validator("model", mode="before")(_strip_string)
-    _strip_purchase_type = field_validator("purchase_type", mode="before")(
-        _strip_string
+    _normalize_purchase_type_field = field_validator(
+        "purchase_type", mode="before"
+    )(_normalize_purchase_type)
+    _normalize_usage = field_validator("usage", mode="before")(
+        _normalize_vehicle_usage
     )
-    _strip_usage = field_validator("usage", mode="before")(_strip_string)
+    _normalize_leased = field_validator("leased_vehicle", mode="before")(
+        _normalize_yes_no_boolean
+    )
+    _normalize_ride_share = field_validator("ride_share", mode="before")(
+        _normalize_yes_no_boolean
+    )
+    _normalize_salvaged = field_validator("salvaged", mode="before")(
+        _normalize_yes_no_boolean
+    )
 
 
 class PolicyCoveragesInput(BaseModel):
@@ -486,19 +752,24 @@ class PolicyCoveragesInput(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
-    _strip_liability_bi = field_validator(
+    _normalize_liability_bi = field_validator(
         "liability_bi_limit", mode="before"
-    )(_strip_string)
-    _strip_liability_pd = field_validator(
+    )(_normalize_slash_limit)
+    _normalize_liability_pd = field_validator(
         "liability_pd_limit", mode="before"
-    )(_strip_string)
-    _strip_med_pay = field_validator("med_pay_limit", mode="before")(_strip_string)
-    _strip_um_bi = field_validator(
+    )(_normalize_money_string)
+    _normalize_med_pay = field_validator("med_pay_limit", mode="before")(
+        _normalize_money_string
+    )
+    _normalize_um_bi = field_validator(
         "uninsured_motorist_bi_limit", mode="before"
-    )(_strip_string)
-    _strip_accidental = field_validator(
+    )(_normalize_slash_limit)
+    _normalize_accidental = field_validator(
         "accidental_death_limit", mode="before"
-    )(_strip_string)
+    )(_normalize_money_string)
+    _normalize_um_pd_collision = field_validator(
+        "uninsured_motorist_pd_collision_damage_waiver", mode="before"
+    )(_normalize_yes_no_boolean)
 
 
 class CarrierProductQuestionInput(BaseModel):
@@ -611,11 +882,24 @@ class PersonalAutoQuoteOptionsInput(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
     _strip_identifier = field_validator("identifier", mode="before")(_strip_string)
-    _strip_effective = field_validator("effective_date", mode="before")(_strip_string)
-    _strip_bump = field_validator("bump_limits", mode="before")(_strip_string)
-    _strip_term = field_validator("term", mode="before")(_strip_string)
-    _strip_payment = field_validator("payment_method", mode="before")(_strip_string)
-    _strip_policy_type = field_validator("policy_type", mode="before")(_strip_string)
+    _normalize_effective_field = field_validator(
+        "effective_date", mode="before"
+    )(_normalize_effective_date)
+    _normalize_declined_credit = field_validator(
+        "customer_declined_credit", mode="before"
+    )(_normalize_yes_no_boolean)
+    _normalize_bump_field = field_validator("bump_limits", mode="before")(
+        _normalize_bump_limits
+    )
+    _normalize_term_field = field_validator("term", mode="before")(
+        _normalize_policy_term
+    )
+    _normalize_payment_field = field_validator(
+        "payment_method", mode="before"
+    )(_normalize_payment_method)
+    _normalize_policy_type_field = field_validator(
+        "policy_type", mode="before"
+    )(_normalize_policy_type)
 
 
 class PersonalAutoRateRequest(BaseModel):
@@ -641,11 +925,24 @@ class PersonalAutoRateRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
     _strip_identifier = field_validator("identifier", mode="before")(_strip_string)
-    _strip_effective = field_validator("effective_date", mode="before")(_strip_string)
-    _strip_bump = field_validator("bump_limits", mode="before")(_strip_string)
-    _strip_term = field_validator("term", mode="before")(_strip_string)
-    _strip_payment = field_validator("payment_method", mode="before")(_strip_string)
-    _strip_policy_type = field_validator("policy_type", mode="before")(_strip_string)
+    _normalize_effective_field = field_validator(
+        "effective_date", mode="before"
+    )(_normalize_effective_date)
+    _normalize_declined_credit = field_validator(
+        "customer_declined_credit", mode="before"
+    )(_normalize_yes_no_boolean)
+    _normalize_bump_field = field_validator("bump_limits", mode="before")(
+        _normalize_bump_limits
+    )
+    _normalize_term_field = field_validator("term", mode="before")(
+        _normalize_policy_term
+    )
+    _normalize_payment_field = field_validator(
+        "payment_method", mode="before"
+    )(_normalize_payment_method)
+    _normalize_policy_type_field = field_validator(
+        "policy_type", mode="before"
+    )(_normalize_policy_type)
 
 
 def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocationResult:
