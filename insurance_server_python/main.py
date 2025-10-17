@@ -106,10 +106,11 @@ WIDGETS: Tuple[WidgetDefinition, ...] = (
         invoking="Collecting a customer's state",
         invoked="Captured the customer's state",
         html=INSURANCE_STATE_WIDGET_HTML,
-        response_text="Let's confirm the customer's state before we continue with their insurance quote.",
+        response_text=
+            "Let's confirm the customer's state so we can gather their driver and vehicle details for the quote.",
         input_schema=INSURANCE_STATE_INPUT_SCHEMA,
         tool_description=
-            "Collects the customer's U.S. state so the assistant can surface insurance options that apply there.",
+            "Collects the customer's U.S. state so the assistant can continue gathering driver and vehicle information for their AIS auto quote.",
     ),
 )
 
@@ -638,7 +639,7 @@ def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocatio
     return {
         "structured_content": {},
         "response_text": (
-            "Let's confirm the customer's state before we continue with their insurance quote."
+            "Let's confirm the customer's state so we can gather their driver and vehicle details for the quote."
         ),
         "meta": {
             **_tool_meta(widget),
