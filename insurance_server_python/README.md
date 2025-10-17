@@ -63,3 +63,7 @@ The personal auto quoting tools now support a staged approach for gathering driv
 2. **`collect-personal-auto-drivers`** remains available for validating the complete rated driver payload once the broader intake conversation is underway.
 
 Pair the roster tool with the existing customer, vehicle, coverage, carrier, and rating handlers to flexibly capture the details needed for a quote while still keeping the assistant's responses concise and confirmatory.
+
+### Intake plan
+
+When walking through the personal auto intake plan, the assistant can now capture quote-level selections independently before submitting the full rating package. Use **`collect-personal-auto-quote-options`** to confirm the quote identifier, effective date, policy type, term, payment method, and related options alongside the existing customer, driver, vehicle, and carrier tools.
