@@ -782,7 +782,7 @@ PERSONAL_AUTO_RATE_ENDPOINT = (
 PERSONAL_AUTO_RATE_HEADERS = {
     "Content-Type": "application/json",
     "User-Agent": "insomnia/11.6.1",
-    "x-api-key": "81562316-a10c-49a0-b7cf-43ff3ec30737",
+    "x-api-key": "",
 }
 
 
