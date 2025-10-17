@@ -28,6 +28,8 @@ import httpx
 import mcp.types as types
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from .insurance_state_widget import INSURANCE_STATE_WIDGET_HTML
 
@@ -1068,6 +1070,79 @@ mcp._mcp_server.request_handlers[types.ReadResourceRequest] = _handle_read_resou
 
 
 app = mcp.streamable_http_app()
+
+
+async def _legacy_call_tool_route(request: Request) -> JSONResponse:
+    """Handle legacy ``callTool`` HTTP requests.
+
+    Older MCP HTTP clients (including early Apps SDK builds) issue JSON-RPC
+    requests using the pre-2024-10 method name ``callTool`` and expect a JSON
+    response body rather than an SSE stream. The FastMCP transport now requires
+    the newer ``tools/call`` method literal and enforces ``text/event-stream``
+    negotiation, which causes the legacy clients to fail before the tool handler
+    runs. This adapter normalizes those requests so the rest of the server can
+    reuse the canonical handler logic.
+    """
+
+    try:
+        payload = await request.json()
+    except json.JSONDecodeError as exc:
+        return JSONResponse(
+            {
+                "jsonrpc": "2.0",
+                "id": None,
+                "error": {
+                    "code": -32700,
+                    "message": f"Parse error: {exc}",
+                },
+            },
+            status_code=400,
+        )
+
+    method = payload.get("method")
+    if method != "callTool":
+        return JSONResponse(
+            {
+                "jsonrpc": "2.0",
+                "id": payload.get("id"),
+                "error": {
+                    "code": -32601,
+                    "message": f"Unsupported method: {method}",
+                },
+            },
+            status_code=405,
+        )
+
+    # Clone the payload but swap in the protocol-compliant method name so we
+    # can delegate back to the shared handler.
+    normalized_payload = {**payload, "method": "tools/call"}
+
+    try:
+        call_request = types.CallToolRequest.model_validate(normalized_payload)
+    except ValidationError as exc:
+        return JSONResponse(
+            {
+                "jsonrpc": "2.0",
+                "id": payload.get("id"),
+                "error": {
+                    "code": -32602,
+                    "message": "Invalid request parameters",
+                    "data": exc.errors(),
+                },
+            },
+            status_code=400,
+        )
+
+    server_result = await _call_tool_request(call_request)
+    response_payload = server_result.model_dump(mode="json")
+
+    # Legacy clients expect a JSON-RPC response envelope with either ``result``
+    # or ``error``. ``ServerResult`` always wraps a ``CallToolResult`` so we
+    # surface it as a ``result`` here.
+    return JSONResponse({"jsonrpc": "2.0", "id": payload.get("id"), "result": response_payload})
+
+
+app.add_route("/mcp/messages", _legacy_call_tool_route, methods=["POST"])
 
 try:
     from starlette.middleware.cors import CORSMiddleware
