@@ -35,6 +35,9 @@ from starlette.responses import JSONResponse
 from dotenv import load_dotenv
 
 from .insurance_state_widget import INSURANCE_STATE_WIDGET_HTML
+from .insurance_quote_options_widget import (
+    INSURANCE_QUOTE_OPTIONS_WIDGET_HTML,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -51,7 +54,7 @@ class WidgetDefinition:
     invoked: str
     html: str
     response_text: str
-    input_schema: Dict[str, Any]
+    input_schema: Optional[Dict[str, Any]]
     tool_description: Optional[str] = None
 
 
@@ -108,7 +111,7 @@ INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
 }
 
 
-WIDGETS: Tuple[WidgetDefinition, ...] = (
+DEFAULT_WIDGETS: Tuple[WidgetDefinition, ...] = (
     WidgetDefinition(
         identifier="insurance-state-selector",
         title="Collect insurance state",
@@ -124,10 +127,29 @@ WIDGETS: Tuple[WidgetDefinition, ...] = (
     ),
 )
 
-widgets: Tuple[WidgetDefinition, ...] = WIDGETS
+ADDITIONAL_WIDGETS: Tuple[WidgetDefinition, ...] = (
+    WidgetDefinition(
+        identifier="insurance-quote-options",
+        title="Capture personal auto quote options",
+        template_uri="ui://widget/insurance-quote-options.html",
+        invoking="Collecting personal auto quote options",
+        invoked="Captured personal auto quote options",
+        html=INSURANCE_QUOTE_OPTIONS_WIDGET_HTML,
+        response_text=
+            "Let's review the quote details together so everything is normalized for rating.",
+        input_schema=None,
+        tool_description=(
+            "Guides the user through selecting normalized personal auto quote options before invoking the rating flow."
+        ),
+    ),
+)
+
+widgets: Tuple[WidgetDefinition, ...] = DEFAULT_WIDGETS + ADDITIONAL_WIDGETS
 
 INSURANCE_STATE_WIDGET_IDENTIFIER = "insurance-state-selector"
 INSURANCE_STATE_WIDGET_TEMPLATE_URI = "ui://widget/insurance-state.html"
+INSURANCE_QUOTE_OPTIONS_WIDGET_IDENTIFIER = "insurance-quote-options"
+INSURANCE_QUOTE_OPTIONS_WIDGET_TEMPLATE_URI = "ui://widget/insurance-quote-options.html"
 
 
 MIME_TYPE = "text/html+skybridge"
@@ -151,6 +173,21 @@ if INSURANCE_STATE_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
     msg = (
         "Insurance state selector widget must expose the correct template URI; "
         f"expected '{INSURANCE_STATE_WIDGET_TEMPLATE_URI}' in widgets"
+    )
+    raise RuntimeError(msg)
+
+
+if INSURANCE_QUOTE_OPTIONS_WIDGET_IDENTIFIER not in WIDGETS_BY_ID:
+    msg = (
+        "Personal auto quote options widget must be registered; "
+        f"expected identifier '{INSURANCE_QUOTE_OPTIONS_WIDGET_IDENTIFIER}' in widgets"
+    )
+    raise RuntimeError(msg)
+
+if INSURANCE_QUOTE_OPTIONS_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
+    msg = (
+        "Personal auto quote options widget must expose the correct template URI; "
+        f"expected '{INSURANCE_QUOTE_OPTIONS_WIDGET_TEMPLATE_URI}' in widgets"
     )
     raise RuntimeError(msg)
 
@@ -682,7 +719,30 @@ def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocatio
 def _collect_personal_auto_quote_options(
     arguments: Mapping[str, Any]
 ) -> ToolInvocationResult:
-    payload = PersonalAutoQuoteOptionsInput.model_validate(arguments)
+    try:
+        payload = PersonalAutoQuoteOptionsInput.model_validate(arguments)
+    except ValidationError as error:
+        widget = WIDGETS_BY_ID[INSURANCE_QUOTE_OPTIONS_WIDGET_IDENTIFIER]
+        errors = error.errors()
+        message = (
+            "Let's fill in the quote options using the widget so everything is normalized for the rating request."
+        )
+        if errors:
+            first_error = errors[0]
+            location = ".".join(str(part) for part in first_error.get("loc", []))
+            details = first_error.get("msg")
+            if location and details:
+                message += f" ({location}: {details})"
+
+        return {
+            "structured_content": {"validationErrors": errors},
+            "response_text": message,
+            "meta": {
+                **_tool_meta(widget),
+                "openai.com/widget": _embedded_widget_resource(widget).model_dump(mode="json"),
+            },
+        }
+
     identifier = payload.identifier.strip()
     if identifier:
         message = f"Captured quote options for {identifier}."
@@ -691,6 +751,10 @@ def _collect_personal_auto_quote_options(
     return {
         "structured_content": payload.model_dump(by_alias=True),
         "response_text": message,
+        "meta": {
+            "openai/resultCanProduceWidget": False,
+            "openai/widgetAccessible": False,
+        },
     }
 
 
@@ -891,7 +955,14 @@ def _embedded_widget_resource(widget: WidgetDefinition) -> types.EmbeddedResourc
 
 
 def _register_default_tools() -> None:
-    for widget in widgets:
+    for widget in DEFAULT_WIDGETS:
+        if widget.identifier in TOOL_REGISTRY:
+            continue
+
+        if widget.input_schema is None:
+            msg = f"Widget '{widget.identifier}' must define an input schema to register its default tool."
+            raise RuntimeError(msg)
+
         handler = _insurance_state_tool_handler
 
         meta = _tool_meta(widget)
@@ -936,6 +1007,13 @@ def _register_personal_auto_intake_tools() -> None:
         )
     )
 
+    quote_options_widget = WIDGETS_BY_ID[INSURANCE_QUOTE_OPTIONS_WIDGET_IDENTIFIER]
+    quote_options_meta = _tool_meta(quote_options_widget)
+    quote_options_default_meta = {
+        **quote_options_meta,
+        "openai.com/widget": _embedded_widget_resource(quote_options_widget).model_dump(mode="json"),
+    }
+
     register_tool(
         ToolRegistration(
             tool=types.Tool(
@@ -943,9 +1021,11 @@ def _register_personal_auto_intake_tools() -> None:
                 title="Collect personal auto quote options",
                 description="Confirm quote-level options such as term, policy type, and payment method.",
                 inputSchema=_model_schema(PersonalAutoQuoteOptionsInput),
+                _meta=quote_options_meta,
             ),
             handler=_collect_personal_auto_quote_options,
             default_response_text="Captured personal auto quote options.",
+            default_meta=quote_options_default_meta,
         )
     )
 
