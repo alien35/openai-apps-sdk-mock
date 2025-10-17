@@ -546,6 +546,20 @@ class CarrierInformationInput(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
 
+def _default_ais_carrier_information() -> CarrierInformationInput:
+    """Return the implicit AIS carrier configuration."""
+
+    return CarrierInformationInput(
+        use_exact_carrier_info=True,
+        products=[
+            CarrierProductInput(
+                product_name="AIS",
+                carrier_name="AIS",
+            )
+        ],
+    )
+
+
 class PersonalAutoCustomerIntake(BaseModel):
     customer: CustomerProfileInput = Field(..., alias="Customer")
 
@@ -572,18 +586,6 @@ class PersonalAutoVehicleIntake(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
 
-class PersonalAutoCoverageIntake(BaseModel):
-    policy_coverages: PolicyCoveragesInput = Field(..., alias="PolicyCoverages")
-
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
-
-
-class PersonalAutoCarrierIntake(BaseModel):
-    carrier_information: CarrierInformationInput = Field(..., alias="CarrierInformation")
-
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
-
-
 class PersonalAutoRateRequest(BaseModel):
     identifier: str = Field(..., alias="Identifier")
     effective_date: str = Field(..., alias="EffectiveDate")
@@ -595,11 +597,13 @@ class PersonalAutoRateRequest(BaseModel):
     payment_method: Optional[str] = Field(default=None, alias="PaymentMethod")
     policy_type: Optional[str] = Field(default=None, alias="PolicyType")
     customer: CustomerProfileInput = Field(..., alias="Customer")
-    policy_coverages: PolicyCoveragesInput = Field(..., alias="PolicyCoverages")
+    policy_coverages: PolicyCoveragesInput = Field(
+        default_factory=PolicyCoveragesInput, alias="PolicyCoverages"
+    )
     rated_drivers: List[RatedDriverInput] = Field(..., alias="RatedDrivers")
     vehicles: List[VehicleInput] = Field(..., alias="Vehicles")
-    carrier_information: CarrierInformationInput = Field(
-        ..., alias="CarrierInformation"
+    carrier_information: Optional[CarrierInformationInput] = Field(
+        default=None, alias="CarrierInformation"
     )
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
@@ -729,38 +733,6 @@ def _collect_personal_auto_vehicles(arguments: Mapping[str, Any]) -> ToolInvocat
     }
 
 
-def _collect_personal_auto_coverages(arguments: Mapping[str, Any]) -> ToolInvocationResult:
-    payload = PersonalAutoCoverageIntake.model_validate(arguments)
-    coverages = payload.policy_coverages
-    parts = []
-    if coverages.liability_bi_limit:
-        parts.append(f"BI {coverages.liability_bi_limit}")
-    if coverages.liability_pd_limit:
-        parts.append(f"PD {coverages.liability_pd_limit}")
-    if coverages.med_pay_limit and coverages.med_pay_limit.lower() != "none":
-        parts.append(f"MedPay {coverages.med_pay_limit}")
-    summary = ", ".join(parts) if parts else "default selections"
-    message = f"Recorded policy coverages: {summary}."
-    return {
-        "structured_content": payload.model_dump(by_alias=True),
-        "response_text": message,
-    }
-
-
-def _collect_personal_auto_carriers(arguments: Mapping[str, Any]) -> ToolInvocationResult:
-    payload = PersonalAutoCarrierIntake.model_validate(arguments)
-    product_count = len(payload.carrier_information.products)
-    message = (
-        "Logged carrier credential details for quoting."
-        if product_count
-        else "Registered carrier preferences without product-level details."
-    )
-    return {
-        "structured_content": payload.model_dump(by_alias=True),
-        "response_text": message,
-    }
-
-
 PERSONAL_AUTO_RATE_ENDPOINT = (
     "https://gateway.zrater.io/api/v2/linesOfBusiness/personalAuto/states"
 )
@@ -774,7 +746,13 @@ PERSONAL_AUTO_RATE_HEADERS = {
 
 async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvocationResult:
     payload = PersonalAutoRateRequest.model_validate(arguments)
-    request_body = payload.model_dump(by_alias=True)
+    request_body = payload.model_dump(by_alias=True, exclude_none=True)
+    request_body.setdefault(
+        "CarrierInformation",
+        _default_ais_carrier_information().model_dump(
+            by_alias=True, exclude_none=True
+        ),
+    )
     state = payload.customer.address.state
     url = f"{PERSONAL_AUTO_RATE_ENDPOINT}/{state}/rates/latest?multiAgency=false"
 
@@ -944,32 +922,6 @@ def _register_personal_auto_intake_tools() -> None:
             ),
             handler=_collect_personal_auto_vehicles,
             default_response_text="Captured vehicle information.",
-        )
-    )
-
-    register_tool(
-        ToolRegistration(
-            tool=types.Tool(
-                name="collect-personal-auto-coverages",
-                title="Collect personal auto coverage preferences",
-                description="Validate the coverage selections for a personal auto quote.",
-                inputSchema=_model_schema(PersonalAutoCoverageIntake),
-            ),
-            handler=_collect_personal_auto_coverages,
-            default_response_text="Recorded policy coverage selections.",
-        )
-    )
-
-    register_tool(
-        ToolRegistration(
-            tool=types.Tool(
-                name="collect-personal-auto-carriers",
-                title="Collect personal auto carrier preferences",
-                description="Capture carrier credential details required to retrieve personal auto rates.",
-                inputSchema=_model_schema(PersonalAutoCarrierIntake),
-            ),
-            handler=_collect_personal_auto_carriers,
-            default_response_text="Logged carrier preferences.",
         )
     )
 
