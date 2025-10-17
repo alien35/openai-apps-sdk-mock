@@ -98,36 +98,6 @@ INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
 }
 
 
-PERSONAL_AUTO_PRODUCTS_INPUT_SCHEMA: Dict[str, Any] = {
-    "type": "object",
-    "properties": {
-        "state": {
-            "type": "string",
-            "description": (
-                "Two-letter U.S. state or District of Columbia abbreviation (for example, \"CA\")."
-            ),
-            "minLength": 2,
-            "maxLength": 2,
-            "pattern": "^[A-Za-z]{2}$",
-        }
-    },
-    "required": ["state"],
-    "additionalProperties": False,
-}
-
-
-PERSONAL_AUTO_PRODUCTS_ENDPOINT = (
-    "https://gateway.pre.zrater.io/api/v1/linesOfBusiness/personalAuto/states"
-)
-
-PERSONAL_AUTO_PRODUCTS_HEADERS = {
-    "Accept": "application/json",
-    "Cookie": "BCSI-CS-7883f85839ae9af9=1",
-    "User-Agent": "insomnia/11.1.0",
-    "x-api-key": "e57528b0-95b4-4efe-8870-caa0f8a95143",
-}
-
-
 WIDGETS: Tuple[WidgetDefinition, ...] = (
     WidgetDefinition(
         identifier="insurance-state-selector",
@@ -199,33 +169,6 @@ class InsuranceStateInput(BaseModel):
     def _normalize_state(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return None
-        if not isinstance(value, str):
-            return value
-        return value.upper()
-
-
-class PersonalAutoProductsInput(BaseModel):
-    """Schema for the personal auto products tool."""
-
-    state: str = Field(
-        min_length=2,
-        max_length=2,
-        pattern=r"^[A-Za-z]{2}$",
-        description="Two-letter U.S. state or District of Columbia abbreviation (for example, \"CA\").",
-    )
-
-    model_config = ConfigDict(extra="forbid")
-
-    @field_validator("state", mode="before")
-    @classmethod
-    def _strip_state(cls, value: Any) -> Any:
-        if not isinstance(value, str):
-            return value
-        return value.strip()
-
-    @field_validator("state")
-    @classmethod
-    def _normalize_state(cls, value: Any) -> Any:
         if not isinstance(value, str):
             return value
         return value.upper()
@@ -701,62 +644,6 @@ def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocatio
 
 
 
-async def _fetch_personal_auto_products(arguments: Mapping[str, Any]) -> ToolInvocationResult:
-    payload = PersonalAutoProductsInput.model_validate(arguments)
-    state = payload.state
-    url = (
-        f"{PERSONAL_AUTO_PRODUCTS_ENDPOINT}/{state}/activeProducts"
-    )
-
-    try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
-            response = await client.get(url, headers=PERSONAL_AUTO_PRODUCTS_HEADERS)
-    except httpx.HTTPError as exc:
-        raise RuntimeError(
-            f"Failed to fetch personal auto products: {exc}"
-        ) from exc
-
-    status_code = response.status_code
-
-    if status_code == 404:
-        message = f"No active personal auto products found for {state}."
-        return {
-            "structured_content": {"state": state, "status": status_code, "products": []},
-            "response_text": message,
-        }
-
-    if response.is_error:
-        raise RuntimeError(
-            f"Personal auto products request failed with status {status_code}"
-        )
-
-    raw_body = response.text
-    parsed_body: Any = []
-    if raw_body.strip():
-        try:
-            parsed_body = response.json()
-        except (json.JSONDecodeError, ValueError) as exc:
-            raise RuntimeError(
-                f"Failed to parse personal auto products response: {exc}"
-            ) from exc
-
-    products = parsed_body if isinstance(parsed_body, list) else []
-    message = (
-        f"Found {len(products)} active personal auto product{'s' if len(products) != 1 else ''} for {state}."
-        if products
-        else f"No active personal auto products found for {state}."
-    )
-
-    return {
-        "structured_content": {
-            "state": state,
-            "status": status_code,
-            "products": products,
-        },
-        "response_text": message,
-    }
-
-
 def _collect_personal_auto_customer(arguments: Mapping[str, Any]) -> ToolInvocationResult:
     payload = PersonalAutoCustomerIntake.model_validate(arguments)
     customer = payload.customer
@@ -1001,20 +888,6 @@ def _register_default_tools() -> None:
                 default_meta=default_meta,
             )
         )
-
-    register_tool(
-        ToolRegistration(
-            tool=types.Tool(
-                name="fetch-personal-auto-products",
-                title="Fetch personal auto products",
-                description="Retrieve active personal auto insurance products for a given state.",
-                inputSchema=deepcopy(PERSONAL_AUTO_PRODUCTS_INPUT_SCHEMA),
-            ),
-            handler=_fetch_personal_auto_products,
-            default_response_text="Retrieved personal auto product availability.",
-        )
-    )
-
 
 _register_default_tools()
 
