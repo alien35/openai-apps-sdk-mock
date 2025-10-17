@@ -413,6 +413,19 @@ class FinancialResponsibilityInformationInput(BaseModel):
         return value.upper()
 
 
+class DriverRosterEntryInput(BaseModel):
+    driver_id: int = Field(..., alias="DriverId")
+    first_name: str = Field(..., alias="FirstName")
+    middle_name: Optional[str] = Field(default=None, alias="MiddleName")
+    last_name: str = Field(..., alias="LastName")
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    _strip_first = field_validator("first_name", mode="before")(_strip_string)
+    _strip_middle = field_validator("middle_name", mode="before")(_strip_string)
+    _strip_last = field_validator("last_name", mode="before")(_strip_string)
+
+
 class RatedDriverInput(BaseModel):
     driver_id: int = Field(..., alias="DriverId")
     first_name: str = Field(..., alias="FirstName")
@@ -602,6 +615,14 @@ class PersonalAutoDriverIntake(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
 
+class PersonalAutoDriverRosterInput(BaseModel):
+    driver_roster: List[DriverRosterEntryInput] = Field(
+        ..., alias="DriverRoster"
+    )
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+
 class PersonalAutoVehicleIntake(BaseModel):
     vehicles: List[VehicleInput] = Field(..., alias="Vehicles")
 
@@ -745,6 +766,36 @@ def _collect_personal_auto_customer(arguments: Mapping[str, Any]) -> ToolInvocat
         if part
     )
     message = f"Captured customer profile for {full_name.strip()}.".strip()
+    return {
+        "structured_content": payload.model_dump(by_alias=True),
+        "response_text": message,
+    }
+
+
+def _collect_personal_auto_driver_roster(
+    arguments: Mapping[str, Any]
+) -> ToolInvocationResult:
+    payload = PersonalAutoDriverRosterInput.model_validate(arguments)
+    entries = payload.driver_roster
+    names = [
+        " ".join(
+            part
+            for part in [entry.first_name, entry.middle_name, entry.last_name]
+            if part
+        )
+        for entry in entries
+    ]
+
+    if not names:
+        message = "Captured an empty driver roster."
+    elif len(names) == 1:
+        message = f"Captured driver roster entry for {names[0]}."
+    else:
+        listed = ", ".join(names)
+        message = (
+            f"Captured driver roster entries for {len(names)} drivers: {listed}."
+        )
+
     return {
         "structured_content": payload.model_dump(by_alias=True),
         "response_text": message,
@@ -992,6 +1043,21 @@ def _register_personal_auto_intake_tools() -> None:
             ),
             handler=_collect_personal_auto_drivers,
             default_response_text="Captured rated driver information.",
+        )
+    )
+
+    register_tool(
+        ToolRegistration(
+            tool=types.Tool(
+                name="collect-personal-auto-driver-roster",
+                title="Collect personal auto driver roster",
+                description=(
+                    "Capture a lightweight roster of known drivers before gathering full profiles."
+                ),
+                inputSchema=_model_schema(PersonalAutoDriverRosterInput),
+            ),
+            handler=_collect_personal_auto_driver_roster,
+            default_response_text="Captured driver roster entries.",
         )
     )
 
