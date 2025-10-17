@@ -41,6 +41,8 @@ from .insurance_quote_options_widget import (
 
 
 logger = logging.getLogger(__name__)
+if not logging.getLogger().hasHandlers():
+    logging.basicConfig(level=logging.INFO)
 
 load_dotenv()
 
@@ -719,6 +721,9 @@ def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocatio
 def _collect_personal_auto_quote_options(
     arguments: Mapping[str, Any]
 ) -> ToolInvocationResult:
+    logger.info(
+        "collect-personal-auto-quote-options invoked with arguments: %s", arguments
+    )
     try:
         payload = PersonalAutoQuoteOptionsInput.model_validate(arguments)
     except ValidationError as error:
@@ -734,6 +739,10 @@ def _collect_personal_auto_quote_options(
             if location and details:
                 message += f" ({location}: {details})"
 
+        logger.info(
+            "Validation failed for collect-personal-auto-quote-options; returning widget with %d error(s)",
+            len(errors),
+        )
         return {
             "structured_content": {"validationErrors": errors},
             "response_text": message,
@@ -748,6 +757,7 @@ def _collect_personal_auto_quote_options(
         message = f"Captured quote options for {identifier}."
     else:
         message = "Captured quote options."
+    logger.info("Successfully captured quote options for identifier='%s'", identifier)
     return {
         "structured_content": payload.model_dump(by_alias=True),
         "response_text": message,
@@ -1094,32 +1104,46 @@ async def _list_tools() -> List[types.Tool]:
 
 @mcp._mcp_server.list_resources()
 async def _list_resources() -> List[types.Resource]:
-    return [
-        types.Resource(
-            name=widget.title,
-            title=widget.title,
-            uri=widget.template_uri,
-            description=_resource_description(widget),
-            mimeType=MIME_TYPE,
-            _meta=_tool_meta(widget),
+    widget_resources: List[types.Resource] = []
+    for widget in widgets:
+        resource_meta = {
+            **_tool_meta(widget),
+            "openai.com/widget": _embedded_widget_resource(widget).model_dump(mode="json"),
+        }
+        widget_resources.append(
+            types.Resource(
+                name=widget.title,
+                title=widget.title,
+                uri=widget.template_uri,
+                description=_resource_description(widget),
+                mimeType=MIME_TYPE,
+                _meta=resource_meta,
+            )
         )
-        for widget in widgets
-    ]
+
+    return widget_resources
 
 
 @mcp._mcp_server.list_resource_templates()
 async def _list_resource_templates() -> List[types.ResourceTemplate]:
-    return [
-        types.ResourceTemplate(
-            name=widget.title,
-            title=widget.title,
-            uriTemplate=widget.template_uri,
-            description=_resource_description(widget),
-            mimeType=MIME_TYPE,
-            _meta=_tool_meta(widget),
+    resource_templates: List[types.ResourceTemplate] = []
+    for widget in widgets:
+        template_meta = {
+            **_tool_meta(widget),
+            "openai.com/widget": _embedded_widget_resource(widget).model_dump(mode="json"),
+        }
+        resource_templates.append(
+            types.ResourceTemplate(
+                name=widget.title,
+                title=widget.title,
+                uriTemplate=widget.template_uri,
+                description=_resource_description(widget),
+                mimeType=MIME_TYPE,
+                _meta=template_meta,
+            )
         )
-        for widget in widgets
-    ]
+
+    return resource_templates
 
 
 async def _handle_read_resource(req: types.ReadResourceRequest) -> types.ServerResult:
@@ -1137,7 +1161,10 @@ async def _handle_read_resource(req: types.ReadResourceRequest) -> types.ServerR
             uri=widget.template_uri,
             mimeType=MIME_TYPE,
             text=widget.html,
-            _meta=_tool_meta(widget),
+            _meta={
+                **_tool_meta(widget),
+                "openai.com/widget": _embedded_widget_resource(widget).model_dump(mode="json"),
+            },
         )
     ]
 
