@@ -1,6 +1,6 @@
 # Insurance MCP server (Python)
 
-This directory packages a Python implementation of the insurance demo server using the `FastMCP` helper from the official Model Context Protocol SDK. It focuses on insurance intake flows by exposing the insurance state selector alongside tools that validate customer, driver, vehicle, coverage, carrier, and rating details.
+This directory packages a Python implementation of the insurance demo server using the `FastMCP` helper from the official Model Context Protocol SDK. It focuses on insurance intake flows by exposing the insurance state selector alongside tools that validate customer, driver, vehicle, coverage, carrier, roster, and rating details.
 
 ## Prerequisites
 
@@ -53,3 +53,13 @@ Use these handlers as a starting point when wiring in real data, authentication,
 1. Register reusable UI resources that load static HTML bundles.
 2. Associate tools with those widgets via `_meta.openai/outputTemplate`.
 3. Ship structured JSON alongside human-readable confirmation text.
+
+
+### Auto quoting flow overview
+
+The personal auto quoting tools now support a staged approach for gathering driver information:
+
+1. **`collect-personal-auto-driver-roster`** accepts a lightweight roster containing driver identifiers and names. This provides a quick confirmation of who should be rated before the assistant dives into full profile collection.
+2. **`collect-personal-auto-drivers`** remains available for validating the complete rated driver payload once the broader intake conversation is underway.
+
+Pair the roster tool with the existing customer, vehicle, coverage, carrier, and rating handlers to flexibly capture the details needed for a quote while still keeping the assistant's responses concise and confirmatory.
