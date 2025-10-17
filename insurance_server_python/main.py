@@ -23,6 +23,7 @@ from typing import (
 from typing import Type, cast
 import inspect
 import json
+import logging
 
 import httpx
 import mcp.types as types
@@ -32,6 +33,9 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from .insurance_state_widget import INSURANCE_STATE_WIDGET_HTML
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -1072,6 +1076,11 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
         if inspect.isawaitable(handler_result):
             handler_result = await handler_result
     except ValidationError as exc:
+        logger.exception(
+            "Validation error while invoking tool '%s' with arguments %s",
+            req.params.name,
+            arguments,
+        )
         return types.ServerResult(
             types.CallToolResult(
                 content=[
@@ -1084,6 +1093,11 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
             )
         )
     except Exception as exc:  # pragma: no cover - defensive safety net
+        logger.exception(
+            "Unhandled exception while invoking tool '%s' with arguments %s",
+            req.params.name,
+            arguments,
+        )
         return types.ServerResult(
             types.CallToolResult(
                 content=[
