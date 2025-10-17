@@ -589,6 +589,27 @@ class PersonalAutoVehicleIntake(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
 
+class PersonalAutoQuoteOptionsInput(BaseModel):
+    identifier: str = Field(..., alias="Identifier")
+    effective_date: str = Field(..., alias="EffectiveDate")
+    customer_declined_credit: Optional[bool] = Field(
+        default=None, alias="CustomerDeclinedCredit"
+    )
+    bump_limits: Optional[str] = Field(default=None, alias="BumpLimits")
+    term: Optional[str] = Field(default=None, alias="Term")
+    payment_method: Optional[str] = Field(default=None, alias="PaymentMethod")
+    policy_type: Optional[str] = Field(default=None, alias="PolicyType")
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    _strip_identifier = field_validator("identifier", mode="before")(_strip_string)
+    _strip_effective = field_validator("effective_date", mode="before")(_strip_string)
+    _strip_bump = field_validator("bump_limits", mode="before")(_strip_string)
+    _strip_term = field_validator("term", mode="before")(_strip_string)
+    _strip_payment = field_validator("payment_method", mode="before")(_strip_string)
+    _strip_policy_type = field_validator("policy_type", mode="before")(_strip_string)
+
+
 class PersonalAutoRateRequest(BaseModel):
     identifier: str = Field(..., alias="Identifier")
     effective_date: str = Field(..., alias="EffectiveDate")
@@ -649,6 +670,20 @@ def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocatio
         },
     }
 
+
+def _collect_personal_auto_quote_options(
+    arguments: Mapping[str, Any]
+) -> ToolInvocationResult:
+    payload = PersonalAutoQuoteOptionsInput.model_validate(arguments)
+    identifier = payload.identifier.strip()
+    if identifier:
+        message = f"Captured quote options for {identifier}."
+    else:
+        message = "Captured quote options."
+    return {
+        "structured_content": payload.model_dump(by_alias=True),
+        "response_text": message,
+    }
 
 
 def _collect_personal_auto_customer(arguments: Mapping[str, Any]) -> ToolInvocationResult:
@@ -884,6 +919,19 @@ def _register_personal_auto_intake_tools() -> None:
             ),
             handler=_collect_personal_auto_customer,
             default_response_text="Captured customer profile information.",
+        )
+    )
+
+    register_tool(
+        ToolRegistration(
+            tool=types.Tool(
+                name="collect-personal-auto-quote-options",
+                title="Collect personal auto quote options",
+                description="Confirm quote-level options such as term, policy type, and payment method.",
+                inputSchema=_model_schema(PersonalAutoQuoteOptionsInput),
+            ),
+            handler=_collect_personal_auto_quote_options,
+            default_response_text="Captured personal auto quote options.",
         )
     )
 
