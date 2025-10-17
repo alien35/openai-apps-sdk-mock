@@ -24,6 +24,7 @@ from typing import Type, cast
 import inspect
 import json
 import logging
+import os
 
 import httpx
 import mcp.types as types
@@ -31,11 +32,14 @@ from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+from dotenv import load_dotenv
 
 from .insurance_state_widget import INSURANCE_STATE_WIDGET_HTML
 
 
 logger = logging.getLogger(__name__)
+
+load_dotenv()
 
 
 @dataclass(frozen=True)
@@ -779,11 +783,17 @@ PERSONAL_AUTO_RATE_ENDPOINT = (
     "https://gateway.zrater.io/api/v2/linesOfBusiness/personalAuto/states"
 )
 
-PERSONAL_AUTO_RATE_HEADERS = {
-    "Content-Type": "application/json",
-    "User-Agent": "insomnia/11.6.1",
-    "x-api-key": "",
-}
+def _personal_auto_rate_headers() -> Dict[str, str]:
+    api_key = os.getenv("PERSONAL_AUTO_RATE_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "Missing PERSONAL_AUTO_RATE_API_KEY environment variable for personal auto rate requests."
+        )
+    return {
+        "Content-Type": "application/json",
+        "User-Agent": "insomnia/11.6.1",
+        "x-api-key": api_key,
+    }
 
 
 async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvocationResult:
@@ -802,7 +812,7 @@ async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvoc
         async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
             response = await client.post(
                 url,
-                headers=PERSONAL_AUTO_RATE_HEADERS,
+                headers=_personal_auto_rate_headers(),
                 json=request_body,
             )
     except httpx.HTTPError as exc:  # pragma: no cover - network error handling
