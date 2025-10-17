@@ -13,6 +13,7 @@ This directory packages a Python implementation of the insurance demo server usi
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env  # then edit .env to add secrets
 ```
 
 > **Heads up:** There is a similarly named package named `modelcontextprotocol`
@@ -27,6 +28,11 @@ pip install -r requirements.txt
 ```bash
 python main.py
 ```
+
+The server reads secrets such as the personal auto rating API key from a local
+`.env` file. Copy `.env.example` to `.env` and update
+`PERSONAL_AUTO_RATE_API_KEY` with your credential before invoking the rating
+tool.
 
 This boots a FastAPI app with uvicorn on `http://127.0.0.1:8000` (equivalently `uvicorn insurance_server_python.main:app --host 0.0.0.0 --port 8000`). The endpoints mirror the Node demo:
 
