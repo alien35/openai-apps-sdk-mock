@@ -95,15 +95,113 @@ def _model_schema(model: Type[BaseModel]) -> Dict[str, Any]:
     return cast(Dict[str, Any], model.model_json_schema(by_alias=True))
 
 
+STATE_ABBREVIATION_TO_NAME: Dict[str, str] = {
+    "AL": "Alabama",
+    "AK": "Alaska",
+    "AZ": "Arizona",
+    "AR": "Arkansas",
+    "CA": "California",
+    "CO": "Colorado",
+    "CT": "Connecticut",
+    "DE": "Delaware",
+    "DC": "District of Columbia",
+    "FL": "Florida",
+    "GA": "Georgia",
+    "HI": "Hawaii",
+    "ID": "Idaho",
+    "IL": "Illinois",
+    "IN": "Indiana",
+    "IA": "Iowa",
+    "KS": "Kansas",
+    "KY": "Kentucky",
+    "LA": "Louisiana",
+    "ME": "Maine",
+    "MD": "Maryland",
+    "MA": "Massachusetts",
+    "MI": "Michigan",
+    "MN": "Minnesota",
+    "MS": "Mississippi",
+    "MO": "Missouri",
+    "MT": "Montana",
+    "NE": "Nebraska",
+    "NV": "Nevada",
+    "NH": "New Hampshire",
+    "NJ": "New Jersey",
+    "NM": "New Mexico",
+    "NY": "New York",
+    "NC": "North Carolina",
+    "ND": "North Dakota",
+    "OH": "Ohio",
+    "OK": "Oklahoma",
+    "OR": "Oregon",
+    "PA": "Pennsylvania",
+    "RI": "Rhode Island",
+    "SC": "South Carolina",
+    "SD": "South Dakota",
+    "TN": "Tennessee",
+    "TX": "Texas",
+    "UT": "Utah",
+    "VT": "Vermont",
+    "VA": "Virginia",
+    "WA": "Washington",
+    "WV": "West Virginia",
+    "WI": "Wisconsin",
+    "WY": "Wyoming",
+}
+
+STATE_NAME_TO_CANONICAL: Dict[str, str] = {
+    name.upper(): name for name in STATE_ABBREVIATION_TO_NAME.values()
+}
+
+STATE_NAME_TO_ABBREVIATION: Dict[str, str] = {
+    name: code for code, name in STATE_ABBREVIATION_TO_NAME.items()
+}
+
+
+def normalize_state_name(value: Optional[str]) -> Optional[str]:
+    """Normalize state values to their canonical long-form name."""
+
+    if value is None or not isinstance(value, str):
+        return value
+
+    trimmed = value.strip()
+    if not trimmed:
+        return trimmed
+
+    upper_value = trimmed.upper()
+    if upper_value in STATE_ABBREVIATION_TO_NAME:
+        return STATE_ABBREVIATION_TO_NAME[upper_value]
+
+    canonical = STATE_NAME_TO_CANONICAL.get(upper_value)
+    if canonical:
+        return canonical
+
+    return trimmed
+
+
+def state_abbreviation(value: Optional[str]) -> Optional[str]:
+    """Return the two-letter abbreviation for a state value if known."""
+
+    if value is None:
+        return None
+
+    normalized = normalize_state_name(value)
+    if not isinstance(normalized, str):
+        return normalized
+
+    return STATE_NAME_TO_ABBREVIATION.get(normalized)
+
+
 INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
     "type": "object",
     "properties": {
         "state": {
             "type": "string",
-            "description": "Two-letter U.S. state or District of Columbia abbreviation (for example, \"CA\").",
+            "description": (
+                "Full U.S. state or District of Columbia name (for example, \"California\"). "
+                "Two-letter abbreviations like \"CA\" are also accepted and normalized."
+            ),
             "minLength": 2,
-            "maxLength": 2,
-            "pattern": "^[A-Za-z]{2}$",
         }
     },
     "required": [],
@@ -198,9 +296,10 @@ class InsuranceStateInput(BaseModel):
     state: Optional[str] = Field(
         default=None,
         min_length=2,
-        max_length=2,
-        pattern=r"^[A-Za-z]{2}$",
-        description="Two-letter U.S. state or District of Columbia abbreviation (for example, \"CA\").",
+        description=(
+            "Full U.S. state or District of Columbia name (for example, \"California\"). "
+            "Two-letter abbreviations like \"CA\" are also accepted and normalized."
+        ),
     )
 
     model_config = ConfigDict(extra="forbid")
@@ -215,11 +314,7 @@ class InsuranceStateInput(BaseModel):
     @field_validator("state")
     @classmethod
     def _normalize_state(cls, value: Optional[str]) -> Optional[str]:
-        if value is None:
-            return None
-        if not isinstance(value, str):
-            return value
-        return value.upper()
+        return normalize_state_name(value)
 
 
 def _strip_string(value: Any) -> Any:
@@ -232,7 +327,14 @@ class AddressInput(BaseModel):
     street1: str = Field(..., alias="Street1")
     street2: Optional[str] = Field(default=None, alias="Street2")
     city: str = Field(..., alias="City")
-    state: str = Field(..., alias="State", min_length=2, max_length=2)
+    state: str = Field(
+        ...,
+        alias="State",
+        min_length=2,
+        description=(
+            "Full U.S. state or District of Columbia name. Abbreviations are accepted and normalized."
+        ),
+    )
     county: Optional[str] = Field(default=None, alias="County")
     zip_code: str = Field(..., alias="ZipCode")
 
@@ -248,7 +350,8 @@ class AddressInput(BaseModel):
     @field_validator("state")
     @classmethod
     def _normalize_state(cls, value: str) -> str:
-        return value.upper()
+        normalized = normalize_state_name(value)
+        return normalized if isinstance(normalized, str) else value
 
 
 class ContactInformationInput(BaseModel):
@@ -339,9 +442,7 @@ class LicenseInformationInput(BaseModel):
     @field_validator("state_licensed")
     @classmethod
     def _normalize_state(cls, value: Optional[str]) -> Optional[str]:
-        if value is None:
-            return None
-        return value.upper()
+        return normalize_state_name(value)
 
 
 class DriverAttributesInput(BaseModel):
@@ -399,9 +500,7 @@ class FinancialResponsibilityInformationInput(BaseModel):
     @field_validator("sr22_state")
     @classmethod
     def _normalize_state(cls, value: Optional[str]) -> Optional[str]:
-        if value is None:
-            return None
-        return value.upper()
+        return normalize_state_name(value)
 
 
 class DriverRosterEntryInput(BaseModel):
@@ -870,7 +969,8 @@ async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvoc
         ),
     )
     state = payload.customer.address.state
-    url = f"{PERSONAL_AUTO_RATE_ENDPOINT}/{state}/rates/latest?multiAgency=false"
+    state_code = state_abbreviation(state) or state
+    url = f"{PERSONAL_AUTO_RATE_ENDPOINT}/{state_code}/rates/latest?multiAgency=false"
 
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
