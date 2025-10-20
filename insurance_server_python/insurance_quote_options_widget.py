@@ -246,30 +246,69 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_HTML = """
     if (!root) return;
 
     const POLICY_TYPE_OPTIONS = [
-      { value: "NEW_BUSINESS", label: "New business" },
-      { value: "REWRITE", label: "Rewrite" },
-      { value: "ENDORSEMENT", label: "Endorsement" },
-      { value: "CROSS_SELL", label: "Cross-sell" },
+      { value: "New Business", label: "New business" },
+      { value: "Rewrite", label: "Rewrite" },
+      { value: "Endorsement", label: "Endorsement" },
+      { value: "Cross Sell", label: "Cross-sell" },
     ];
 
     const TERM_OPTIONS = [
-      { value: "SIX_MONTHS", label: "6-month term" },
-      { value: "TWELVE_MONTHS", label: "12-month term" },
-      { value: "MONTH_TO_MONTH", label: "Month to month" },
+      { value: "Semi Annual", label: "6-month term" },
+      { value: "Annual", label: "12-month term" },
+      { value: "Monthly", label: "Month to month" },
     ];
 
     const PAYMENT_METHOD_OPTIONS = [
-      { value: "PAID_IN_FULL", label: "Paid in full" },
-      { value: "MONTHLY_AUTOPAY", label: "Monthly autopay" },
-      { value: "QUARTERLY", label: "Quarterly" },
-      { value: "AGENCY_BILL", label: "Agency bill" },
+      { value: "Paid In Full", label: "Paid in full" },
+      { value: "Electronic Funds Transfer", label: "Monthly autopay" },
+      { value: "Quarterly", label: "Quarterly" },
+      { value: "Agency Bill", label: "Agency bill" },
     ];
 
     const BUMP_LIMIT_OPTIONS = [
       { value: "", label: "No automatic bump" },
-      { value: "RAISE_TO_RECOMMENDED", label: "Raise to recommended" },
-      { value: "MATCH_PREVIOUS", label: "Match prior policy" },
+      { value: "Bump Up", label: "Raise to recommended" },
+      { value: "Match Prior Policy", label: "Match prior policy" },
     ];
+
+    const POLICY_TYPE_CONTRACT_VALUE_MAP = new Map([
+      ["NEW_BUSINESS", "New Business"],
+      ["REWRITE", "Rewrite"],
+      ["ENDORSEMENT", "Endorsement"],
+      ["CROSS_SELL", "Cross Sell"],
+      ["New Business", "New Business"],
+      ["Rewrite", "Rewrite"],
+      ["Endorsement", "Endorsement"],
+      ["Cross Sell", "Cross Sell"],
+    ]);
+
+    const TERM_CONTRACT_VALUE_MAP = new Map([
+      ["SIX_MONTHS", "Semi Annual"],
+      ["TWELVE_MONTHS", "Annual"],
+      ["MONTH_TO_MONTH", "Monthly"],
+      ["Semi Annual", "Semi Annual"],
+      ["Annual", "Annual"],
+      ["Monthly", "Monthly"],
+    ]);
+
+    const PAYMENT_METHOD_CONTRACT_VALUE_MAP = new Map([
+      ["PAID_IN_FULL", "Paid In Full"],
+      ["MONTHLY_AUTOPAY", "Electronic Funds Transfer"],
+      ["QUARTERLY", "Quarterly"],
+      ["AGENCY_BILL", "Agency Bill"],
+      ["Paid In Full", "Paid In Full"],
+      ["Electronic Funds Transfer", "Electronic Funds Transfer"],
+      ["Quarterly", "Quarterly"],
+      ["Agency Bill", "Agency Bill"],
+    ]);
+
+    const BUMP_LIMIT_CONTRACT_VALUE_MAP = new Map([
+      ["", ""],
+      ["RAISE_TO_RECOMMENDED", "Bump Up"],
+      ["MATCH_PREVIOUS", "Match Prior Policy"],
+      ["Bump Up", "Bump Up"],
+      ["Match Prior Policy", "Match Prior Policy"],
+    ]);
 
     const container = document.createElement("div");
     container.className = "quote-widget";
@@ -285,7 +324,7 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_HTML = """
     const description = document.createElement("p");
     description.className = "quote-widget__description";
     description.textContent =
-      "Pick from normalized options so the assistant can pass an API-ready payload without extra follow-up.";
+      "Pick from AIS contract values so the assistant can pass an API-ready payload without extra follow-up.";
 
     const form = document.createElement("form");
     form.className = "quote-widget__form";
@@ -468,6 +507,61 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_HTML = """
       customerDeclinedCredit: null,
     };
 
+    function normalizeToContractValue(value, map) {
+      if (value == null) {
+        return "";
+      }
+      if (typeof value !== "string") {
+        return value;
+      }
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return "";
+      }
+      return map.get(trimmed) ?? trimmed;
+    }
+
+    function normalizeStatePartial(partial) {
+      const normalized = { ...partial };
+      if (Object.prototype.hasOwnProperty.call(partial, "policyType")) {
+        normalized.policyType = normalizeToContractValue(
+          partial.policyType,
+          POLICY_TYPE_CONTRACT_VALUE_MAP
+        );
+      }
+      if (Object.prototype.hasOwnProperty.call(partial, "term")) {
+        normalized.term = normalizeToContractValue(
+          partial.term,
+          TERM_CONTRACT_VALUE_MAP
+        );
+      }
+      if (Object.prototype.hasOwnProperty.call(partial, "paymentMethod")) {
+        normalized.paymentMethod = normalizeToContractValue(
+          partial.paymentMethod,
+          PAYMENT_METHOD_CONTRACT_VALUE_MAP
+        );
+      }
+      if (Object.prototype.hasOwnProperty.call(partial, "bumpLimits")) {
+        normalized.bumpLimits = normalizeToContractValue(
+          partial.bumpLimits,
+          BUMP_LIMIT_CONTRACT_VALUE_MAP
+        );
+      }
+      return normalized;
+    }
+
+    function normalizeStateSnapshot(snapshot) {
+      return {
+        ...snapshot,
+        ...normalizeStatePartial({
+          policyType: snapshot.policyType,
+          term: snapshot.term,
+          paymentMethod: snapshot.paymentMethod,
+          bumpLimits: snapshot.bumpLimits,
+        }),
+      };
+    }
+
     let isSubmitting = false;
 
     function setStatus(message, type) {
@@ -489,13 +583,14 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_HTML = """
       if (!window.openai || typeof window.openai.setWidgetState !== "function") {
         return;
       }
+      const normalized = normalizeStateSnapshot(state);
       const payload = {
-        Identifier: state.identifier || undefined,
-        EffectiveDate: state.effectiveDate || undefined,
-        PolicyType: state.policyType || undefined,
-        Term: state.term || undefined,
-        PaymentMethod: state.paymentMethod || undefined,
-        BumpLimits: state.bumpLimits || undefined,
+        Identifier: normalized.identifier || undefined,
+        EffectiveDate: normalized.effectiveDate || undefined,
+        PolicyType: normalized.policyType || undefined,
+        Term: normalized.term || undefined,
+        PaymentMethod: normalized.paymentMethod || undefined,
+        BumpLimits: normalized.bumpLimits || undefined,
         CustomerDeclinedCredit: state.customerDeclinedCredit,
       };
       try {
@@ -518,7 +613,7 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_HTML = """
     }
 
     function setState(partial) {
-      Object.assign(state, partial);
+      Object.assign(state, normalizeStatePartial(partial));
       updateSubmitState();
       persistState();
     }
@@ -573,14 +668,16 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_HTML = """
     }
 
     function buildToolArguments() {
+      const normalized = normalizeStateSnapshot(state);
       const payload = {
-        Identifier: state.identifier.trim(),
-        EffectiveDate: state.effectiveDate,
+        Identifier: normalized.identifier.trim(),
+        EffectiveDate: normalized.effectiveDate,
       };
-      if (state.policyType) payload.PolicyType = state.policyType;
-      if (state.term) payload.Term = state.term;
-      if (state.paymentMethod) payload.PaymentMethod = state.paymentMethod;
-      if (state.bumpLimits) payload.BumpLimits = state.bumpLimits;
+      if (normalized.policyType) payload.PolicyType = normalized.policyType;
+      if (normalized.term) payload.Term = normalized.term;
+      if (normalized.paymentMethod)
+        payload.PaymentMethod = normalized.paymentMethod;
+      if (normalized.bumpLimits) payload.BumpLimits = normalized.bumpLimits;
       if (state.customerDeclinedCredit !== null) {
         payload.CustomerDeclinedCredit = state.customerDeclinedCredit;
       }
@@ -654,12 +751,16 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_HTML = """
     form.addEventListener("submit", submitForm);
 
     function applyStateToInputs(current) {
-      identifierField.input.value = current.identifier || "";
-      effectiveDateField.input.value = current.effectiveDate || "";
-      policyTypeField.select.value = current.policyType || "";
-      termField.select.value = current.term || "";
-      paymentMethodField.select.value = current.paymentMethod || "";
-      bumpLimitsField.select.value = current.bumpLimits || "";
+      const normalized = normalizeStateSnapshot(current);
+      if (current === state) {
+        Object.assign(state, normalized);
+      }
+      identifierField.input.value = normalized.identifier || "";
+      effectiveDateField.input.value = normalized.effectiveDate || "";
+      policyTypeField.select.value = normalized.policyType || "";
+      termField.select.value = normalized.term || "";
+      paymentMethodField.select.value = normalized.paymentMethod || "";
+      bumpLimitsField.select.value = normalized.bumpLimits || "";
       toggleButtons.forEach((button) => {
         const value = button.getAttribute("data-value");
         const isActive =
@@ -709,9 +810,11 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_HTML = """
         nextState.customerDeclinedCredit = null;
       }
 
-      Object.assign(state, nextState);
+      const normalizedNextState = normalizeStateSnapshot(nextState);
+      Object.assign(state, normalizedNextState);
       applyStateToInputs(state);
       updateSubmitState();
+      persistState();
     }
 
     hydrateStateFromGlobals(window.openai ?? {});
