@@ -29,7 +29,14 @@ import os
 import httpx
 import mcp.types as types
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from dotenv import load_dotenv
@@ -380,6 +387,12 @@ class PriorInsuranceInformationInput(BaseModel):
         "reason_for_no_insurance", mode="before"
     )(_strip_string)
 
+    @model_validator(mode="after")
+    def _ensure_reason(cls, values: "PriorInsuranceInformationInput") -> "PriorInsuranceInformationInput":
+        if not values.prior_insurance and not values.reason_for_no_insurance:
+            values.reason_for_no_insurance = "Other"
+        return values
+
 
 class CustomerProfileInput(BaseModel):
     identifier: str = Field(..., alias="Identifier")
@@ -393,8 +406,8 @@ class CustomerProfileInput(BaseModel):
     contact_information: ContactInformationInput = Field(
         default_factory=ContactInformationInput, alias="ContactInformation"
     )
-    prior_insurance_information: Optional[PriorInsuranceInformationInput] = Field(
-        default=None, alias="PriorInsuranceInformation"
+    prior_insurance_information: PriorInsuranceInformationInput = Field(
+        ..., alias="PriorInsuranceInformation"
     )
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
@@ -1099,11 +1112,17 @@ def _register_personal_auto_intake_tools() -> None:
             tool=types.Tool(
                 name="collect-personal-auto-customer",
                 title="Collect personal auto customer profile",
-                description="Validate and capture the customer's personal information for a personal auto quote.",
+                description=(
+                    "Validate and capture the customer's personal information, "
+                    "including prior insurance status and any reason for a lapse, "
+                    "for a personal auto quote."
+                ),
                 inputSchema=_model_schema(PersonalAutoCustomerIntake),
             ),
             handler=_collect_personal_auto_customer,
-            default_response_text="Captured customer profile information.",
+            default_response_text=(
+                "Captured customer profile information, including prior insurance details."
+            ),
         )
     )
 
@@ -1175,7 +1194,11 @@ def _register_personal_auto_intake_tools() -> None:
             tool=types.Tool(
                 name="request-personal-auto-rate",
                 title="Request personal auto rate",
-                description="Submit a fully populated personal auto quote request and return the carrier response.",
+                description=(
+                    "Submit a fully populated personal auto quote request and return the "
+                    "carrier response. Ensure the customer intake includes both "
+                    "PriorInsurance and ReasonForNoInsurance before invoking this tool."
+                ),
                 inputSchema=_model_schema(PersonalAutoRateRequest),
             ),
             handler=_request_personal_auto_rate,
