@@ -19,6 +19,8 @@ from typing import (
     Sequence,
     Tuple,
     TypedDict,
+    Literal,
+    get_args,
 )
 from typing import Type, cast
 import inspect
@@ -507,15 +509,85 @@ class VehicleInput(BaseModel):
     _strip_usage = field_validator("usage", mode="before")(_strip_string)
 
 
+LiabilityBiLimit = Literal[
+    "15/30",
+    "25/50",
+    "30/60",
+    "50/100",
+    "100/300",
+    "250/500",
+    "500/500",
+]
+PropertyDamageLimit = Literal["5", "10", "15", "20", "25", "50", "100"]
+MedicalPaymentsLimit = Literal[
+    "500",
+    "1000",
+    "2000",
+    "5000",
+    "10000",
+    "25000",
+    "50000",
+]
+UninsuredMotoristBiLimit = LiabilityBiLimit
+AccidentalDeathLimit = Literal["5000", "10000", "15000", "25000"]
+
+AIS_LIABILITY_BI_LIMITS: Tuple[str, ...] = tuple(get_args(LiabilityBiLimit))
+AIS_LIABILITY_PD_LIMITS: Tuple[str, ...] = tuple(get_args(PropertyDamageLimit))
+AIS_MED_PAY_LIMITS: Tuple[str, ...] = tuple(get_args(MedicalPaymentsLimit))
+AIS_UNINSURED_MOTORIST_BI_LIMITS: Tuple[str, ...] = tuple(
+    get_args(UninsuredMotoristBiLimit)
+)
+AIS_ACCIDENTAL_DEATH_LIMITS: Tuple[str, ...] = tuple(get_args(AccidentalDeathLimit))
+
+AIS_POLICY_COVERAGE_SUMMARY = (
+    "Liability BI: "
+    + ", ".join(AIS_LIABILITY_BI_LIMITS)
+    + "; Liability PD: "
+    + ", ".join(AIS_LIABILITY_PD_LIMITS)
+    + "; MedPay: "
+    + ", ".join(AIS_MED_PAY_LIMITS)
+    + "; UM BI: "
+    + ", ".join(AIS_UNINSURED_MOTORIST_BI_LIMITS)
+    + "; Accidental death: "
+    + ", ".join(AIS_ACCIDENTAL_DEATH_LIMITS)
+    + "."
+)
+
+
+def _coverage_description(label: str, options: Sequence[str]) -> str:
+    joined = ", ".join(options)
+    return f"Use one of the AIS accepted {label} options: {joined}."
+
+
 class PolicyCoveragesInput(BaseModel):
-    liability_bi_limit: Optional[str] = Field(default=None, alias="LiabilityBiLimit")
-    liability_pd_limit: Optional[str] = Field(default=None, alias="LiabilityPdLimit")
-    med_pay_limit: Optional[str] = Field(default=None, alias="MedPayLimit")
-    uninsured_motorist_bi_limit: Optional[str] = Field(
-        default=None, alias="UninsuredMotoristBiLimit"
+    liability_bi_limit: Optional[LiabilityBiLimit] = Field(
+        default=None,
+        alias="LiabilityBiLimit",
+        description=_coverage_description("bodily injury liability", AIS_LIABILITY_BI_LIMITS),
     )
-    accidental_death_limit: Optional[str] = Field(
-        default=None, alias="AccidentalDeathLimit"
+    liability_pd_limit: Optional[PropertyDamageLimit] = Field(
+        default=None,
+        alias="LiabilityPdLimit",
+        description=_coverage_description("property damage liability", AIS_LIABILITY_PD_LIMITS),
+    )
+    med_pay_limit: Optional[MedicalPaymentsLimit] = Field(
+        default=None,
+        alias="MedPayLimit",
+        description=_coverage_description("medical payments", AIS_MED_PAY_LIMITS),
+    )
+    uninsured_motorist_bi_limit: Optional[UninsuredMotoristBiLimit] = Field(
+        default=None,
+        alias="UninsuredMotoristBiLimit",
+        description=_coverage_description(
+            "uninsured motorist bodily injury", AIS_UNINSURED_MOTORIST_BI_LIMITS
+        ),
+    )
+    accidental_death_limit: Optional[AccidentalDeathLimit] = Field(
+        default=None,
+        alias="AccidentalDeathLimit",
+        description=_coverage_description(
+            "accidental death", AIS_ACCIDENTAL_DEATH_LIMITS
+        ),
     )
     uninsured_motorist_pd_collision_damage_waiver: Optional[bool] = Field(
         default=None, alias="UninsuredMotoristPd/CollisionDamageWaiver"
@@ -1070,12 +1142,17 @@ def _register_personal_auto_intake_tools() -> None:
         )
     )
 
+    rate_tool_description = (
+        "Submit a fully populated personal auto quote request and return the carrier response. "
+        f"Coverage limits must match AIS enumerations ({AIS_POLICY_COVERAGE_SUMMARY})"
+    )
+
     register_tool(
         ToolRegistration(
             tool=types.Tool(
                 name="request-personal-auto-rate",
                 title="Request personal auto rate",
-                description="Submit a fully populated personal auto quote request and return the carrier response.",
+                description=rate_tool_description,
                 inputSchema=_model_schema(PersonalAutoRateRequest),
             ),
             handler=_request_personal_auto_rate,
