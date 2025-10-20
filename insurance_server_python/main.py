@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import (
     Any,
     Awaitable,
@@ -332,6 +333,43 @@ def _strip_string(value: Any) -> Any:
     return value
 
 
+def _normalize_enum_value(value: Optional[str], mapping: Mapping[str, str]) -> Optional[str]:
+    if value is None:
+        return None
+
+    normalized = value.strip()
+    if not normalized:
+        return None
+
+    key = "".join(ch for ch in normalized.lower() if ch.isalnum())
+    return mapping.get(key, normalized)
+
+
+def _ensure_iso_datetime(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+
+    trimmed = value.strip()
+    if not trimmed:
+        return None
+
+    candidate = trimmed.replace("Z", "+00:00")
+    parsed: Optional[datetime] = None
+    try:
+        parsed = datetime.fromisoformat(candidate)
+    except ValueError:
+        try:
+            parsed = datetime.strptime(trimmed, "%Y-%m-%d")
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        except ValueError:
+            return trimmed
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+
+    return parsed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
 class AddressInput(BaseModel):
     street1: str = Field(..., alias="Street1")
     street2: Optional[str] = Field(default=None, alias="Street2")
@@ -485,9 +523,9 @@ class DriverAttributesInput(BaseModel):
 
 def _default_driver_attributes() -> DriverAttributesInput:
     return DriverAttributesInput(
-        residency_status="Resident",
-        residency_type="Owner",
-        relation="Self",
+        residency_status="HouseholdResident",
+        residency_type="Owned",
+        relation="NamedInsured",
         occasional_operator=False,
         property_insurance=False,
     )
@@ -526,6 +564,63 @@ class FinancialResponsibilityInformationInput(BaseModel):
     @classmethod
     def _normalize_state(cls, value: Optional[str]) -> Optional[str]:
         return normalize_state_name(value)
+
+
+TERM_MAPPINGS: Mapping[str, str] = {
+    "6months": "SixMonths",
+    "sixmonths": "SixMonths",
+    "sixmonth": "SixMonths",
+    "six": "SixMonths",
+    "sixmonthterm": "SixMonths",
+    "sixmonthspolicy": "SixMonths",
+    "6month": "SixMonths",
+    "6monthterm": "SixMonths",
+    "6monthspolicy": "SixMonths",
+    "12months": "TwelveMonths",
+    "twelvemonths": "TwelveMonths",
+    "twelvemonth": "TwelveMonths",
+    "annual": "TwelveMonths",
+    "yearly": "TwelveMonths",
+}
+
+PURCHASE_TYPE_MAPPINGS: Mapping[str, str] = {
+    "own": "Owned",
+    "owned": "Owned",
+    "owner": "Owned",
+    "finance": "Financed",
+    "financed": "Financed",
+    "loan": "Financed",
+    "lease": "Leased",
+    "leased": "Leased",
+}
+
+RELATION_MAPPINGS: Mapping[str, str] = {
+    "self": "NamedInsured",
+    "namedinsured": "NamedInsured",
+    "policyholder": "NamedInsured",
+    "insured": "NamedInsured",
+    "spouse": "Spouse",
+    "partner": "Spouse",
+    "child": "Child",
+    "parent": "Parent",
+    "sibling": "Sibling",
+    "other": "Other",
+}
+
+RESIDENCY_STATUS_MAPPINGS: Mapping[str, str] = {
+    "resident": "HouseholdResident",
+    "householdresident": "HouseholdResident",
+    "nonresident": "NonResident",
+    "notresident": "NonResident",
+}
+
+RESIDENCY_TYPE_MAPPINGS: Mapping[str, str] = {
+    "owner": "Owned",
+    "owned": "Owned",
+    "rent": "Rented",
+    "renter": "Rented",
+    "rented": "Rented",
+}
 
 
 class DriverRosterEntryInput(BaseModel):
@@ -603,8 +698,8 @@ def _default_vehicle_coverage_information() -> VehicleCoverageInformationInput:
     return VehicleCoverageInformationInput(
         collision_deductible="0",
         comprehensive_deductible="0",
-        rental_limit="0",
-        towing_limit="0",
+        rental_limit=None,
+        towing_limit=None,
         gap_coverage=False,
         custom_equipment_value=0,
         safety_glass_coverage=False,
@@ -880,6 +975,102 @@ class PersonalAutoRateRequest(BaseModel):
     _strip_policy_type = field_validator("policy_type", mode="before")(_strip_string)
 
 
+def _sanitize_personal_auto_rate_request(request_body: Dict[str, Any]) -> None:
+    effective_date = _ensure_iso_datetime(request_body.get("EffectiveDate"))
+    if effective_date:
+        request_body["EffectiveDate"] = effective_date
+
+    term = _normalize_enum_value(request_body.get("Term"), TERM_MAPPINGS)
+    request_body["Term"] = term or "SixMonths"
+
+    request_body.setdefault("BumpLimits", "None")
+    request_body.setdefault("PolicyType", "PersonalAuto")
+
+    customer = request_body.get("Customer")
+    if isinstance(customer, dict):
+        customer.setdefault("MonthsAtResidence", 24)
+        prior = customer.get("PriorInsuranceInformation")
+        if not isinstance(prior, dict):
+            customer["PriorInsuranceInformation"] = {"PriorInsurance": False}
+
+    policy_coverages = request_body.setdefault("PolicyCoverages", {})
+    if isinstance(policy_coverages, dict):
+        policy_coverages.setdefault("LiabilityBiLimit", "15/30")
+        policy_coverages.setdefault("LiabilityPdLimit", "5")
+        policy_coverages.setdefault("MedPayLimit", "500")
+        policy_coverages.setdefault("UninsuredMotoristBiLimit", "15/30")
+        policy_coverages.setdefault("AccidentalDeathLimit", "5000")
+        policy_coverages.setdefault(
+            "UninsuredMotoristPd/CollisionDamageWaiver", False
+        )
+
+    rated_drivers = request_body.get("RatedDrivers", [])
+    for driver in rated_drivers:
+        if not isinstance(driver, dict):
+            continue
+
+        date_of_birth = _ensure_iso_datetime(driver.get("DateOfBirth"))
+        if date_of_birth:
+            driver["DateOfBirth"] = date_of_birth
+
+        attributes = driver.get("Attributes")
+        if isinstance(attributes, dict):
+            relation = _normalize_enum_value(attributes.get("Relation"), RELATION_MAPPINGS)
+            residency_status = _normalize_enum_value(
+                attributes.get("ResidencyStatus"), RESIDENCY_STATUS_MAPPINGS
+            )
+            residency_type = _normalize_enum_value(
+                attributes.get("ResidencyType"), RESIDENCY_TYPE_MAPPINGS
+            )
+
+            if relation:
+                attributes["Relation"] = relation
+            else:
+                attributes.pop("Relation", None)
+
+            if residency_status:
+                attributes["ResidencyStatus"] = residency_status
+            else:
+                attributes.pop("ResidencyStatus", None)
+
+            if residency_type:
+                attributes["ResidencyType"] = residency_type
+            else:
+                attributes.pop("ResidencyType", None)
+
+        license_info = driver.setdefault("LicenseInformation", {})
+        if isinstance(license_info, dict):
+            license_info.setdefault("LicenseStatus", "Valid")
+            license_info.setdefault("MonthsLicensed", 24)
+            license_info.setdefault("MonthsStateLicensed", 24)
+            license_info.setdefault("MonthsForeignLicense", 0)
+            license_info.setdefault("CountryOfOrigin", "United States")
+            license_info.setdefault("MonthsMvrExperience", 24)
+            license_info.setdefault("MonthsSuspended", 0)
+            if not license_info.get("LicenseNumber"):
+                license_info["LicenseNumber"] = "UNKNOWN0000"
+
+    vehicles = request_body.get("Vehicles", [])
+    for vehicle in vehicles:
+        if not isinstance(vehicle, dict):
+            continue
+
+        purchase_type = _normalize_enum_value(vehicle.get("PurchaseType"), PURCHASE_TYPE_MAPPINGS)
+        if purchase_type:
+            vehicle["PurchaseType"] = purchase_type
+        else:
+            vehicle.pop("PurchaseType", None)
+
+        if not vehicle.get("Vin"):
+            vehicle["Vin"] = "UNKNOWNVIN0000000"
+
+        coverage = vehicle.get("CoverageInformation")
+        if isinstance(coverage, dict):
+            for key in ("RentalLimit", "TowingLimit"):
+                value = coverage.get(key)
+                if isinstance(value, str) and value.strip() in {"0", "0.0"}:
+                    coverage.pop(key, None)
+
 def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocationResult:
     payload = InsuranceStateInput.model_validate(arguments)
     state = payload.state
@@ -1118,6 +1309,7 @@ def _personal_auto_rate_headers() -> Dict[str, str]:
 async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvocationResult:
     payload = PersonalAutoRateRequest.model_validate(arguments)
     request_body = payload.model_dump(by_alias=True, exclude_none=True)
+    _sanitize_personal_auto_rate_request(request_body)
     request_body["CarrierInformation"] = DEFAULT_CARRIER_INFORMATION
     state = payload.customer.address.state
     state_code = state_abbreviation(state) or state
