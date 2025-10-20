@@ -405,8 +405,23 @@ INSURANCE_STATE_WIDGET_HTML = """
       return STATES.find((state) => state.code === code.toUpperCase()) ?? null;
     }
 
+    function getStateByName(name) {
+      if (!name) return null;
+      const normalized = name.trim().toLowerCase();
+      if (!normalized) return null;
+      return (
+        STATES.find((state) => state.nameLower === normalized) ??
+        STATES.find((state) => state.codeLower === normalized) ??
+        null
+      );
+    }
+
+    function getStateByValue(value) {
+      return getStateByCode(value) ?? getStateByName(value);
+    }
+
     function updateSelectionDisplay(code) {
-      const state = getStateByCode(code);
+      const state = getStateByValue(code);
       selectedCode = state ? state.code : null;
       if (state) {
         selection.textContent =
@@ -428,13 +443,13 @@ INSURANCE_STATE_WIDGET_HTML = """
         });
     }
 
-    function pushWidgetState(code) {
+    function pushWidgetState(state) {
       if (!window.openai || typeof window.openai.setWidgetState !== "function") {
         return;
       }
-      if (!code) return;
+      if (!state) return;
       try {
-        void window.openai.setWidgetState({ state: code });
+        void window.openai.setWidgetState({ state: state.name });
       } catch (error) {
         console.warn("Failed to persist widget state", error);
       }
@@ -482,7 +497,7 @@ INSURANCE_STATE_WIDGET_HTML = """
 
         button.addEventListener("click", () => {
           updateSelectionDisplay(state.code);
-          pushWidgetState(state.code);
+          pushWidgetState(state);
           input.focus();
         });
 
@@ -490,11 +505,10 @@ INSURANCE_STATE_WIDGET_HTML = """
       });
     }
 
-    function sendSelectionToAssistant(code) {
+    function sendSelectionToAssistant(state) {
       if (!window.openai || typeof window.openai.sendFollowUpMessage !== "function") {
         return Promise.resolve();
       }
-      const state = getStateByCode(code);
       if (!state) return Promise.resolve();
       const prompt =
         "My state for insurance purposes is " +
@@ -507,14 +521,16 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     confirm.addEventListener("click", async () => {
       if (!selectedCode || isSending) return;
+      const state = getStateByCode(selectedCode);
+      if (!state) return;
       isSending = true;
       confirm.textContent = "Sending to assistant…";
       confirm.setAttribute("aria-disabled", "true");
       confirm.disabled = true;
 
       try {
-        pushWidgetState(selectedCode);
-        await sendSelectionToAssistant(selectedCode);
+        pushWidgetState(state);
+        await sendSelectionToAssistant(state);
       } catch (error) {
         console.warn("Failed to share state with assistant", error);
       } finally {
@@ -559,10 +575,11 @@ INSURANCE_STATE_WIDGET_HTML = """
     })();
 
     renderOptions();
-    updateSelectionDisplay(initialFromState);
+    const initialState = getStateByValue(initialFromState);
+    updateSelectionDisplay(initialState ? initialState.code : null);
 
-    if (initialFromState) {
-      pushWidgetState(initialFromState);
+    if (initialState) {
+      pushWidgetState(initialState);
     }
 
     window.addEventListener("openai:set_globals", (event) => {
@@ -589,8 +606,11 @@ INSURANCE_STATE_WIDGET_HTML = """
         return null;
       })();
 
-      if (typeof maybeState === "string" && maybeState !== selectedCode) {
-        updateSelectionDisplay(maybeState);
+      if (typeof maybeState === "string") {
+        const normalized = getStateByValue(maybeState);
+        if (normalized && normalized.code !== selectedCode) {
+          updateSelectionDisplay(normalized.code);
+        }
       }
     });
   })();

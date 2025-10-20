@@ -31,7 +31,14 @@ import os
 import httpx
 import mcp.types as types
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from dotenv import load_dotenv
@@ -97,15 +104,113 @@ def _model_schema(model: Type[BaseModel]) -> Dict[str, Any]:
     return cast(Dict[str, Any], model.model_json_schema(by_alias=True))
 
 
+STATE_ABBREVIATION_TO_NAME: Dict[str, str] = {
+    "AL": "Alabama",
+    "AK": "Alaska",
+    "AZ": "Arizona",
+    "AR": "Arkansas",
+    "CA": "California",
+    "CO": "Colorado",
+    "CT": "Connecticut",
+    "DE": "Delaware",
+    "DC": "District of Columbia",
+    "FL": "Florida",
+    "GA": "Georgia",
+    "HI": "Hawaii",
+    "ID": "Idaho",
+    "IL": "Illinois",
+    "IN": "Indiana",
+    "IA": "Iowa",
+    "KS": "Kansas",
+    "KY": "Kentucky",
+    "LA": "Louisiana",
+    "ME": "Maine",
+    "MD": "Maryland",
+    "MA": "Massachusetts",
+    "MI": "Michigan",
+    "MN": "Minnesota",
+    "MS": "Mississippi",
+    "MO": "Missouri",
+    "MT": "Montana",
+    "NE": "Nebraska",
+    "NV": "Nevada",
+    "NH": "New Hampshire",
+    "NJ": "New Jersey",
+    "NM": "New Mexico",
+    "NY": "New York",
+    "NC": "North Carolina",
+    "ND": "North Dakota",
+    "OH": "Ohio",
+    "OK": "Oklahoma",
+    "OR": "Oregon",
+    "PA": "Pennsylvania",
+    "RI": "Rhode Island",
+    "SC": "South Carolina",
+    "SD": "South Dakota",
+    "TN": "Tennessee",
+    "TX": "Texas",
+    "UT": "Utah",
+    "VT": "Vermont",
+    "VA": "Virginia",
+    "WA": "Washington",
+    "WV": "West Virginia",
+    "WI": "Wisconsin",
+    "WY": "Wyoming",
+}
+
+STATE_NAME_TO_CANONICAL: Dict[str, str] = {
+    name.upper(): name for name in STATE_ABBREVIATION_TO_NAME.values()
+}
+
+STATE_NAME_TO_ABBREVIATION: Dict[str, str] = {
+    name: code for code, name in STATE_ABBREVIATION_TO_NAME.items()
+}
+
+
+def normalize_state_name(value: Optional[str]) -> Optional[str]:
+    """Normalize state values to their canonical long-form name."""
+
+    if value is None or not isinstance(value, str):
+        return value
+
+    trimmed = value.strip()
+    if not trimmed:
+        return trimmed
+
+    upper_value = trimmed.upper()
+    if upper_value in STATE_ABBREVIATION_TO_NAME:
+        return STATE_ABBREVIATION_TO_NAME[upper_value]
+
+    canonical = STATE_NAME_TO_CANONICAL.get(upper_value)
+    if canonical:
+        return canonical
+
+    return trimmed
+
+
+def state_abbreviation(value: Optional[str]) -> Optional[str]:
+    """Return the two-letter abbreviation for a state value if known."""
+
+    if value is None:
+        return None
+
+    normalized = normalize_state_name(value)
+    if not isinstance(normalized, str):
+        return normalized
+
+    return STATE_NAME_TO_ABBREVIATION.get(normalized)
+
+
 INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
     "type": "object",
     "properties": {
         "state": {
             "type": "string",
-            "description": "Two-letter U.S. state or District of Columbia abbreviation (for example, \"CA\").",
+            "description": (
+                "Full U.S. state or District of Columbia name (for example, \"California\"). "
+                "Two-letter abbreviations like \"CA\" are also accepted and normalized."
+            ),
             "minLength": 2,
-            "maxLength": 2,
-            "pattern": "^[A-Za-z]{2}$",
         }
     },
     "required": [],
@@ -200,9 +305,10 @@ class InsuranceStateInput(BaseModel):
     state: Optional[str] = Field(
         default=None,
         min_length=2,
-        max_length=2,
-        pattern=r"^[A-Za-z]{2}$",
-        description="Two-letter U.S. state or District of Columbia abbreviation (for example, \"CA\").",
+        description=(
+            "Full U.S. state or District of Columbia name (for example, \"California\"). "
+            "Two-letter abbreviations like \"CA\" are also accepted and normalized."
+        ),
     )
 
     model_config = ConfigDict(extra="forbid")
@@ -217,11 +323,7 @@ class InsuranceStateInput(BaseModel):
     @field_validator("state")
     @classmethod
     def _normalize_state(cls, value: Optional[str]) -> Optional[str]:
-        if value is None:
-            return None
-        if not isinstance(value, str):
-            return value
-        return value.upper()
+        return normalize_state_name(value)
 
 
 def _strip_string(value: Any) -> Any:
@@ -234,7 +336,14 @@ class AddressInput(BaseModel):
     street1: str = Field(..., alias="Street1")
     street2: Optional[str] = Field(default=None, alias="Street2")
     city: str = Field(..., alias="City")
-    state: str = Field(..., alias="State", min_length=2, max_length=2)
+    state: str = Field(
+        ...,
+        alias="State",
+        min_length=2,
+        description=(
+            "Full U.S. state or District of Columbia name. Abbreviations are accepted and normalized."
+        ),
+    )
     county: Optional[str] = Field(default=None, alias="County")
     zip_code: str = Field(..., alias="ZipCode")
 
@@ -250,7 +359,8 @@ class AddressInput(BaseModel):
     @field_validator("state")
     @classmethod
     def _normalize_state(cls, value: str) -> str:
-        return value.upper()
+        normalized = normalize_state_name(value)
+        return normalized if isinstance(normalized, str) else value
 
 
 class ContactInformationInput(BaseModel):
@@ -279,6 +389,12 @@ class PriorInsuranceInformationInput(BaseModel):
         "reason_for_no_insurance", mode="before"
     )(_strip_string)
 
+    @model_validator(mode="after")
+    def _ensure_reason(cls, values: "PriorInsuranceInformationInput") -> "PriorInsuranceInformationInput":
+        if not values.prior_insurance and not values.reason_for_no_insurance:
+            values.reason_for_no_insurance = "Other"
+        return values
+
 
 class CustomerProfileInput(BaseModel):
     identifier: str = Field(..., alias="Identifier")
@@ -292,8 +408,8 @@ class CustomerProfileInput(BaseModel):
     contact_information: ContactInformationInput = Field(
         default_factory=ContactInformationInput, alias="ContactInformation"
     )
-    prior_insurance_information: Optional[PriorInsuranceInformationInput] = Field(
-        default=None, alias="PriorInsuranceInformation"
+    prior_insurance_information: PriorInsuranceInformationInput = Field(
+        ..., alias="PriorInsuranceInformation"
     )
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
@@ -341,9 +457,7 @@ class LicenseInformationInput(BaseModel):
     @field_validator("state_licensed")
     @classmethod
     def _normalize_state(cls, value: Optional[str]) -> Optional[str]:
-        if value is None:
-            return None
-        return value.upper()
+        return normalize_state_name(value)
 
 
 class DriverAttributesInput(BaseModel):
@@ -367,6 +481,16 @@ class DriverAttributesInput(BaseModel):
     _strip_residency_type = field_validator(
         "residency_type", mode="before"
     )(_strip_string)
+
+
+def _default_driver_attributes() -> DriverAttributesInput:
+    return DriverAttributesInput(
+        residency_status="Resident",
+        residency_type="Owner",
+        relation="Self",
+        occasional_operator=False,
+        property_insurance=False,
+    )
 
 
 class DriverDiscountsInput(BaseModel):
@@ -401,9 +525,7 @@ class FinancialResponsibilityInformationInput(BaseModel):
     @field_validator("sr22_state")
     @classmethod
     def _normalize_state(cls, value: Optional[str]) -> Optional[str]:
-        if value is None:
-            return None
-        return value.upper()
+        return normalize_state_name(value)
 
 
 class DriverRosterEntryInput(BaseModel):
@@ -431,7 +553,9 @@ class RatedDriverInput(BaseModel):
     industry: Optional[str] = Field(default=None, alias="Industry")
     occupation: Optional[str] = Field(default=None, alias="Occupation")
     license_information: LicenseInformationInput = Field(..., alias="LicenseInformation")
-    attributes: Optional[DriverAttributesInput] = Field(default=None, alias="Attributes")
+    attributes: DriverAttributesInput = Field(
+        default_factory=_default_driver_attributes, alias="Attributes"
+    )
     discounts: Optional[DriverDiscountsInput] = Field(default=None, alias="Discounts")
     financial_responsibility_information: Optional[
         FinancialResponsibilityInformationInput
@@ -475,6 +599,18 @@ class VehicleCoverageInformationInput(BaseModel):
     _strip_towing = field_validator("towing_limit", mode="before")(_strip_string)
 
 
+def _default_vehicle_coverage_information() -> VehicleCoverageInformationInput:
+    return VehicleCoverageInformationInput(
+        collision_deductible="0",
+        comprehensive_deductible="0",
+        rental_limit="0",
+        towing_limit="0",
+        gap_coverage=False,
+        custom_equipment_value=0,
+        safety_glass_coverage=False,
+    )
+
+
 class VehicleInput(BaseModel):
     vehicle_id: int = Field(..., alias="VehicleId")
     vin: Optional[str] = Field(default=None, alias="Vin")
@@ -494,8 +630,9 @@ class VehicleInput(BaseModel):
     garaging_address: Optional[AddressInput] = Field(
         default=None, alias="GaragingAddress"
     )
-    coverage_information: Optional[VehicleCoverageInformationInput] = Field(
-        default=None, alias="CoverageInformation"
+    coverage_information: VehicleCoverageInformationInput = Field(
+        default_factory=_default_vehicle_coverage_information,
+        alias="CoverageInformation",
     )
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
@@ -666,20 +803,6 @@ class CarrierInformationInput(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
 
-def _default_ais_carrier_information() -> CarrierInformationInput:
-    """Return the implicit AIS carrier configuration."""
-
-    return CarrierInformationInput(
-        use_exact_carrier_info=True,
-        products=[
-            CarrierProductInput(
-                product_name="AIS",
-                carrier_name="AIS",
-            )
-        ],
-    )
-
-
 class PersonalAutoCustomerIntake(BaseModel):
     customer: CustomerProfileInput = Field(..., alias="Customer")
 
@@ -743,8 +866,8 @@ class PersonalAutoRateRequest(BaseModel):
     )
     rated_drivers: List[RatedDriverInput] = Field(..., alias="RatedDrivers")
     vehicles: List[VehicleInput] = Field(..., alias="Vehicles")
-    carrier_information: Optional[CarrierInformationInput] = Field(
-        default=None, alias="CarrierInformation"
+    carrier_information: CarrierInformationInput = Field(
+        ..., alias="CarrierInformation"
     )
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
@@ -935,14 +1058,9 @@ def _personal_auto_rate_headers() -> Dict[str, str]:
 async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvocationResult:
     payload = PersonalAutoRateRequest.model_validate(arguments)
     request_body = payload.model_dump(by_alias=True, exclude_none=True)
-    request_body.setdefault(
-        "CarrierInformation",
-        _default_ais_carrier_information().model_dump(
-            by_alias=True, exclude_none=True
-        ),
-    )
     state = payload.customer.address.state
-    url = f"{PERSONAL_AUTO_RATE_ENDPOINT}/{state}/rates/latest?multiAgency=false"
+    state_code = state_abbreviation(state) or state
+    url = f"{PERSONAL_AUTO_RATE_ENDPOINT}/{state_code}/rates/latest?multiAgency=false"
 
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
@@ -1071,11 +1189,17 @@ def _register_personal_auto_intake_tools() -> None:
             tool=types.Tool(
                 name="collect-personal-auto-customer",
                 title="Collect personal auto customer profile",
-                description="Validate and capture the customer's personal information for a personal auto quote.",
+                description=(
+                    "Validate and capture the customer's personal information, "
+                    "including prior insurance status and any reason for a lapse, "
+                    "for a personal auto quote."
+                ),
                 inputSchema=_model_schema(PersonalAutoCustomerIntake),
             ),
             handler=_collect_personal_auto_customer,
-            default_response_text="Captured customer profile information.",
+            default_response_text=(
+                "Captured customer profile information, including prior insurance details."
+            ),
         )
     )
 
@@ -1106,7 +1230,10 @@ def _register_personal_auto_intake_tools() -> None:
             tool=types.Tool(
                 name="collect-personal-auto-drivers",
                 title="Collect personal auto driver profiles",
-                description="Validate one or more rated drivers for a personal auto quote.",
+                description=(
+                    "Validate one or more rated drivers for a personal auto quote, "
+                    "including residency details in each driver's Attributes block."
+                ),
                 inputSchema=_model_schema(PersonalAutoDriverIntake),
             ),
             handler=_collect_personal_auto_drivers,
@@ -1134,7 +1261,10 @@ def _register_personal_auto_intake_tools() -> None:
             tool=types.Tool(
                 name="collect-personal-auto-vehicles",
                 title="Collect personal auto vehicle details",
-                description="Validate the vehicles to be included on a personal auto quote.",
+                description=(
+                    "Validate the vehicles to be included on a personal auto quote and "
+                    "confirm coverage selections for each vehicle."
+                ),
                 inputSchema=_model_schema(PersonalAutoVehicleIntake),
             ),
             handler=_collect_personal_auto_vehicles,
