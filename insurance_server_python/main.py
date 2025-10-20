@@ -367,6 +367,16 @@ class DriverAttributesInput(BaseModel):
     )(_strip_string)
 
 
+def _default_driver_attributes() -> DriverAttributesInput:
+    return DriverAttributesInput(
+        residency_status="Resident",
+        residency_type="Owner",
+        relation="Self",
+        occasional_operator=False,
+        property_insurance=False,
+    )
+
+
 class DriverDiscountsInput(BaseModel):
     distant_student: Optional[str] = Field(default=None, alias="DistantStudent")
     drivers_training: Optional[bool] = Field(default=None, alias="DriversTraining")
@@ -429,7 +439,9 @@ class RatedDriverInput(BaseModel):
     industry: Optional[str] = Field(default=None, alias="Industry")
     occupation: Optional[str] = Field(default=None, alias="Occupation")
     license_information: LicenseInformationInput = Field(..., alias="LicenseInformation")
-    attributes: Optional[DriverAttributesInput] = Field(default=None, alias="Attributes")
+    attributes: DriverAttributesInput = Field(
+        default_factory=_default_driver_attributes, alias="Attributes"
+    )
     discounts: Optional[DriverDiscountsInput] = Field(default=None, alias="Discounts")
     financial_responsibility_information: Optional[
         FinancialResponsibilityInformationInput
@@ -473,6 +485,18 @@ class VehicleCoverageInformationInput(BaseModel):
     _strip_towing = field_validator("towing_limit", mode="before")(_strip_string)
 
 
+def _default_vehicle_coverage_information() -> VehicleCoverageInformationInput:
+    return VehicleCoverageInformationInput(
+        collision_deductible="0",
+        comprehensive_deductible="0",
+        rental_limit="0",
+        towing_limit="0",
+        gap_coverage=False,
+        custom_equipment_value=0,
+        safety_glass_coverage=False,
+    )
+
+
 class VehicleInput(BaseModel):
     vehicle_id: int = Field(..., alias="VehicleId")
     vin: Optional[str] = Field(default=None, alias="Vin")
@@ -492,8 +516,9 @@ class VehicleInput(BaseModel):
     garaging_address: Optional[AddressInput] = Field(
         default=None, alias="GaragingAddress"
     )
-    coverage_information: Optional[VehicleCoverageInformationInput] = Field(
-        default=None, alias="CoverageInformation"
+    coverage_information: VehicleCoverageInformationInput = Field(
+        default_factory=_default_vehicle_coverage_information,
+        alias="CoverageInformation",
     )
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
@@ -1034,7 +1059,10 @@ def _register_personal_auto_intake_tools() -> None:
             tool=types.Tool(
                 name="collect-personal-auto-drivers",
                 title="Collect personal auto driver profiles",
-                description="Validate one or more rated drivers for a personal auto quote.",
+                description=(
+                    "Validate one or more rated drivers for a personal auto quote, "
+                    "including residency details in each driver's Attributes block."
+                ),
                 inputSchema=_model_schema(PersonalAutoDriverIntake),
             ),
             handler=_collect_personal_auto_drivers,
@@ -1062,7 +1090,10 @@ def _register_personal_auto_intake_tools() -> None:
             tool=types.Tool(
                 name="collect-personal-auto-vehicles",
                 title="Collect personal auto vehicle details",
-                description="Validate the vehicles to be included on a personal auto quote.",
+                description=(
+                    "Validate the vehicles to be included on a personal auto quote and "
+                    "confirm coverage selections for each vehicle."
+                ),
                 inputSchema=_model_schema(PersonalAutoVehicleIntake),
             ),
             handler=_collect_personal_auto_vehicles,
