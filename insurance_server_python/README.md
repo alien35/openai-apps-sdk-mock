@@ -48,7 +48,7 @@ Follow this quick validation list if the insurance picker does not appear in you
 1. **Confirm the widget is registered.** `list_tools`, `list_resources`, or `list_resource_templates` should include `insurance-state-selector` with the template URI `ui://widget/insurance-state.html`.
 2. **Restart the Python server.** Run `uvicorn insurance_server_python.main:app --host 0.0.0.0 --port 8000` after pulling changes so the updated handlers and HTML load.
 3. **Point the client at the Python endpoint.** Update your MCP client configuration to use the `insurance-python` server you just restarted, then reload the session so the tool list refreshes.
-4. **Invoke the tool manually.** Issue a `call_tool` request with `{"name": "insurance-state-selector", "arguments": {}}` to bring up the dropdown UI. Passing `{ "state": "CA" }` should pre-select California and return the normalized code in `structuredContent`.
+4. **Invoke the tool manually.** Issue a `call_tool` request with `{"name": "insurance-state-selector", "arguments": {}}` to bring up the dropdown UI. Passing `{ "state": "CA" }` or `{ "state": "California" }` should pre-select California and return the normalized long-form name in `structuredContent`.
 
 If those steps succeed but the picker still fails to render during normal conversations, verify your client isn't caching an older tool schema and that the request identifier matches `insurance-state-selector` exactly.
 
@@ -66,9 +66,11 @@ Use these handlers as a starting point when wiring in real data, authentication,
 The personal auto quoting tools now support a staged approach for gathering driver information:
 
 1. **`collect-personal-auto-driver-roster`** accepts a lightweight roster containing driver identifiers and names. This provides a quick confirmation of who should be rated before the assistant dives into full profile collection.
-2. **`collect-personal-auto-drivers`** remains available for validating the complete rated driver payload once the broader intake conversation is underway.
+2. **`collect-personal-auto-drivers`** remains available for validating the complete rated driver payload once the broader intake conversation is underway. Make sure the assistant confirms each driver's residency status and residency type so the `Attributes` block is fully populated.
 
 Pair the roster tool with the existing customer, vehicle, coverage, carrier, and rating handlers to flexibly capture the details needed for a quote while still keeping the assistant's responses concise and confirmatory.
+
+When reviewing the vehicle list, confirm coverage for every vehicle. The `collect-personal-auto-vehicles` payload now expects a `CoverageInformation` object per vehicle that includes deductibles (often `$0` defaults for AIS) and optional protections such as rental, towing, custom equipment, and gap coverage selections.
 
 ### Intake plan
 
