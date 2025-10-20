@@ -1384,6 +1384,9 @@ def _collect_personal_auto_vehicles(arguments: Mapping[str, Any]) -> ToolInvocat
 PERSONAL_AUTO_RATE_ENDPOINT = (
     "https://gateway.zrater.io/api/v2/linesOfBusiness/personalAuto/states"
 )
+PERSONAL_AUTO_RATE_RESULTS_ENDPOINT = (
+    "https://gateway.zrater.io/api/v2/linesOfBusiness/personalAuto/getRateResultsById"
+)
 
 
 DEFAULT_CARRIER_INFORMATION: Dict[str, Any] = {
@@ -1467,11 +1470,13 @@ async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvoc
     state_code = state_abbreviation(state) or state
     url = f"{PERSONAL_AUTO_RATE_ENDPOINT}/{state_code}/rates/latest?multiAgency=false"
 
+    headers = _personal_auto_rate_headers()
+
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
             response = await client.post(
                 url,
-                headers=_personal_auto_rate_headers(),
+                headers=headers,
                 json=request_body,
             )
     except httpx.HTTPError as exc:  # pragma: no cover - network error handling
@@ -1494,17 +1499,51 @@ async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvoc
         )
 
     transaction_id = parsed_response.get("transactionId")
+    rate_results: Any = None
+    rate_results_status: Optional[int] = None
+    if transaction_id:
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
+                rate_results_response = await client.get(
+                    PERSONAL_AUTO_RATE_RESULTS_ENDPOINT,
+                    headers=headers,
+                    params={"Id": transaction_id},
+                )
+        except httpx.HTTPError as exc:  # pragma: no cover - network error handling
+            raise RuntimeError(
+                f"Failed to request personal auto rate results: {exc}"
+            ) from exc
+
+        rate_results_status = rate_results_response.status_code
+        rate_results_text = rate_results_response.text
+        if rate_results_response.is_error:
+            raise RuntimeError(
+                "Personal auto rate results request failed with "
+                f"status {rate_results_status}: {rate_results_text}"
+            )
+        if rate_results_text.strip():
+            try:
+                rate_results = rate_results_response.json()
+            except (json.JSONDecodeError, ValueError) as exc:
+                raise RuntimeError(
+                    f"Failed to parse personal auto rate results response: {exc}"
+                ) from exc
+
     message = (
         f"Received personal auto rate response (transaction {transaction_id})."
         if transaction_id
         else "Received personal auto rate response."
     )
+    if transaction_id and rate_results is not None:
+        message += " Retrieved carrier rate results."
 
     return {
         "structured_content": {
             "request": request_body,
             "response": parsed_response,
             "status": status_code,
+            "rate_results": rate_results,
+            "rate_results_status": rate_results_status,
         },
         "response_text": message,
     }
