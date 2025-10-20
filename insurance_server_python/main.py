@@ -1042,6 +1042,66 @@ PERSONAL_AUTO_RATE_ENDPOINT = (
     "https://gateway.zrater.io/api/v2/linesOfBusiness/personalAuto/states"
 )
 
+
+DEFAULT_CARRIER_INFORMATION: Dict[str, Any] = {
+    "UseExactCarrierInfo": False,
+    "Products": [
+        {
+            "AgencyId": "456494ef-0742-499c-92e0-db9fc8c78941",
+            "ProductId": "9c0220c6-49c4-4358-aefc-d5bc51630fe5",
+            "ProductName": "Anchor Gemini",
+            "CarrierUserName": "autoinsspec",
+            "CarrierPassword": "character99",
+            "ProducerCode": "92000",
+            "CarrierLoginUserName": "",
+            "CarrierLoginPassword": "",
+            "CarrierId": "0b0ab021-dd46-4d60-8cd5-e22901030008",
+            "CarrierName": "Anchor General Ins",
+        },
+        {
+            "AgencyId": "456494ef-0742-499c-92e0-db9fc8c78941",
+            "ProductId": "5e9d28df-214d-4dfc-b723-2f2abd3f5ee5",
+            "ProductName": "Anchor Motor Club",
+            "CarrierUserName": "autoinsspec",
+            "CarrierPassword": "charachter99",
+            "ProducerCode": "92002",
+            "CarrierLoginUserName": "",
+            "CarrierLoginPassword": "",
+            "CarrierId": "0b0ab021-dd46-4d60-8cd5-e22901030008",
+            "CarrierName": "Anchor General Ins",
+            "ProductQuestions": {
+                "AnchorMotorClubV3RTCollBuyback": {
+                    "Id": "0-AnchorMotorClubV3RTCollBuyback",
+                    "Value": "Yes",
+                }
+            },
+        },
+        {
+            "AgencyId": "456494ef-0742-499c-92e0-db9fc8c78941",
+            "ProductId": "bdd4c0f9-7c50-45dc-a5df-deac8ac717fe",
+            "ProductName": "Anchor Premier",
+            "CarrierUserName": "autoinsspec",
+            "CarrierPassword": "charachter99",
+            "ProducerCode": "92840",
+            "CarrierLoginUserName": "",
+            "CarrierLoginPassword": "",
+            "CarrierId": "0b0ab021-dd46-4d60-8cd5-e22901030008",
+            "CarrierName": "Anchor General Ins",
+            "ProductQuestions": {
+                "AnchorPremierV3MPP": {
+                    "Id": "0-AnchorPremierV3MPP",
+                    "Value": "Yes",
+                },
+                "AnchorPremierV3RTCollBuyback": {
+                    "Id": "0-AnchorPremierV3RTCollBuyback",
+                    "Value": "Yes",
+                },
+            },
+        },
+    ],
+}
+
+
 def _personal_auto_rate_headers() -> Dict[str, str]:
     api_key = os.getenv("PERSONAL_AUTO_RATE_API_KEY")
     if not api_key:
@@ -1058,6 +1118,7 @@ def _personal_auto_rate_headers() -> Dict[str, str]:
 async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvocationResult:
     payload = PersonalAutoRateRequest.model_validate(arguments)
     request_body = payload.model_dump(by_alias=True, exclude_none=True)
+    request_body["CarrierInformation"] = DEFAULT_CARRIER_INFORMATION
     state = payload.customer.address.state
     state_code = state_abbreviation(state) or state
     url = f"{PERSONAL_AUTO_RATE_ENDPOINT}/{state_code}/rates/latest?multiAgency=false"
