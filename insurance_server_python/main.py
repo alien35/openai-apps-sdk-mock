@@ -28,6 +28,7 @@ import inspect
 import json
 import logging
 import os
+from pathlib import Path
 
 import httpx
 import mcp.types as types
@@ -1466,6 +1467,15 @@ async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvoc
     request_body = payload.model_dump(by_alias=True, exclude_none=True)
     _sanitize_personal_auto_rate_request(request_body)
     request_body["CarrierInformation"] = DEFAULT_CARRIER_INFORMATION
+
+    try:
+        log_path = Path(__file__).with_name("personal_auto_rate_request.json")
+        log_path.write_text(
+            json.dumps(request_body, indent=2, sort_keys=True), encoding="utf-8"
+        )
+    except OSError as exc:  # pragma: no cover - filesystem error handling
+        logger.warning("Failed to write personal auto rate request body: %s", exc)
+
     state = payload.customer.address.state
     state_code = state_abbreviation(state) or state
     url = f"{PERSONAL_AUTO_RATE_ENDPOINT}/{state_code}/rates/latest?multiAgency=false"
