@@ -594,20 +594,6 @@ class CarrierInformationInput(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
 
-def _default_ais_carrier_information() -> CarrierInformationInput:
-    """Return the implicit AIS carrier configuration."""
-
-    return CarrierInformationInput(
-        use_exact_carrier_info=True,
-        products=[
-            CarrierProductInput(
-                product_name="AIS",
-                carrier_name="AIS",
-            )
-        ],
-    )
-
-
 class PersonalAutoCustomerIntake(BaseModel):
     customer: CustomerProfileInput = Field(..., alias="Customer")
 
@@ -671,8 +657,8 @@ class PersonalAutoRateRequest(BaseModel):
     )
     rated_drivers: List[RatedDriverInput] = Field(..., alias="RatedDrivers")
     vehicles: List[VehicleInput] = Field(..., alias="Vehicles")
-    carrier_information: Optional[CarrierInformationInput] = Field(
-        default=None, alias="CarrierInformation"
+    carrier_information: CarrierInformationInput = Field(
+        ..., alias="CarrierInformation"
     )
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
@@ -863,12 +849,6 @@ def _personal_auto_rate_headers() -> Dict[str, str]:
 async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvocationResult:
     payload = PersonalAutoRateRequest.model_validate(arguments)
     request_body = payload.model_dump(by_alias=True, exclude_none=True)
-    request_body.setdefault(
-        "CarrierInformation",
-        _default_ais_carrier_information().model_dump(
-            by_alias=True, exclude_none=True
-        ),
-    )
     state = payload.customer.address.state
     url = f"{PERSONAL_AUTO_RATE_ENDPOINT}/{state}/rates/latest?multiAgency=false"
 
