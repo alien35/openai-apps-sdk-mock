@@ -345,6 +345,18 @@ def _normalize_enum_value(value: Optional[str], mapping: Mapping[str, str]) -> O
     return mapping.get(key, normalized)
 
 
+def _normalize_coverage_value(value: Optional[str], mapping: Mapping[str, str]) -> Optional[str]:
+    if value is None:
+        return None
+
+    normalized = value.strip()
+    if not normalized:
+        return None
+
+    key = "".join(ch for ch in normalized.lower() if ch.isalnum())
+    return mapping.get(key, normalized)
+
+
 def _ensure_iso_datetime(value: Optional[str]) -> Optional[str]:
     if value is None:
         return None
@@ -523,9 +535,9 @@ class DriverAttributesInput(BaseModel):
 
 def _default_driver_attributes() -> DriverAttributesInput:
     return DriverAttributesInput(
-        residency_status="HouseholdResident",
-        residency_type="Owned",
-        relation="NamedInsured",
+        residency_status="Own",
+        residency_type="Home",
+        relation="Insured",
         occasional_operator=False,
         property_insurance=False,
     )
@@ -567,20 +579,45 @@ class FinancialResponsibilityInformationInput(BaseModel):
 
 
 TERM_MAPPINGS: Mapping[str, str] = {
-    "6months": "SixMonths",
-    "sixmonths": "SixMonths",
-    "sixmonth": "SixMonths",
-    "six": "SixMonths",
-    "sixmonthterm": "SixMonths",
-    "sixmonthspolicy": "SixMonths",
-    "6month": "SixMonths",
-    "6monthterm": "SixMonths",
-    "6monthspolicy": "SixMonths",
-    "12months": "TwelveMonths",
-    "twelvemonths": "TwelveMonths",
-    "twelvemonth": "TwelveMonths",
-    "annual": "TwelveMonths",
-    "yearly": "TwelveMonths",
+    "6months": "Semi Annual",
+    "sixmonths": "Semi Annual",
+    "sixmonth": "Semi Annual",
+    "six": "Semi Annual",
+    "sixmonthterm": "Semi Annual",
+    "sixmonthspolicy": "Semi Annual",
+    "6month": "Semi Annual",
+    "6monthterm": "Semi Annual",
+    "6monthspolicy": "Semi Annual",
+    "semiannual": "Semi Annual",
+    "semiannualterm": "Semi Annual",
+    "semi": "Semi Annual",
+    "12months": "Annual",
+    "twelvemonths": "Annual",
+    "twelvemonth": "Annual",
+    "annual": "Annual",
+    "yearly": "Annual",
+}
+
+PAYMENT_METHOD_MAPPINGS: Mapping[str, str] = {
+    "eft": "Electronic Funds Transfer",
+    "electronicfundstransfer": "Electronic Funds Transfer",
+    "bankdraft": "Electronic Funds Transfer",
+    "ach": "Electronic Funds Transfer",
+    "credit": "Credit Card",
+    "creditcard": "Credit Card",
+    "card": "Credit Card",
+    "debit": "Debit Card",
+    "debitcard": "Debit Card",
+    "cash": "Cash",
+    "moneyorder": "Money Order",
+}
+
+POLICY_TYPE_MAPPINGS: Mapping[str, str] = {
+    "personalauto": "Standard",
+    "standard": "Standard",
+    "standardauto": "Standard",
+    "preferred": "Preferred",
+    "nonstandard": "Non-Standard",
 }
 
 PURCHASE_TYPE_MAPPINGS: Mapping[str, str] = {
@@ -595,10 +632,10 @@ PURCHASE_TYPE_MAPPINGS: Mapping[str, str] = {
 }
 
 RELATION_MAPPINGS: Mapping[str, str] = {
-    "self": "NamedInsured",
-    "namedinsured": "NamedInsured",
-    "policyholder": "NamedInsured",
-    "insured": "NamedInsured",
+    "self": "Insured",
+    "namedinsured": "Insured",
+    "policyholder": "Insured",
+    "insured": "Insured",
     "spouse": "Spouse",
     "partner": "Spouse",
     "child": "Child",
@@ -608,18 +645,80 @@ RELATION_MAPPINGS: Mapping[str, str] = {
 }
 
 RESIDENCY_STATUS_MAPPINGS: Mapping[str, str] = {
-    "resident": "HouseholdResident",
-    "householdresident": "HouseholdResident",
-    "nonresident": "NonResident",
-    "notresident": "NonResident",
+    "resident": "Own",
+    "householdresident": "Own",
+    "owner": "Own",
+    "own": "Own",
+    "nonresident": "Rent",
+    "notresident": "Rent",
+    "rent": "Rent",
+    "renter": "Rent",
 }
 
 RESIDENCY_TYPE_MAPPINGS: Mapping[str, str] = {
-    "owner": "Owned",
-    "owned": "Owned",
-    "rent": "Rented",
-    "renter": "Rented",
-    "rented": "Rented",
+    "owner": "Home",
+    "owned": "Home",
+    "home": "Home",
+    "house": "Home",
+    "rent": "Apartment",
+    "renter": "Apartment",
+    "rented": "Apartment",
+    "apartment": "Apartment",
+}
+
+LIABILITY_BI_LIMIT_MAPPINGS: Mapping[str, str] = {
+    "1530": "15000/30000",
+    "2550": "25000/50000",
+    "3060": "30000/60000",
+    "50100": "50000/100000",
+    "100300": "100000/300000",
+    "250500": "250000/500000",
+    "500500": "500/500",
+    "1500030000": "15000/30000",
+    "2500050000": "25000/50000",
+    "3000060000": "30000/60000",
+    "50000100000": "50000/100000",
+    "100000300000": "100000/300000",
+    "250000500000": "250000/500000",
+    "300000300000": "300000/300000",
+}
+
+PROPERTY_DAMAGE_LIMIT_MAPPINGS: Mapping[str, str] = {
+    "5": "5000",
+    "10": "10000",
+    "15": "15000",
+    "20": "20000",
+    "25": "25000",
+    "50": "50000",
+    "100": "100000",
+    "5000": "5000",
+    "10000": "10000",
+    "15000": "15000",
+    "20000": "20000",
+    "25000": "25000",
+    "50000": "50000",
+    "100000": "100000",
+}
+
+ACCIDENTAL_DEATH_LIMIT_MAPPINGS: Mapping[str, str] = {
+    "0": "None",
+    "none": "None",
+    "5000": "5000",
+    "10000": "10000",
+    "15000": "15000",
+    "25000": "25000",
+}
+
+MED_PAY_LIMIT_MAPPINGS: Mapping[str, str] = {
+    "0": "None",
+    "none": "None",
+    "500": "500",
+    "1000": "1000",
+    "2000": "2000",
+    "5000": "5000",
+    "10000": "10000",
+    "25000": "25000",
+    "50000": "50000",
 }
 
 
@@ -696,10 +795,10 @@ class VehicleCoverageInformationInput(BaseModel):
 
 def _default_vehicle_coverage_information() -> VehicleCoverageInformationInput:
     return VehicleCoverageInformationInput(
-        collision_deductible="0",
-        comprehensive_deductible="0",
-        rental_limit=None,
-        towing_limit=None,
+        collision_deductible="None",
+        comprehensive_deductible="None",
+        rental_limit="None",
+        towing_limit="None",
         gap_coverage=False,
         custom_equipment_value=0,
         safety_glass_coverage=False,
@@ -749,9 +848,32 @@ LiabilityBiLimit = Literal[
     "100/300",
     "250/500",
     "500/500",
+    "15000/30000",
+    "25000/50000",
+    "30000/60000",
+    "50000/100000",
+    "100000/300000",
+    "250000/500000",
+    "300000/300000",
 ]
-PropertyDamageLimit = Literal["5", "10", "15", "20", "25", "50", "100"]
+PropertyDamageLimit = Literal[
+    "5",
+    "10",
+    "15",
+    "20",
+    "25",
+    "50",
+    "100",
+    "5000",
+    "10000",
+    "15000",
+    "20000",
+    "25000",
+    "50000",
+    "100000",
+]
 MedicalPaymentsLimit = Literal[
+    "None",
     "500",
     "1000",
     "2000",
@@ -761,7 +883,7 @@ MedicalPaymentsLimit = Literal[
     "50000",
 ]
 UninsuredMotoristBiLimit = LiabilityBiLimit
-AccidentalDeathLimit = Literal["5000", "10000", "15000", "25000"]
+AccidentalDeathLimit = Literal["None", "5000", "10000", "15000", "25000"]
 
 AIS_LIABILITY_BI_LIMITS: Tuple[str, ...] = tuple(get_args(LiabilityBiLimit))
 AIS_LIABILITY_PD_LIMITS: Tuple[str, ...] = tuple(get_args(PropertyDamageLimit))
@@ -922,30 +1044,79 @@ def _sanitize_personal_auto_rate_request(request_body: Dict[str, Any]) -> None:
         request_body["EffectiveDate"] = effective_date
 
     term = _normalize_enum_value(request_body.get("Term"), TERM_MAPPINGS)
-    request_body["Term"] = term or "SixMonths"
+    request_body["Term"] = term or "Semi Annual"
+
+    payment_method = _normalize_enum_value(
+        request_body.get("PaymentMethod"), PAYMENT_METHOD_MAPPINGS
+    )
+    if payment_method:
+        request_body["PaymentMethod"] = payment_method
+    else:
+        request_body.setdefault("PaymentMethod", "Electronic Funds Transfer")
+
+    policy_type = _normalize_enum_value(request_body.get("PolicyType"), POLICY_TYPE_MAPPINGS)
+    if policy_type:
+        request_body["PolicyType"] = policy_type
+    else:
+        request_body.setdefault("PolicyType", "Standard")
 
     request_body.setdefault("BumpLimits", "None")
-    request_body.setdefault("PolicyType", "PersonalAuto")
 
     customer = request_body.get("Customer")
+    customer_state: Optional[str] = None
+    customer_address: Optional[Dict[str, Any]] = None
     if isinstance(customer, dict):
         customer.setdefault("MonthsAtResidence", 24)
+        address = customer.get("Address")
+        if isinstance(address, dict):
+            state_value = normalize_state_name(address.get("State"))
+            if isinstance(state_value, str):
+                address["State"] = state_value
+                customer_state = state_value
+            customer_address = address
+
         prior = customer.get("PriorInsuranceInformation")
         if not isinstance(prior, dict):
-            customer["PriorInsuranceInformation"] = {"PriorInsurance": False}
+            prior = {}
+        prior.setdefault("PriorInsurance", False)
+        prior_reason = _normalize_enum_value(
+            prior.get("ReasonForNoInsurance"), {"other": "Other"}
+        )
+        prior["ReasonForNoInsurance"] = prior_reason or "Other"
+        customer["PriorInsuranceInformation"] = prior
 
     policy_coverages = request_body.setdefault("PolicyCoverages", {})
     if isinstance(policy_coverages, dict):
-        policy_coverages.setdefault("LiabilityBiLimit", "15/30")
-        policy_coverages.setdefault("LiabilityPdLimit", "5")
-        policy_coverages.setdefault("MedPayLimit", "500")
-        policy_coverages.setdefault("UninsuredMotoristBiLimit", "15/30")
-        policy_coverages.setdefault("AccidentalDeathLimit", "5000")
+        liability = _normalize_coverage_value(
+            policy_coverages.get("LiabilityBiLimit"), LIABILITY_BI_LIMIT_MAPPINGS
+        )
+        policy_coverages["LiabilityBiLimit"] = liability or "30000/60000"
+
+        pd_limit = _normalize_coverage_value(
+            policy_coverages.get("LiabilityPdLimit"), PROPERTY_DAMAGE_LIMIT_MAPPINGS
+        )
+        policy_coverages["LiabilityPdLimit"] = pd_limit or "15000"
+
+        med_pay = _normalize_coverage_value(
+            policy_coverages.get("MedPayLimit"), MED_PAY_LIMIT_MAPPINGS
+        )
+        policy_coverages["MedPayLimit"] = med_pay or "None"
+
+        um_bi = _normalize_coverage_value(
+            policy_coverages.get("UninsuredMotoristBiLimit"), LIABILITY_BI_LIMIT_MAPPINGS
+        )
+        policy_coverages["UninsuredMotoristBiLimit"] = um_bi or "30000/60000"
+
+        accidental = _normalize_coverage_value(
+            policy_coverages.get("AccidentalDeathLimit"), ACCIDENTAL_DEATH_LIMIT_MAPPINGS
+        )
+        policy_coverages["AccidentalDeathLimit"] = accidental or "None"
         policy_coverages.setdefault(
             "UninsuredMotoristPd/CollisionDamageWaiver", False
         )
 
     rated_drivers = request_body.get("RatedDrivers", [])
+    default_driver_id: Optional[int] = None
     for driver in rated_drivers:
         if not isinstance(driver, dict):
             continue
@@ -953,6 +1124,11 @@ def _sanitize_personal_auto_rate_request(request_body: Dict[str, Any]) -> None:
         date_of_birth = _ensure_iso_datetime(driver.get("DateOfBirth"))
         if date_of_birth:
             driver["DateOfBirth"] = date_of_birth
+
+        if default_driver_id is None:
+            driver_id = driver.get("DriverId")
+            if isinstance(driver_id, int):
+                default_driver_id = driver_id
 
         attributes = driver.get("Attributes")
         if isinstance(attributes, dict):
@@ -985,18 +1161,24 @@ def _sanitize_personal_auto_rate_request(request_body: Dict[str, Any]) -> None:
             license_info.setdefault("MonthsLicensed", 24)
             license_info.setdefault("MonthsStateLicensed", 24)
             license_info.setdefault("MonthsForeignLicense", 0)
-            license_info.setdefault("CountryOfOrigin", "United States")
+            license_info.setdefault("CountryOfOrigin", "None")
             license_info.setdefault("MonthsMvrExperience", 24)
             license_info.setdefault("MonthsSuspended", 0)
             if not license_info.get("LicenseNumber"):
                 license_info["LicenseNumber"] = "UNKNOWN0000"
+            if not license_info.get("StateLicensed") and customer_state:
+                license_info["StateLicensed"] = customer_state
+            license_info.setdefault("ForeignNational", False)
+            license_info.setdefault("InternationalDriversLicense", False)
 
     vehicles = request_body.get("Vehicles", [])
     for vehicle in vehicles:
         if not isinstance(vehicle, dict):
             continue
 
-        purchase_type = _normalize_enum_value(vehicle.get("PurchaseType"), PURCHASE_TYPE_MAPPINGS)
+        purchase_type = _normalize_enum_value(
+            vehicle.get("PurchaseType"), PURCHASE_TYPE_MAPPINGS
+        )
         if purchase_type:
             vehicle["PurchaseType"] = purchase_type
         else:
@@ -1005,12 +1187,41 @@ def _sanitize_personal_auto_rate_request(request_body: Dict[str, Any]) -> None:
         if not vehicle.get("Vin"):
             vehicle["Vin"] = "UNKNOWNVIN0000000"
 
+        if not vehicle.get("AssignedDriverId") and default_driver_id is not None:
+            vehicle["AssignedDriverId"] = default_driver_id
+
+        vehicle.setdefault("Usage", "Work School")
+        vehicle.setdefault("LeasedVehicle", False)
+        vehicle.setdefault("RideShare", False)
+        vehicle.setdefault("Salvaged", False)
+        if not vehicle.get("GaragingAddress") and customer_address is not None:
+            vehicle["GaragingAddress"] = deepcopy(customer_address)
+
         coverage = vehicle.get("CoverageInformation")
         if isinstance(coverage, dict):
-            for key in ("RentalLimit", "TowingLimit"):
-                value = coverage.get(key)
-                if isinstance(value, str) and value.strip() in {"0", "0.0"}:
-                    coverage.pop(key, None)
+            coverage.setdefault("CollisionDeductible", "None")
+            coverage.setdefault("ComprehensiveDeductible", "None")
+            rental_limit = _normalize_coverage_value(
+                coverage.get("RentalLimit"), MED_PAY_LIMIT_MAPPINGS
+            )
+            coverage["RentalLimit"] = rental_limit or "None"
+            towing_limit = _normalize_coverage_value(
+                coverage.get("TowingLimit"), MED_PAY_LIMIT_MAPPINGS
+            )
+            coverage["TowingLimit"] = towing_limit or "None"
+            coverage.setdefault("GapCoverage", False)
+            coverage.setdefault("CustomEquipmentValue", 0)
+            coverage.setdefault("SafetyGlassCoverage", False)
+        else:
+            vehicle["CoverageInformation"] = {
+                "CollisionDeductible": "None",
+                "ComprehensiveDeductible": "None",
+                "RentalLimit": "None",
+                "TowingLimit": "None",
+                "GapCoverage": False,
+                "CustomEquipmentValue": 0,
+                "SafetyGlassCoverage": False,
+            }
 
 def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocationResult:
     payload = InsuranceStateInput.model_validate(arguments)
