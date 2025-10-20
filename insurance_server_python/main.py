@@ -408,8 +408,8 @@ class CustomerProfileInput(BaseModel):
     contact_information: ContactInformationInput = Field(
         default_factory=ContactInformationInput, alias="ContactInformation"
     )
-    prior_insurance_information: PriorInsuranceInformationInput = Field(
-        ..., alias="PriorInsuranceInformation"
+    prior_insurance_information: Optional[PriorInsuranceInformationInput] = Field(
+        default=None, alias="PriorInsuranceInformation"
     )
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
