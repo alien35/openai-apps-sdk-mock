@@ -842,62 +842,6 @@ class PolicyCoveragesInput(BaseModel):
     )(_strip_string)
 
 
-class CarrierProductQuestionInput(BaseModel):
-    id: str = Field(..., alias="Id")
-    value: str = Field(..., alias="Value")
-
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
-
-    _strip_id = field_validator("id", mode="before")(_strip_string)
-    _strip_value = field_validator("value", mode="before")(_strip_string)
-
-
-class CarrierProductInput(BaseModel):
-    agency_id: Optional[str] = Field(default=None, alias="AgencyId")
-    product_id: Optional[str] = Field(default=None, alias="ProductId")
-    product_name: Optional[str] = Field(default=None, alias="ProductName")
-    carrier_user_name: Optional[str] = Field(default=None, alias="CarrierUserName")
-    carrier_password: Optional[str] = Field(default=None, alias="CarrierPassword")
-    producer_code: Optional[str] = Field(default=None, alias="ProducerCode")
-    carrier_login_user_name: Optional[str] = Field(
-        default=None, alias="CarrierLoginUserName"
-    )
-    carrier_login_password: Optional[str] = Field(
-        default=None, alias="CarrierLoginPassword"
-    )
-    carrier_id: Optional[str] = Field(default=None, alias="CarrierId")
-    carrier_name: Optional[str] = Field(default=None, alias="CarrierName")
-    product_questions: Optional[Dict[str, CarrierProductQuestionInput]] = Field(
-        default=None, alias="ProductQuestions"
-    )
-
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
-
-    _strip_agency = field_validator("agency_id", mode="before")(_strip_string)
-    _strip_product_id = field_validator("product_id", mode="before")(_strip_string)
-    _strip_product_name = field_validator("product_name", mode="before")(_strip_string)
-    _strip_user = field_validator("carrier_user_name", mode="before")(_strip_string)
-    _strip_password = field_validator("carrier_password", mode="before")(_strip_string)
-    _strip_producer = field_validator("producer_code", mode="before")(_strip_string)
-    _strip_login_user = field_validator(
-        "carrier_login_user_name", mode="before"
-    )(_strip_string)
-    _strip_login_password = field_validator(
-        "carrier_login_password", mode="before"
-    )(_strip_string)
-    _strip_carrier_id = field_validator("carrier_id", mode="before")(_strip_string)
-    _strip_carrier_name = field_validator("carrier_name", mode="before")(_strip_string)
-
-
-class CarrierInformationInput(BaseModel):
-    use_exact_carrier_info: Optional[bool] = Field(
-        default=None, alias="UseExactCarrierInfo"
-    )
-    products: List[CarrierProductInput] = Field(default_factory=list, alias="Products")
-
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
-
-
 class PersonalAutoCustomerIntake(BaseModel):
     customer: CustomerProfileInput = Field(..., alias="Customer")
 
@@ -961,9 +905,6 @@ class PersonalAutoRateRequest(BaseModel):
     )
     rated_drivers: List[RatedDriverInput] = Field(..., alias="RatedDrivers")
     vehicles: List[VehicleInput] = Field(..., alias="Vehicles")
-    carrier_information: CarrierInformationInput = Field(
-        ..., alias="CarrierInformation"
-    )
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
