@@ -537,7 +537,7 @@ class DriverAttributesInput(BaseModel):
 def _default_driver_attributes() -> DriverAttributesInput:
     return DriverAttributesInput(
         residency_status="Own",
-        residency_type="Home",
+        residency_type="Owner",
         relation="Insured",
         occasional_operator=False,
         property_insurance=False,
@@ -657,14 +657,15 @@ RESIDENCY_STATUS_MAPPINGS: Mapping[str, str] = {
 }
 
 RESIDENCY_TYPE_MAPPINGS: Mapping[str, str] = {
-    "owner": "Home",
-    "owned": "Home",
-    "home": "Home",
-    "house": "Home",
-    "rent": "Apartment",
-    "renter": "Apartment",
-    "rented": "Apartment",
-    "apartment": "Apartment",
+    "owner": "Owner",
+    "owned": "Owner",
+    "home": "Owner",
+    "house": "Owner",
+    "rent": "Tenant",
+    "renter": "Tenant",
+    "rented": "Tenant",
+    "apartment": "Tenant",
+    "tenant": "Tenant",
 }
 
 LIABILITY_BI_LIMIT_MAPPINGS: Mapping[str, str] = {
