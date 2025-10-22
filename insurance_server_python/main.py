@@ -35,6 +35,7 @@ import httpx
 import mcp.types as types
 from mcp.server.fastmcp import FastMCP
 from pydantic import (
+    AliasChoices,
     BaseModel,
     ConfigDict,
     Field,
@@ -1076,6 +1077,18 @@ class PersonalAutoRateRequest(BaseModel):
     _strip_policy_type = field_validator("policy_type", mode="before")(_strip_string)
 
 
+class PersonalAutoRateResultsRequest(BaseModel):
+    identifier: str = Field(
+        ...,
+        alias="Identifier",
+        validation_alias=AliasChoices("Identifier", "Id"),
+    )
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    _strip_identifier = field_validator("identifier", mode="before")(_strip_string)
+
+
 def _sanitize_personal_auto_rate_request(request_body: Dict[str, Any]) -> None:
     effective_date = _ensure_iso_datetime(request_body.get("EffectiveDate"))
     if effective_date:
@@ -1612,6 +1625,57 @@ async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvoc
     }
 
 
+async def _retrieve_personal_auto_rate_results(
+    arguments: Mapping[str, Any]
+) -> ToolInvocationResult:
+    payload = PersonalAutoRateResultsRequest.model_validate(arguments)
+    identifier = payload.identifier
+
+    headers = _personal_auto_rate_headers()
+
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
+            response = await client.get(
+                PERSONAL_AUTO_RATE_RESULTS_ENDPOINT,
+                headers=headers,
+                params={"Id": identifier},
+            )
+    except httpx.HTTPError as exc:  # pragma: no cover - network error handling
+        raise RuntimeError(
+            f"Failed to retrieve personal auto rate results: {exc}"
+        ) from exc
+
+    status_code = response.status_code
+    response_text = response.text
+    rate_results: Any = None
+    if response_text.strip():
+        try:
+            rate_results = response.json()
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise RuntimeError(
+                f"Failed to parse personal auto rate results response: {exc}"
+            ) from exc
+
+    if response.is_error:
+        raise RuntimeError(
+            "Personal auto rate results request failed with "
+            f"status {status_code}: {response_text}"
+        )
+
+    message = f"Retrieved personal auto rate results for {identifier}."
+    if not rate_results:
+        message += " No carrier results were returned."
+
+    return {
+        "structured_content": {
+            "identifier": identifier,
+            "rate_results": rate_results,
+            "status": status_code,
+        },
+        "response_text": message,
+    }
+
+
 mcp = FastMCP(
     name="insurance-python",
     sse_path="/mcp",
@@ -1794,6 +1858,22 @@ def _register_personal_auto_intake_tools() -> None:
             ),
             handler=_request_personal_auto_rate,
             default_response_text="Submitted personal auto rating request.",
+        )
+    )
+
+    register_tool(
+        ToolRegistration(
+            tool=types.Tool(
+                name="retrieve-personal-auto-rate-results",
+                title="Retrieve personal auto rate results",
+                description=(
+                    "Fetch carrier rate results for an existing personal auto quote "
+                    "using its identifier."
+                ),
+                inputSchema=_model_schema(PersonalAutoRateResultsRequest),
+            ),
+            handler=_retrieve_personal_auto_rate_results,
+            default_response_text="Retrieved personal auto rate results.",
         )
     )
 
