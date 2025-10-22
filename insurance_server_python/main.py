@@ -602,6 +602,9 @@ TERM_MAPPINGS: Mapping[str, str] = {
 PAYMENT_METHOD_MAPPINGS: Mapping[str, str] = {
     "eft": "Electronic Funds Transfer",
     "electronicfundstransfer": "Electronic Funds Transfer",
+    "electronicfundtransfer": "Electronic Funds Transfer",
+    "electronicfundtransfers": "Electronic Funds Transfer",
+    "electronicfundstransfers": "Electronic Funds Transfer",
     "bankdraft": "Electronic Funds Transfer",
     "ach": "Electronic Funds Transfer",
     "credit": "Credit Card",
