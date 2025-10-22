@@ -692,16 +692,17 @@ RESIDENCY_STATUS_MAPPINGS: Mapping[str, str] = {
     "renter": "Rent",
 }
 
+# TODO: Fix
 RESIDENCY_TYPE_MAPPINGS: Mapping[str, str] = {
-    "owner": "Owner",
-    "owned": "Owner",
-    "home": "Owner",
-    "house": "Owner",
-    "rent": "Tenant",
-    "renter": "Tenant",
-    "rented": "Tenant",
-    "apartment": "Tenant",
-    "tenant": "Tenant",
+    "owner": "Home",
+    "owned": "Home",
+    "home": "Home",
+    "house": "Home",
+    "rent": "Home",
+    "renter": "Home",
+    "rented": "Home",
+    "apartment": "Home",
+    "tenant": "Home",
 }
 
 LIABILITY_BI_LIMIT_MAPPINGS: Mapping[str, str] = {
@@ -1230,7 +1231,7 @@ def _sanitize_personal_auto_rate_request(request_body: Dict[str, Any]) -> None:
             vehicle.pop("PurchaseType", None)
 
         if not vehicle.get("Vin"):
-            vehicle["Vin"] = "UNKNOWNVIN0000000"
+            vehicle["Vin"] = "2FMPK4J99J"
 
         if not vehicle.get("AssignedDriverId") and default_driver_id is not None:
             vehicle["AssignedDriverId"] = default_driver_id
