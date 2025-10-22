@@ -29,6 +29,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from uuid import uuid4
 
 import httpx
 import mcp.types as types
@@ -344,6 +345,26 @@ def _normalize_enum_value(value: Optional[str], mapping: Mapping[str, str]) -> O
 
     key = "".join(ch for ch in normalized.lower() if ch.isalnum())
     return mapping.get(key, normalized)
+
+
+def generate_quote_identifier(now: Optional[datetime] = None) -> str:
+    """Return a quote identifier that includes a UTC timestamp and random suffix."""
+
+    current = now or datetime.now(timezone.utc)
+    timestamp = current.strftime("%Y%m%d-%H%M%S")
+    random_suffix = uuid4().hex[:12].upper()
+    return f"QUOTE-{timestamp}-{random_suffix}"
+
+
+def _extract_identifier(arguments: Mapping[str, Any]) -> Optional[str]:
+    """Extract a trimmed identifier from tool arguments if present."""
+
+    raw_identifier = arguments.get("Identifier") or arguments.get("identifier")
+    if not isinstance(raw_identifier, str):
+        return None
+
+    normalized = raw_identifier.strip()
+    return normalized.upper() if normalized else None
 
 
 def _normalize_coverage_value(value: Optional[str], mapping: Mapping[str, str]) -> Optional[str]:
@@ -1268,6 +1289,7 @@ def _collect_personal_auto_quote_options(
     except ValidationError as error:
         widget = WIDGETS_BY_ID[INSURANCE_QUOTE_OPTIONS_WIDGET_IDENTIFIER]
         errors = error.errors()
+        identifier = _extract_identifier(arguments) or generate_quote_identifier()
         message = (
             "Let's fill in the quote options using the widget so everything is normalized for the rating request."
         )
@@ -1279,15 +1301,23 @@ def _collect_personal_auto_quote_options(
                 message += f" ({location}: {details})"
 
         return {
-            "structured_content": {"validationErrors": errors},
+            "structured_content": {
+                "validationErrors": errors,
+                "Identifier": identifier,
+            },
             "response_text": message,
             "meta": {
                 **_tool_meta(widget),
                 "openai.com/widget": _embedded_widget_resource(widget).model_dump(mode="json"),
+                "openai/widgetState": {"Identifier": identifier},
             },
         }
 
-    identifier = payload.identifier.strip()
+    identifier = payload.identifier.strip().upper()
+    if not identifier:
+        identifier = generate_quote_identifier()
+    payload = payload.model_copy(update={"identifier": identifier})
+
     if identifier:
         message = f"Captured quote options for {identifier}."
     else:

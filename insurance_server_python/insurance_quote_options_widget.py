@@ -407,8 +407,15 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_HTML = """
     const identifierField = createTextField(
       "insurance-quote-identifier",
       "Quote identifier",
-      "AIS-000123"
+      "Generated automatically"
     );
+    const identifierHint = document.createElement("p");
+    identifierHint.className = "quote-widget__hint";
+    identifierHint.textContent =
+      "Generated automatically when the assistant collects quote options.";
+    identifierField.field.appendChild(identifierHint);
+    identifierField.input.readOnly = true;
+    identifierField.input.setAttribute("aria-readonly", "true");
     const effectiveDateField = createDateField(
       "insurance-quote-effective-date",
       "Effective date"
@@ -497,30 +504,6 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_HTML = """
 
     root.appendChild(container);
 
-    function generateQuoteIdentifier() {
-      const now = new Date();
-      const datePart = now.toISOString().slice(0, 10);
-      let randomPart;
-
-      if (
-        typeof crypto !== "undefined" &&
-        typeof crypto.randomUUID === "function"
-      ) {
-        randomPart = crypto.randomUUID();
-      } else {
-        randomPart = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
-          /[xy]/g,
-          (character) => {
-            const random = Math.floor(Math.random() * 16);
-            const value = character === "x" ? random : (random & 0x3) | 0x8;
-            return value.toString(16);
-          }
-        );
-      }
-
-      return `QUOTE-${datePart}-${randomPart}`.toUpperCase();
-    }
-
     const state = {
       identifier: "",
       effectiveDate: "",
@@ -530,9 +513,6 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_HTML = """
       bumpLimits: "",
       customerDeclinedCredit: null,
     };
-
-    state.identifier = generateQuoteIdentifier();
-    identifierField.input.value = state.identifier;
 
     function normalizeToContractValue(value, map) {
       if (value == null) {
@@ -611,6 +591,9 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_HTML = """
         return;
       }
       const normalized = normalizeStateSnapshot(state);
+      if (!normalized.identifier) {
+        return;
+      }
       const payload = {
         Identifier: normalized.identifier || undefined,
         EffectiveDate: normalized.effectiveDate || undefined,
@@ -651,8 +634,6 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_HTML = """
         setState({ [key]: value });
       });
     }
-
-    attachInputListener(identifierField.input, "identifier", (value) => value.toUpperCase().trim());
 
     effectiveDateField.input.addEventListener("change", () => {
       setState({ effectiveDate: effectiveDateField.input.value });
