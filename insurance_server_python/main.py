@@ -624,6 +624,7 @@ POLICY_TYPE_MAPPINGS: Mapping[str, str] = {
 PURCHASE_TYPE_MAPPINGS: Mapping[str, str] = {
     "own": "Owned",
     "owned": "Owned",
+    "ownedoutright": "Owned",
     "owner": "Owned",
     "finance": "Financed",
     "financed": "Financed",
