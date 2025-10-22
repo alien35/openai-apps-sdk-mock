@@ -649,6 +649,17 @@ RELATION_MAPPINGS: Mapping[str, str] = {
     "other": "Other",
 }
 
+LICENSE_STATUS_MAPPINGS: Mapping[str, str] = {
+    "valid": "Valid",
+    "licensed": "Valid",
+    "licenseddriver": "Valid",
+    "validlicense": "Valid",
+    "full": "Valid",
+    "fulllicense": "Valid",
+    "active": "Valid",
+    "activelicense": "Valid",
+}
+
 RESIDENCY_STATUS_MAPPINGS: Mapping[str, str] = {
     "resident": "Own",
     "householdresident": "Own",
@@ -1163,6 +1174,13 @@ def _sanitize_personal_auto_rate_request(request_body: Dict[str, Any]) -> None:
 
         license_info = driver.setdefault("LicenseInformation", {})
         if isinstance(license_info, dict):
+            license_status = _normalize_enum_value(
+                license_info.get("LicenseStatus"), LICENSE_STATUS_MAPPINGS
+            )
+            if license_status:
+                license_info["LicenseStatus"] = license_status
+            else:
+                license_info.pop("LicenseStatus", None)
             license_info.setdefault("LicenseStatus", "Valid")
             license_info.setdefault("MonthsLicensed", 24)
             license_info.setdefault("MonthsStateLicensed", 24)
