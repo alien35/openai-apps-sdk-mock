@@ -51,6 +51,9 @@ from .insurance_state_widget import INSURANCE_STATE_WIDGET_HTML
 from .insurance_quote_options_widget import (
     INSURANCE_QUOTE_OPTIONS_WIDGET_HTML,
 )
+from .insurance_rate_results_widget import (
+    INSURANCE_RATE_RESULTS_WIDGET_HTML,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -253,6 +256,19 @@ ADDITIONAL_WIDGETS: Tuple[WidgetDefinition, ...] = (
             "Guides the user through selecting normalized personal auto quote options before invoking the rating flow."
         ),
     ),
+    WidgetDefinition(
+        identifier="insurance-rate-results",
+        title="Review personal auto rate results",
+        template_uri="ui://widget/insurance-rate-results.html",
+        invoking="Retrieving personal auto rate results",
+        invoked="Displayed personal auto rate results",
+        html=INSURANCE_RATE_RESULTS_WIDGET_HTML,
+        response_text="Here are the carrier premiums returned for this quote.",
+        input_schema=None,
+        tool_description=(
+            "Summarizes carrier premiums, payment plans, and shared coverages for a personal auto quote."
+        ),
+    ),
 )
 
 widgets: Tuple[WidgetDefinition, ...] = DEFAULT_WIDGETS + ADDITIONAL_WIDGETS
@@ -261,6 +277,8 @@ INSURANCE_STATE_WIDGET_IDENTIFIER = "insurance-state-selector"
 INSURANCE_STATE_WIDGET_TEMPLATE_URI = "ui://widget/insurance-state.html"
 INSURANCE_QUOTE_OPTIONS_WIDGET_IDENTIFIER = "insurance-quote-options"
 INSURANCE_QUOTE_OPTIONS_WIDGET_TEMPLATE_URI = "ui://widget/insurance-quote-options.html"
+INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER = "insurance-rate-results"
+INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI = "ui://widget/insurance-rate-results.html"
 
 
 MIME_TYPE = "text/html+skybridge"
@@ -299,6 +317,21 @@ if INSURANCE_QUOTE_OPTIONS_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
     msg = (
         "Personal auto quote options widget must expose the correct template URI; "
         f"expected '{INSURANCE_QUOTE_OPTIONS_WIDGET_TEMPLATE_URI}' in widgets"
+    )
+    raise RuntimeError(msg)
+
+
+if INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER not in WIDGETS_BY_ID:
+    msg = (
+        "Personal auto rate results widget must be registered; "
+        f"expected identifier '{INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER}' in widgets"
+    )
+    raise RuntimeError(msg)
+
+if INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
+    msg = (
+        "Personal auto rate results widget must expose the correct template URI; "
+        f"expected '{INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI}' in widgets"
     )
     raise RuntimeError(msg)
 
@@ -1785,6 +1818,13 @@ def _register_personal_auto_intake_tools() -> None:
         "openai.com/widget": _embedded_widget_resource(quote_options_widget).model_dump(mode="json"),
     }
 
+    rate_results_widget = WIDGETS_BY_ID[INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER]
+    rate_results_meta = _tool_meta(rate_results_widget)
+    rate_results_default_meta = {
+        **rate_results_meta,
+        "openai.com/widget": _embedded_widget_resource(rate_results_widget).model_dump(mode="json"),
+    }
+
     register_tool(
         ToolRegistration(
             tool=types.Tool(
@@ -1875,9 +1915,11 @@ def _register_personal_auto_intake_tools() -> None:
                     "using its identifier."
                 ),
                 inputSchema=_model_schema(PersonalAutoRateResultsRequest),
+                _meta=rate_results_meta,
             ),
             handler=_retrieve_personal_auto_rate_results,
             default_response_text="Retrieved personal auto rate results.",
+            default_meta=rate_results_default_meta,
         )
     )
 
