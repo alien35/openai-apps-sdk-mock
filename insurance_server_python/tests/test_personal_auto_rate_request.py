@@ -1,10 +1,28 @@
 import unittest
 from copy import deepcopy
+from uuid import UUID
 
 from insurance_server_python.main import (
     PersonalAutoRateResultsRequest,
     _sanitize_personal_auto_rate_request,
+    generate_quote_identifier,
 )
+
+
+class GenerateQuoteIdentifierTests(unittest.TestCase):
+    def test_returns_uuid_uppercase_string(self) -> None:
+        identifier = generate_quote_identifier()
+
+        parsed = UUID(identifier)
+        self.assertEqual(identifier, identifier.upper())
+        self.assertEqual(str(parsed), identifier.lower())
+
+    def test_accepts_optional_now_parameter(self) -> None:
+        """The optional ``now`` parameter remains for compatibility."""
+
+        identifier = generate_quote_identifier(now=None)
+        self.assertEqual(identifier, identifier.upper())
+        UUID(identifier)
 
 
 class PersonalAutoRateRequestSanitizationTests(unittest.TestCase):
@@ -42,18 +60,26 @@ class PersonalAutoRateRequestSanitizationTests(unittest.TestCase):
 class PersonalAutoRateResultsRequestTests(unittest.TestCase):
     def test_accepts_identifier_aliases(self) -> None:
         request = PersonalAutoRateResultsRequest.model_validate(
-            {"Identifier": "QUOTE-001"}
+            {"Identifier": "550e8400-e29b-41d4-a716-446655440000"}
         )
-        self.assertEqual(request.identifier, "QUOTE-001")
+        self.assertEqual(
+            request.identifier, "550e8400-e29b-41d4-a716-446655440000"
+        )
 
-        alternate = PersonalAutoRateResultsRequest.model_validate({"Id": "QUOTE-002"})
-        self.assertEqual(alternate.identifier, "QUOTE-002")
+        alternate = PersonalAutoRateResultsRequest.model_validate(
+            {"Id": "8a1d6956-5c43-4a0d-9b5d-9058f36502cd"}
+        )
+        self.assertEqual(
+            alternate.identifier, "8a1d6956-5c43-4a0d-9b5d-9058f36502cd"
+        )
 
     def test_strips_identifier_value(self) -> None:
         request = PersonalAutoRateResultsRequest.model_validate(
-            {"Identifier": "  QUOTE-003  "}
+            {"Identifier": "  0de7c3bd-1b6a-4cda-8f6c-715f9c03d0be  "}
         )
-        self.assertEqual(request.identifier, "QUOTE-003")
+        self.assertEqual(
+            request.identifier, "0de7c3bd-1b6a-4cda-8f6c-715f9c03d0be"
+        )
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience for direct execution
