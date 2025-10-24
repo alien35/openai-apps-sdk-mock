@@ -349,12 +349,15 @@ def _normalize_enum_value(value: Optional[str], mapping: Mapping[str, str]) -> O
 
 
 def generate_quote_identifier(now: Optional[datetime] = None) -> str:
-    """Return a quote identifier that includes a UTC timestamp and random suffix."""
+    """Return a unique quote identifier."""
 
-    current = now or datetime.now(timezone.utc)
-    timestamp = current.strftime("%Y%m%d-%H%M%S")
-    random_suffix = uuid4().hex[:12].upper()
-    return f"QUOTE-{timestamp}-{random_suffix}"
+    # ``now`` is kept for API compatibility but no longer used: identifiers are
+    # now generated entirely from a random UUID so they do not leak ordering
+    # information and better mirror the production behaviour of the quoting
+    # systems this mock server represents.
+    _ = now  # pragma: no cover - preserved for signature compatibility
+
+    return str(uuid4()).upper()
 
 
 def _extract_identifier(arguments: Mapping[str, Any]) -> Optional[str]:
