@@ -892,8 +892,13 @@ INSURANCE_RATE_RESULTS_WIDGET_HTML = """
           monthly: "Monthly",
         };
         const downPayment = firstFinite(aggregate.downPayments);
-        const installmentCount =
-          firstFinite(aggregate.installmentCounts) ?? firstFinite(aggregate.scheduleCounts);
+        let installmentCount = firstFinite(aggregate.installmentCounts);
+        if (installmentCount === null || installmentCount === undefined) {
+          const fallbackCount = firstFinite(aggregate.scheduleCounts);
+          if (fallbackCount !== null && fallbackCount !== undefined) {
+            installmentCount = fallbackCount;
+          }
+        }
         let installmentAmount = firstFinite(aggregate.installmentAmounts);
         const scheduleSum = firstFinite(aggregate.scheduleSums);
         const totalPremium = firstFinite(aggregate.totals);
@@ -1141,8 +1146,14 @@ INSURANCE_RATE_RESULTS_WIDGET_HTML = """
             if (!current) return key;
             const currentPlan = plans[current];
             const nextPlan = plans[key];
-            const currentTotal = currentPlan.effectiveTotal ?? Infinity;
-            const nextTotal = nextPlan.effectiveTotal ?? Infinity;
+            const currentTotal =
+              currentPlan.effectiveTotal !== null && currentPlan.effectiveTotal !== undefined
+                ? currentPlan.effectiveTotal
+                : Number.POSITIVE_INFINITY;
+            const nextTotal =
+              nextPlan.effectiveTotal !== null && nextPlan.effectiveTotal !== undefined
+                ? nextPlan.effectiveTotal
+                : Number.POSITIVE_INFINITY;
             return nextTotal < currentTotal ? key : current;
           }, null);
 
@@ -1158,11 +1169,21 @@ INSURANCE_RATE_RESULTS_WIDGET_HTML = """
           const lowestMonthlyPlanKey = order.reduce((current, key) => {
             const plan = plans[key];
             if (!plan) return current;
-            const monthlyValue = plan.installmentAmount ?? plan.averageMonthly ?? null;
+            const monthlyValue =
+              plan.installmentAmount !== null && plan.installmentAmount !== undefined
+                ? plan.installmentAmount
+                : plan.averageMonthly !== null && plan.averageMonthly !== undefined
+                ? plan.averageMonthly
+                : null;
             if (monthlyValue === null) return current;
             if (!current) return key;
             const currentPlan = plans[current];
-            const currentValue = currentPlan.installmentAmount ?? currentPlan.averageMonthly ?? null;
+            const currentValue =
+              currentPlan.installmentAmount !== null && currentPlan.installmentAmount !== undefined
+                ? currentPlan.installmentAmount
+                : currentPlan.averageMonthly !== null && currentPlan.averageMonthly !== undefined
+                ? currentPlan.averageMonthly
+                : null;
             if (currentValue === null) return key;
             return monthlyValue < currentValue ? key : current;
           }, null);
@@ -1203,8 +1224,14 @@ INSURANCE_RATE_RESULTS_WIDGET_HTML = """
         }
 
         products.sort((a, b) => {
-          const totalA = a.baseTotal ?? Number.POSITIVE_INFINITY;
-          const totalB = b.baseTotal ?? Number.POSITIVE_INFINITY;
+          const totalA =
+            a.baseTotal !== null && a.baseTotal !== undefined
+              ? a.baseTotal
+              : Number.POSITIVE_INFINITY;
+          const totalB =
+            b.baseTotal !== null && b.baseTotal !== undefined
+              ? b.baseTotal
+              : Number.POSITIVE_INFINITY;
           return totalA - totalB;
         });
 
@@ -1250,7 +1277,12 @@ INSURANCE_RATE_RESULTS_WIDGET_HTML = """
           if (!key) return;
           const plan = product.plans[key];
           if (!plan) return;
-          const value = plan.installmentAmount ?? plan.averageMonthly;
+          const value =
+            plan.installmentAmount !== null && plan.installmentAmount !== undefined
+              ? plan.installmentAmount
+              : plan.averageMonthly !== null && plan.averageMonthly !== undefined
+              ? plan.averageMonthly
+              : null;
           if (value === null) return;
           if (value < bestMonthlyValue) {
             bestMonthlyValue = value;
@@ -1533,7 +1565,8 @@ INSURANCE_RATE_RESULTS_WIDGET_HTML = """
 
         const headline = document.createElement("p");
         headline.className = "product-card__headline";
-        const termLabel = product.termLabel || shared?.termLabel || "term";
+        const sharedTermLabel = shared && shared.termLabel ? shared.termLabel : null;
+        const termLabel = product.termLabel || sharedTermLabel || "term";
         const totalText = product.baseTotal !== null
           ? `${dataModel.formatCurrency(product.baseTotal) || "--"} for ${termLabel}`
           : `Total premium unavailable`;
@@ -1679,7 +1712,8 @@ INSURANCE_RATE_RESULTS_WIDGET_HTML = """
           bestCell.appendChild(amount);
           const note = document.createElement("div");
           note.className = "compare-table__note";
-          const termLabel = product.termLabel || state.shared?.termLabel || "term";
+          const sharedTerm = state.shared && state.shared.termLabel ? state.shared.termLabel : null;
+          const termLabel = product.termLabel || sharedTerm || "term";
           note.textContent = `${bestPlan.displayLabel} • ${termLabel}`;
           bestCell.appendChild(note);
         } else {
@@ -1702,7 +1736,12 @@ INSURANCE_RATE_RESULTS_WIDGET_HTML = """
 
         const monthlyCell = document.createElement("td");
         if (monthlyPlan) {
-          const monthlyAmount = monthlyPlan.installmentAmount ?? monthlyPlan.averageMonthly;
+          const monthlyAmount =
+            monthlyPlan.installmentAmount !== null && monthlyPlan.installmentAmount !== undefined
+              ? monthlyPlan.installmentAmount
+              : monthlyPlan.averageMonthly !== null && monthlyPlan.averageMonthly !== undefined
+              ? monthlyPlan.averageMonthly
+              : null;
           monthlyCell.innerHTML = `<strong>${dataModel.formatCurrency(monthlyAmount) || "--"}</strong>`;
           const note = document.createElement("div");
           note.className = "compare-table__note";
@@ -1743,7 +1782,7 @@ INSURANCE_RATE_RESULTS_WIDGET_HTML = """
       metaEl.innerHTML = "";
       const chips = [];
       if (identifier) chips.push(`Quote ${identifier}`);
-      if (shared?.termLabel) chips.push(shared.termLabel);
+      if (shared && shared.termLabel) chips.push(shared.termLabel);
       if (products.length) chips.push(`${products.length} product${products.length === 1 ? "" : "s"}`);
       const planCount = products.reduce((total, product) => total + Object.keys(product.plans).length, 0);
       if (planCount) chips.push(`${planCount} payment plans`);
@@ -1787,12 +1826,15 @@ INSURANCE_RATE_RESULTS_WIDGET_HTML = """
           : null;
       titleEl.textContent = identifier ? `Quote results — ${identifier}` : "Quote results";
 
-      const statusCode =
-        typeof toolOutput?.status === "number"
-          ? toolOutput.status
-          : typeof toolOutput?.rate_results_status === "number"
-          ? toolOutput.rate_results_status
-          : null;
+      let statusCode = null;
+      if (toolOutput && typeof toolOutput.status === "number") {
+        statusCode = toolOutput.status;
+      } else if (
+        toolOutput &&
+        typeof toolOutput.rate_results_status === "number"
+      ) {
+        statusCode = toolOutput.rate_results_status;
+      }
 
       if (statusCode !== null) {
         statusEl.textContent = `Status ${statusCode}`;
@@ -1815,7 +1857,9 @@ INSURANCE_RATE_RESULTS_WIDGET_HTML = """
       }
     }
 
-    hydrate(window.openai ?? {});
+    const initialGlobals =
+      typeof window !== "undefined" && window.openai ? window.openai : {};
+    hydrate(initialGlobals);
 
     window.addEventListener("openai:set_globals", (event) => {
       const detail = event.detail;
