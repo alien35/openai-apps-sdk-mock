@@ -724,7 +724,9 @@ INSURANCE_RATE_RESULTS_WIDGET_HTML = """
         }
         if (typeof value === "string") {
           const trimmed = value.trim();
-          return trimmed ? trimmed.replace(/[\t\n\r ]+/g, " ") : null;
+          return trimmed
+            ? trimmed.replace(/[\\t\\n\\r ]+/g, " ")
+            : null;
         }
         return null;
       }
@@ -750,7 +752,9 @@ INSURANCE_RATE_RESULTS_WIDGET_HTML = """
 
       function parseMileageAssumption(warnings) {
         for (const warning of warnings) {
-          const match = warning.match(/([0-9][0-9,]*)[\t\n\r ]*(?:mi|mile|miles)/i);
+          const match = warning.match(
+            /([0-9][0-9,]*)[\\t\\n\\r ]*(?:mi|mile|miles)/i,
+          );
           if (match) {
             const numeric = Number.parseInt(match[1].replace(/,/g, ""), 10);
             if (Number.isFinite(numeric)) return numeric;
