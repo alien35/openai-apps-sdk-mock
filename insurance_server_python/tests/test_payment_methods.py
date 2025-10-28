@@ -33,7 +33,21 @@ class PaymentMethodMappingsTests(unittest.TestCase):
 
         _sanitize_personal_auto_rate_request(request_body)
 
-        self.assertEqual(request_body["PaymentMethod"], "Electronic Funds Transfer")
+        self.assertEqual(request_body["PaymentMethod"], "Default")
+
+    def test_invoice_like_values_normalize_to_standard(self) -> None:
+        aliases = [
+            "Invoice",
+            "invoice",
+            "Paper",
+            "Card",
+            "Agency Bill",
+        ]
+
+        for alias in aliases:
+            with self.subTest(alias=alias):
+                normalized = _normalize_enum_value(alias, PAYMENT_METHOD_MAPPINGS)
+                self.assertEqual(normalized, "Standard")
 
 
 if __name__ == "__main__":

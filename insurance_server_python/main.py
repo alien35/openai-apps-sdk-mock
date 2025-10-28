@@ -665,13 +665,29 @@ PAYMENT_METHOD_MAPPINGS: Mapping[str, str] = {
     "electronicfundstransfers": "Electronic Funds Transfer",
     "bankdraft": "Electronic Funds Transfer",
     "ach": "Electronic Funds Transfer",
-    "credit": "Credit Card",
-    "creditcard": "Credit Card",
-    "card": "Credit Card",
-    "debit": "Debit Card",
-    "debitcard": "Debit Card",
-    "cash": "Cash",
-    "moneyorder": "Money Order",
+    "autopay": "Electronic Funds Transfer",
+    "monthlyautopay": "Electronic Funds Transfer",
+    "default": "Default",
+    "standard": "Standard",
+    "invoice": "Standard",
+    "paper": "Standard",
+    "mail": "Standard",
+    "card": "Standard",
+    "credit": "Standard",
+    "creditcard": "Standard",
+    "debit": "Standard",
+    "debitcard": "Standard",
+    "cash": "Standard",
+    "moneyorder": "Standard",
+    "check": "Standard",
+    "agencybill": "Standard",
+    "quarterly": "Standard",
+    "full": "Paid In Full",
+    "fullpay": "Paid In Full",
+    "onepay": "Paid In Full",
+    "singlepay": "Paid In Full",
+    "paidinfull": "Paid In Full",
+    "payinfull": "Paid In Full",
 }
 
 POLICY_TYPE_MAPPINGS: Mapping[str, str] = {
@@ -1172,7 +1188,7 @@ def _sanitize_personal_auto_rate_request(request_body: Dict[str, Any]) -> None:
     if payment_method:
         request_body["PaymentMethod"] = payment_method
     else:
-        request_body.setdefault("PaymentMethod", "Electronic Funds Transfer")
+        request_body.setdefault("PaymentMethod", "Default")
 
     policy_type = _normalize_enum_value(request_body.get("PolicyType"), POLICY_TYPE_MAPPINGS)
     if policy_type:
