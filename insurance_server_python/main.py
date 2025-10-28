@@ -745,6 +745,13 @@ LICENSE_STATUS_MAPPINGS: Mapping[str, str] = {
     "fulllicense": "Valid",
     "active": "Valid",
     "activelicense": "Valid",
+    "unlicensed": "Unlicensed",
+    "nolicense": "Unlicensed",
+    "permit": "Permit",
+    "learnerpermit": "Permit",
+    "expired": "Expired",
+    "revoked": "Revoked",
+    "suspended": "Suspended",
 }
 
 RESIDENCY_STATUS_MAPPINGS: Mapping[str, str] = {
