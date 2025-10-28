@@ -756,6 +756,8 @@ RESIDENCY_STATUS_MAPPINGS: Mapping[str, str] = {
     "notresident": "Rent",
     "rent": "Rent",
     "renter": "Rent",
+    "lease": "Lease",
+    "leased": "Lease",
 }
 
 # The quoting service expects residency types to be one of the enumerated values
