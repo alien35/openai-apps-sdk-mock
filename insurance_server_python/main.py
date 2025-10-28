@@ -381,6 +381,14 @@ def _normalize_enum_value(value: Optional[str], mapping: Mapping[str, str]) -> O
     return mapping.get(key, normalized)
 
 
+def _normalize_relation_value(value: Optional[str]) -> Optional[str]:
+    normalized = _normalize_enum_value(value, RELATION_MAPPINGS)
+    if normalized is None:
+        return None
+
+    return normalized if normalized in RELATION_ALLOWED_VALUES else None
+
+
 def generate_quote_identifier(now: Optional[datetime] = None) -> str:
     """Return a unique quote identifier."""
 
@@ -723,6 +731,16 @@ PURCHASE_TYPE_MAPPINGS: Mapping[str, str] = {
     "leased": "Leased",
 }
 
+RELATION_ALLOWED_VALUES: Tuple[str, ...] = (
+    "Insured",
+    "Spouse",
+    "Child",
+    "Parent",
+    "Other Related",
+    "Other Non Related",
+)
+
+
 RELATION_MAPPINGS: Mapping[str, str] = {
     "self": "Insured",
     "namedinsured": "Insured",
@@ -730,10 +748,35 @@ RELATION_MAPPINGS: Mapping[str, str] = {
     "insured": "Insured",
     "spouse": "Spouse",
     "partner": "Spouse",
+    "domesticpartner": "Spouse",
+    "husband": "Spouse",
+    "wife": "Spouse",
     "child": "Child",
+    "son": "Child",
+    "daughter": "Child",
+    "dependent": "Child",
     "parent": "Parent",
-    "sibling": "Sibling",
-    "other": "Other",
+    "mother": "Parent",
+    "father": "Parent",
+    "guardian": "Parent",
+    "sibling": "Other Related",
+    "brother": "Other Related",
+    "sister": "Other Related",
+    "cousin": "Other Related",
+    "relative": "Other Related",
+    "family": "Other Related",
+    "otherrelated": "Other Related",
+    "grandparent": "Other Related",
+    "grandmother": "Other Related",
+    "grandfather": "Other Related",
+    "inlaw": "Other Related",
+    "friend": "Other Non Related",
+    "roommate": "Other Non Related",
+    "coworker": "Other Non Related",
+    "colleague": "Other Non Related",
+    "othernonrelated": "Other Non Related",
+    "nonrelative": "Other Non Related",
+    "other": "Other Non Related",
 }
 
 LICENSE_STATUS_MAPPINGS: Mapping[str, str] = {
@@ -1281,7 +1324,7 @@ def _sanitize_personal_auto_rate_request(request_body: Dict[str, Any]) -> None:
 
         attributes = driver.get("Attributes")
         if isinstance(attributes, dict):
-            relation = _normalize_enum_value(attributes.get("Relation"), RELATION_MAPPINGS)
+            relation = _normalize_relation_value(attributes.get("Relation"))
             residency_status = _normalize_enum_value(
                 attributes.get("ResidencyStatus"), RESIDENCY_STATUS_MAPPINGS
             )
