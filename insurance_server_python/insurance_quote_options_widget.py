@@ -259,10 +259,10 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_HTML = """
     ];
 
     const PAYMENT_METHOD_OPTIONS = [
+      { value: "Standard", label: "Standard" },
+      { value: "Electronic Funds Transfer", label: "Electronic funds transfer" },
       { value: "Paid In Full", label: "Paid in full" },
-      { value: "Electronic Funds Transfer", label: "Monthly autopay" },
-      { value: "Quarterly", label: "Quarterly" },
-      { value: "Agency Bill", label: "Agency bill" },
+      { value: "Default", label: "Use default" },
     ];
 
     const BUMP_LIMIT_OPTIONS = [
@@ -292,14 +292,27 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_HTML = """
     ]);
 
     const PAYMENT_METHOD_CONTRACT_VALUE_MAP = new Map([
-      ["PAID_IN_FULL", "Paid In Full"],
+      ["STANDARD", "Standard"],
+      ["Standard", "Standard"],
+      ["INVOICE", "Standard"],
+      ["BILL", "Standard"],
+      ["CARD", "Standard"],
+      ["CASH", "Standard"],
+      ["CHECK", "Standard"],
+      ["QUARTERLY", "Standard"],
+      ["Quarterly", "Standard"],
+      ["AGENCY_BILL", "Standard"],
+      ["Agency Bill", "Standard"],
+      ["EFT", "Electronic Funds Transfer"],
+      ["ACH", "Electronic Funds Transfer"],
+      ["AUTOPAY", "Electronic Funds Transfer"],
       ["MONTHLY_AUTOPAY", "Electronic Funds Transfer"],
-      ["QUARTERLY", "Quarterly"],
-      ["AGENCY_BILL", "Agency Bill"],
-      ["Paid In Full", "Paid In Full"],
       ["Electronic Funds Transfer", "Electronic Funds Transfer"],
-      ["Quarterly", "Quarterly"],
-      ["Agency Bill", "Agency Bill"],
+      ["PAID_IN_FULL", "Paid In Full"],
+      ["FULL_PAY", "Paid In Full"],
+      ["Paid In Full", "Paid In Full"],
+      ["DEFAULT", "Default"],
+      ["Default", "Default"],
     ]);
 
     const BUMP_LIMIT_CONTRACT_VALUE_MAP = new Map([
