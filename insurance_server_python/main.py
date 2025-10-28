@@ -682,6 +682,19 @@ POLICY_TYPE_MAPPINGS: Mapping[str, str] = {
     "nonstandard": "Non-Standard",
 }
 
+BUMP_LIMIT_MAPPINGS: Mapping[str, str] = {
+    "nobumping": "No Bumping",
+    "nobump": "No Bumping",
+    "none": "No Bumping",
+    "bumpup": "Bump Up",
+    "raisetorecommended": "Bump Up",
+    "bumpdown": "Bump Down",
+    "matchpriorpolicy": "Bump Down",
+    "matchprior": "Bump Down",
+    "matchprevious": "Bump Down",
+    "matchpreviouspolicy": "Bump Down",
+}
+
 PURCHASE_TYPE_MAPPINGS: Mapping[str, str] = {
     "own": "Owned",
     "owned": "Owned",
@@ -1167,7 +1180,11 @@ def _sanitize_personal_auto_rate_request(request_body: Dict[str, Any]) -> None:
     else:
         request_body.setdefault("PolicyType", "Standard")
 
-    request_body.setdefault("BumpLimits", "None")
+    bump_limits = _normalize_enum_value(request_body.get("BumpLimits"), BUMP_LIMIT_MAPPINGS)
+    if bump_limits:
+        request_body["BumpLimits"] = bump_limits
+    else:
+        request_body.setdefault("BumpLimits", "No Bumping")
 
     customer = request_body.get("Customer")
     customer_state: Optional[str] = None
