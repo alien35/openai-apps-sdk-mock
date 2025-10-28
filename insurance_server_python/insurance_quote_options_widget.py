@@ -266,9 +266,9 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_HTML = """
     ];
 
     const BUMP_LIMIT_OPTIONS = [
-      { value: "", label: "No automatic bump" },
+      { value: "No Bumping", label: "No bumping" },
       { value: "Bump Up", label: "Raise to recommended" },
-      { value: "Match Prior Policy", label: "Match prior policy" },
+      { value: "Bump Down", label: "Lower if required" },
     ];
 
     const POLICY_TYPE_CONTRACT_VALUE_MAP = new Map([
@@ -304,10 +304,21 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_HTML = """
 
     const BUMP_LIMIT_CONTRACT_VALUE_MAP = new Map([
       ["", ""],
-      ["RAISE_TO_RECOMMENDED", "Bump Up"],
-      ["MATCH_PREVIOUS", "Match Prior Policy"],
+      ["NONE", "No Bumping"],
+      ["None", "No Bumping"],
+      ["no bumping", "No Bumping"],
+      ["NO_BUMPING", "No Bumping"],
+      ["No Bumping", "No Bumping"],
       ["Bump Up", "Bump Up"],
-      ["Match Prior Policy", "Match Prior Policy"],
+      ["bump up", "Bump Up"],
+      ["BUMP_UP", "Bump Up"],
+      ["RAISE_TO_RECOMMENDED", "Bump Up"],
+      ["Bump Down", "Bump Down"],
+      ["bump down", "Bump Down"],
+      ["BUMP_DOWN", "Bump Down"],
+      ["MATCH_PREVIOUS", "Bump Down"],
+      ["MATCH PRIOR POLICY", "Bump Down"],
+      ["Match Prior Policy", "Bump Down"],
     ]);
 
     const container = document.createElement("div");
