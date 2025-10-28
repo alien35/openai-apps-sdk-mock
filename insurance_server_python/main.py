@@ -595,7 +595,7 @@ class DriverAttributesInput(BaseModel):
 def _default_driver_attributes() -> DriverAttributesInput:
     return DriverAttributesInput(
         residency_status="Own",
-        residency_type="Owner",
+        residency_type="Home",
         relation="Insured",
         occasional_operator=False,
         property_insurance=False,
@@ -729,17 +729,36 @@ RESIDENCY_STATUS_MAPPINGS: Mapping[str, str] = {
     "renter": "Rent",
 }
 
-# TODO: Fix
+# The quoting service expects residency types to be one of the enumerated values
+# below.  We normalise common phrases and synonyms to those canonical labels so
+# callers can provide more natural language inputs without violating the
+# contract enforced by the upstream service.
 RESIDENCY_TYPE_MAPPINGS: Mapping[str, str] = {
+    # Detached homes / ownership scenarios
     "owner": "Home",
     "owned": "Home",
     "home": "Home",
     "house": "Home",
-    "rent": "Home",
-    "renter": "Home",
-    "rented": "Home",
-    "apartment": "Home",
-    "tenant": "Home",
+    "singlefamily": "Home",
+    "singlefamilyhome": "Home",
+    "primaryresidence": "Home",
+    # Multi-unit rentals
+    "apartment": "Apartment",
+    "apt": "Apartment",
+    "apartmentunit": "Apartment",
+    "flat": "Apartment",
+    # Condominiums
+    "condo": "Condo",
+    "condominium": "Condo",
+    # Mobile homes
+    "mobilehome": "Mobile Home",
+    "mobile": "Mobile Home",
+    "trailer": "Mobile Home",
+    "manufacturedhome": "Mobile Home",
+    # Fixed mobile homes
+    "fixedmobilehome": "Fixed Mobile Home",
+    "fixedmanufacturedhome": "Fixed Mobile Home",
+    "permanentmobilehome": "Fixed Mobile Home",
 }
 
 LIABILITY_BI_LIMIT_MAPPINGS: Mapping[str, str] = {
