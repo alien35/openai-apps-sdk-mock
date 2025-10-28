@@ -73,14 +73,14 @@ def _sample_rate_results() -> Dict[str, Any]:
             {
                 **base,
                 "PlanName": "Full Pay",
-                "PaymentMethod": "Invoice",
+                "PaymentMethod": "Paid In Full",
                 "DownPayment": total,
                 "InstallmentCount": 0,
             },
             {
                 **base,
                 "PlanName": "Monthly Card",
-                "PaymentMethod": "Credit Card",
+                "PaymentMethod": "Standard",
                 "DownPayment": down,
                 "InstallmentCount": 5,
                 "InstallmentAmount": monthly,
@@ -96,7 +96,7 @@ def _sample_rate_results() -> Dict[str, Any]:
             {
                 **base,
                 "PlanName": "Monthly Invoice",
-                "PaymentMethod": "Invoice",
+                "PaymentMethod": "Default",
                 "DownPayment": down,
                 "InstallmentCount": 5,
                 "InstallmentAmount": invoice,
