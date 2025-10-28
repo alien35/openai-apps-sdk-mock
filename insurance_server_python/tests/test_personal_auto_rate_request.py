@@ -40,6 +40,30 @@ class PersonalAutoRateRequestSanitizationTests(unittest.TestCase):
                 license_info = request_body["RatedDrivers"][0]["LicenseInformation"]
                 self.assertEqual(license_info["LicenseStatus"], "Valid")
 
+    def test_normalizes_all_license_status_enums(self) -> None:
+        statuses = {
+            "Valid": ("Valid", "valid", "ACTIVE"),
+            "Unlicensed": ("Unlicensed", "unlicensed", "no license"),
+            "Permit": ("Permit", "permit", "learner permit"),
+            "Expired": ("Expired", "expired"),
+            "Revoked": ("Revoked", "revoked"),
+            "Suspended": ("Suspended", "suspended"),
+        }
+
+        for expected, inputs in statuses.items():
+            for status in inputs:
+                with self.subTest(status=status, expected=expected):
+                    request_body = {
+                        "RatedDrivers": [
+                            {"LicenseInformation": {"LicenseStatus": status}},
+                        ]
+                    }
+
+                    _sanitize_personal_auto_rate_request(request_body)
+
+                    license_info = request_body["RatedDrivers"][0]["LicenseInformation"]
+                    self.assertEqual(license_info["LicenseStatus"], expected)
+
     def test_defaults_license_status_when_missing(self) -> None:
         cases = (
             {"LicenseInformation": {}},
