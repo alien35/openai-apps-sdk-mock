@@ -457,7 +457,7 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     function renderOptions() {
       const term = input.value.trim().toLowerCase();
-      const matches = term
+      const PRODUCTS = term
         ? STATES.filter(
             (state) =>
               state.nameLower.includes(term) || state.codeLower.includes(term)
@@ -466,7 +466,7 @@ INSURANCE_STATE_WIDGET_HTML = """
 
       options.innerHTML = "";
 
-      if (!matches.length) {
+      if (!PRODUCTS.length) {
         const empty = document.createElement("div");
         empty.className = "insurance-widget__empty";
         empty.textContent = "No states match your search.";
@@ -474,30 +474,30 @@ INSURANCE_STATE_WIDGET_HTML = """
         return;
       }
 
-      matches.forEach((state) => {
+      PRODUCTS.forEach((option) => {
         const button = document.createElement("button");
         button.type = "button";
         button.className = "insurance-widget__option";
-        button.setAttribute("data-state-code", state.code);
+        button.setAttribute("data-state-code", option.code);
         button.setAttribute("role", "option");
         button.setAttribute(
           "aria-selected",
-          state.code === selectedCode ? "true" : "false"
+          option.code === selectedCode ? "true" : "false"
         );
 
         const nameSpan = document.createElement("span");
-        nameSpan.textContent = state.name;
+        nameSpan.textContent = option.name;
 
         const codeSpan = document.createElement("span");
         codeSpan.className = "insurance-widget__option-code";
-        codeSpan.textContent = state.code;
+        codeSpan.textContent = option.code;
 
         button.appendChild(nameSpan);
         button.appendChild(codeSpan);
 
         button.addEventListener("click", () => {
-          updateSelectionDisplay(state.code);
-          pushWidgetState(state);
+          updateSelectionDisplay(option.code);
+          pushWidgetState(option);
           input.focus();
         });
 
