@@ -48,7 +48,7 @@ Follow this quick validation list if the insurance picker does not appear in you
 1. **Confirm the widget is registered.** `list_tools`, `list_resources`, or `list_resource_templates` should include `insurance-state-selector` with the template URI `ui://widget/insurance-state.html`.
 2. **Restart the Python server.** Run `uvicorn insurance_server_python.main:app --host 0.0.0.0 --port 8000` after pulling changes so the updated handlers and HTML load.
 3. **Point the client at the Python endpoint.** Update your MCP client configuration to use the `insurance-python` server you just restarted, then reload the session so the tool list refreshes.
-4. **Invoke the tool manually.** Issue a `call_tool` request with `{"name": "insurance-state-selector", "arguments": {}}` to bring up the dropdown UI. Passing `{ "state": "CA" }` or `{ "state": "California" }` should pre-select California and return the normalized long-form name in `structuredContent`.
+4. **Invoke the tool manually.** Issue a `call_tool` request with `{"name": "insurance-state-selector", "arguments": {}}` to bring up the dropdown UI. Passing `{ "state": "CA", "insuranceType": "personal-auto", "zipCode": "94107" }` should pre-select California, choose personal auto insurance, and return normalized values (`state`, `insuranceType`, and `zipCode`) in `structuredContent`.
 
 If those steps succeed but the picker still fails to render during normal conversations, verify your client isn't caching an older tool schema and that the request identifier matches `insurance-state-selector` exactly.
 

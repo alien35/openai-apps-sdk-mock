@@ -30,6 +30,7 @@ import logging
 import os
 from pathlib import Path
 from uuid import uuid4
+import re
 
 import httpx
 import mcp.types as types
@@ -174,6 +175,30 @@ STATE_NAME_TO_ABBREVIATION: Dict[str, str] = {
 }
 
 
+INSURANCE_TYPE_ALLOWED_VALUES: Dict[str, str] = {
+    "personal-auto": "Personal auto",
+    "homeowners": "Homeowners",
+    "renters": "Renters",
+}
+
+INSURANCE_TYPE_MAPPINGS: Dict[str, str] = {
+    "auto": "personal-auto",
+    "car": "personal-auto",
+    "personalauto": "personal-auto",
+    "personalautos": "personal-auto",
+    "personal-auto": "personal-auto",
+    "home": "homeowners",
+    "homeowner": "homeowners",
+    "homeowners": "homeowners",
+    "property": "homeowners",
+    "rent": "renters",
+    "renter": "renters",
+    "renters": "renters",
+}
+
+ZIP_CODE_NORMALIZATION_PATTERN = re.compile(r"\D")
+
+
 def normalize_state_name(value: Optional[str]) -> Optional[str]:
     """Normalize state values to their canonical long-form name."""
 
@@ -218,7 +243,19 @@ INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
                 "Two-letter abbreviations like \"CA\" are also accepted and normalized."
             ),
             "minLength": 2,
-        }
+        },
+        "insuranceType": {
+            "type": "string",
+            "description": "Type of insurance to quote (personal-auto, homeowners, renters).",
+            "enum": sorted(INSURANCE_TYPE_ALLOWED_VALUES.keys()),
+        },
+        "zipCode": {
+            "type": "string",
+            "description": "Customer ZIP code (5 digits or ZIP+4).",
+            "pattern": r"^\\d{5}(?:-\\d{4})?$",
+            "minLength": 5,
+            "maxLength": 10,
+        },
     },
     "required": [],
     "additionalProperties": False,
@@ -347,7 +384,21 @@ class InsuranceStateInput(BaseModel):
         ),
     )
 
-    model_config = ConfigDict(extra="forbid")
+    insurance_type: Optional[str] = Field(
+        default=None,
+        alias="insuranceType",
+        description="Type of insurance to quote. Supported values: personal-auto, homeowners, renters.",
+    )
+
+    zip_code: Optional[str] = Field(
+        default=None,
+        alias="zipCode",
+        min_length=5,
+        max_length=10,
+        description="Customer ZIP code (5 digits or ZIP+4).",
+    )
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     @field_validator("state", mode="before")
     @classmethod
@@ -360,6 +411,42 @@ class InsuranceStateInput(BaseModel):
     @classmethod
     def _normalize_state(cls, value: Optional[str]) -> Optional[str]:
         return normalize_state_name(value)
+
+    @field_validator("insurance_type", mode="before")
+    @classmethod
+    def _normalize_insurance_type(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise TypeError("insuranceType must be a string")
+
+        normalized = _normalize_enum_value(value, INSURANCE_TYPE_MAPPINGS)
+        if normalized is None:
+            return None
+        if normalized not in INSURANCE_TYPE_ALLOWED_VALUES:
+            allowed = ", ".join(sorted(INSURANCE_TYPE_ALLOWED_VALUES))
+            raise ValueError(f"insuranceType must be one of: {allowed}")
+        return normalized
+
+    @field_validator("zip_code", mode="before")
+    @classmethod
+    def _normalize_zip(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise TypeError("zipCode must be a string")
+
+        stripped = value.strip()
+        if not stripped:
+            return None
+
+        digits = ZIP_CODE_NORMALIZATION_PATTERN.sub("", stripped)
+        if len(digits) == 5:
+            return digits
+        if len(digits) == 9:
+            return f"{digits[:5]}-{digits[5:]}"
+
+        raise ValueError("zipCode must be a valid 5-digit or ZIP+4 code")
 
 
 def _strip_string(value: Any) -> Any:
@@ -1424,12 +1511,25 @@ def _sanitize_personal_auto_rate_request(request_body: Dict[str, Any]) -> None:
 def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocationResult:
     payload = InsuranceStateInput.model_validate(arguments)
     state = payload.state
+    insurance_type = payload.insurance_type
+    zip_code = payload.zip_code
+
+    structured_content: Dict[str, Any] = {}
     if state:
-        # State captured: return structured content but explicitly override meta
-        # to suppress the widget in this response.
+        structured_content["state"] = state
+    if insurance_type:
+        structured_content["insuranceType"] = insurance_type
+    if zip_code:
+        structured_content["zipCode"] = zip_code
+
+    if state and insurance_type and zip_code:
+        insurance_label = INSURANCE_TYPE_ALLOWED_VALUES.get(insurance_type, insurance_type)
+        response_text = (
+            f"Captured {insurance_label} insurance details for {state} (ZIP {zip_code})."
+        )
         return {
-            "structured_content": {"state": state},
-            "response_text": f"Captured {state} as the customer's state.",
+            "structured_content": structured_content,
+            "response_text": response_text,
             "meta": {
                 # Turn off widget production for this result
                 "openai/resultCanProduceWidget": False,
@@ -1438,10 +1538,10 @@ def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocatio
             },
         }
 
-    # No state yet: return the widget meta so the client can render the picker
+    # Details missing: return the widget meta so the client can render the picker
     widget = WIDGETS_BY_ID[INSURANCE_STATE_WIDGET_IDENTIFIER]
     return {
-        "structured_content": {},
+        "structured_content": structured_content,
         "meta": {
             **_tool_meta(widget),
             "openai.com/widget": _embedded_widget_resource(widget).model_dump(mode="json"),
