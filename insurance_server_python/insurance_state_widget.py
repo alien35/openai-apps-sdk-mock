@@ -10,258 +10,223 @@ INSURANCE_STATE_WIDGET_HTML = """
   #insurance-state-root {
     font-family: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont,
       "Helvetica Neue", Arial, sans-serif;
-    color: rgba(0, 0, 0, 0.82);
+    color: #0f172a;
   }
 
   @media (prefers-color-scheme: dark) {
     #insurance-state-root {
-      color: rgba(255, 255, 255, 0.88);
+      color: #f8fafc;
     }
   }
 
-  .insurance-widget {
-    background: rgba(255, 255, 255, 0.94);
-    border-radius: 20px;
-    border: 1px solid rgba(15, 23, 42, 0.08);
-    padding: 24px;
+  .mercury-widget {
+    position: relative;
+    overflow: hidden;
+    border-radius: 28px;
+    border: 1px solid rgba(15, 23, 42, 0.14);
+    min-height: 320px;
+    padding: 32px;
+    display: flex;
+    align-items: center;
+    isolation: isolate;
+    background: radial-gradient(circle at 18% 24%, rgba(30, 64, 175, 0.9), rgba(15, 23, 42, 0.95));
+    color: #fff;
+  }
+
+  .mercury-widget::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(120deg, rgba(15, 23, 42, 0.3) 10%, rgba(15, 23, 42, 0.75) 65%, rgba(15, 23, 42, 0.95)),
+      url("https://persistent.oaistatic.com/mercury/hero-family.webp");
+    background-size: cover;
+    background-position: center;
+    z-index: -2;
+  }
+
+  .mercury-widget::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(15, 23, 42, 0.85) 12%, rgba(15, 23, 42, 0.45) 100%);
+    z-index: -1;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .mercury-widget {
+      border-color: rgba(148, 163, 184, 0.32);
+      background: radial-gradient(circle at 12% 20%, rgba(59, 130, 246, 0.18), rgba(15, 23, 42, 0.95));
+    }
+
+    .mercury-widget::before {
+      opacity: 0.45;
+    }
+
+    .mercury-widget::after {
+      background: linear-gradient(0deg, rgba(15, 23, 42, 0.85) 8%, rgba(15, 23, 42, 0.4) 100%);
+    }
+  }
+
+  .mercury-widget__content {
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .mercury-widget__eyebrow {
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    font-weight: 600;
+    color: rgba(165, 243, 252, 0.85);
+  }
+
+  .mercury-widget__headline {
+    margin: 0;
+    font-weight: 800;
+    line-height: 1.1;
+    font-size: clamp(26px, 3.2vw, 36px);
+  }
+
+  .mercury-widget__headline strong {
+    color: rgba(252, 211, 77, 0.95);
+  }
+
+  .mercury-widget__subhead {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.86);
+  }
+
+  .mercury-widget__form {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    box-shadow: 0 18px 48px rgba(15, 23, 42, 0.12);
   }
 
-  @media (prefers-color-scheme: dark) {
-    .insurance-widget {
-      background: rgba(15, 23, 42, 0.92);
-      border-color: rgba(255, 255, 255, 0.12);
-      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
-    }
+  .mercury-widget__fields {
+    display: grid;
+    grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr);
+    gap: 12px;
   }
 
-  .insurance-widget__eyebrow {
-    text-transform: uppercase;
-    font-size: 11px;
-    letter-spacing: 0.14em;
-    font-weight: 600;
-    color: rgba(99, 102, 241, 0.9);
-  }
-
-  .insurance-widget__title {
-    font-size: 20px;
-    line-height: 1.3;
-    font-weight: 700;
-    margin: 0;
-  }
-
-  .insurance-widget__description {
-    margin: 0;
-    font-size: 14px;
-    line-height: 1.6;
-    color: rgba(15, 23, 42, 0.74);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .insurance-widget__description {
-      color: rgba(226, 232, 240, 0.72);
-    }
-  }
-
-  .insurance-widget__search {
+  .mercury-widget__field {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
 
-  .insurance-widget__label {
+  .mercury-widget__label {
     font-size: 13px;
     font-weight: 600;
-    color: rgba(15, 23, 42, 0.72);
+    color: rgba(226, 232, 240, 0.82);
   }
 
-  @media (prefers-color-scheme: dark) {
-    .insurance-widget__label {
-      color: rgba(226, 232, 240, 0.78);
-    }
-  }
-
-  .insurance-widget__input {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border: 1px solid rgba(15, 23, 42, 0.12);
-    border-radius: 12px;
-    padding: 0 14px;
-    background: rgba(255, 255, 255, 0.96);
-    transition: border 120ms ease, box-shadow 120ms ease;
-  }
-
-  .insurance-widget__input:focus-within {
-    border-color: rgba(99, 102, 241, 0.65);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .insurance-widget__input {
-      background: rgba(15, 23, 42, 0.88);
-      border-color: rgba(148, 163, 184, 0.28);
-    }
-
-    .insurance-widget__input:focus-within {
-      border-color: rgba(99, 102, 241, 0.8);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.28);
-    }
-  }
-
-  .insurance-widget__input input {
-    width: 100%;
+  .mercury-widget__control {
+    height: 48px;
+    border-radius: 14px;
     border: none;
-    outline: none;
-    height: 42px;
-    background: transparent;
-    color: inherit;
-    font-size: 14px;
-  }
-
-  .insurance-widget__input input::placeholder {
-    color: rgba(15, 23, 42, 0.45);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .insurance-widget__input input::placeholder {
-      color: rgba(226, 232, 240, 0.45);
-    }
-  }
-
-  .insurance-widget__options {
-    border: 1px solid rgba(15, 23, 42, 0.08);
-    border-radius: 12px;
-    padding: 4px;
-    max-height: 240px;
-    overflow-y: auto;
-    display: grid;
-    gap: 4px;
-    background: rgba(248, 250, 252, 0.72);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .insurance-widget__options {
-      border-color: rgba(148, 163, 184, 0.24);
-      background: rgba(30, 41, 59, 0.72);
-    }
-  }
-
-  .insurance-widget__option {
-    border: none;
-    background: rgba(255, 255, 255, 0.96);
-    color: inherit;
-    border-radius: 10px;
-    padding: 10px 12px;
-    text-align: left;
-    font-size: 14px;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-    transition: background 120ms ease, transform 120ms ease;
-  }
-
-  .insurance-widget__option:hover,
-  .insurance-widget__option:focus-visible {
-    background: rgba(99, 102, 241, 0.12);
-    transform: translateY(-1px);
-    outline: none;
-  }
-
-  .insurance-widget__option.is-selected {
-    background: linear-gradient(90deg, rgba(99, 102, 241, 0.22), rgba(79, 70, 229, 0.26));
-    box-shadow: inset 0 0 0 1px rgba(79, 70, 229, 0.32);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .insurance-widget__option {
-      background: rgba(15, 23, 42, 0.92);
-    }
-
-    .insurance-widget__option:hover,
-    .insurance-widget__option:focus-visible {
-      background: rgba(129, 140, 248, 0.22);
-    }
-
-    .insurance-widget__option.is-selected {
-      background: linear-gradient(90deg, rgba(129, 140, 248, 0.32), rgba(99, 102, 241, 0.38));
-      box-shadow: inset 0 0 0 1px rgba(165, 180, 252, 0.55);
-    }
-  }
-
-  .insurance-widget__option-code {
+    padding: 0 16px;
+    font-size: 15px;
     font-weight: 600;
-    font-size: 12px;
-    color: rgba(79, 70, 229, 0.9);
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.2);
   }
 
-  @media (prefers-color-scheme: dark) {
-    .insurance-widget__option-code {
-      color: rgba(165, 180, 252, 0.9);
-    }
+  .mercury-widget__control:focus {
+    outline: 3px solid rgba(59, 130, 246, 0.4);
+    outline-offset: 0;
   }
 
-  .insurance-widget__selection {
-    font-size: 13px;
-    color: rgba(15, 23, 42, 0.68);
+  .mercury-widget__control::placeholder {
+    color: rgba(51, 65, 85, 0.48);
   }
 
-  @media (prefers-color-scheme: dark) {
-    .insurance-widget__selection {
-      color: rgba(226, 232, 240, 0.7);
-    }
-  }
-
-  .insurance-widget__confirm {
+  .mercury-widget__button {
+    height: 52px;
+    border-radius: 16px;
     border: none;
-    border-radius: 12px;
-    padding: 12px 16px;
-    background: linear-gradient(135deg, #6366f1, #4338ca);
-    color: #fff;
-    font-weight: 600;
-    font-size: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    background: linear-gradient(90deg, #fde68a, #fbbf24, #f59e0b);
+    box-shadow: 0 18px 32px rgba(250, 204, 21, 0.35);
     cursor: pointer;
-    transition: transform 150ms ease, box-shadow 150ms ease;
+    transition: transform 160ms ease, box-shadow 160ms ease;
   }
 
-  .insurance-widget__confirm:hover:not([aria-disabled="true"]) {
+  .mercury-widget__button:hover:not([aria-disabled="true"]) {
     transform: translateY(-1px);
-    box-shadow: 0 12px 28px rgba(79, 70, 229, 0.32);
+    box-shadow: 0 20px 40px rgba(250, 204, 21, 0.45);
   }
 
-  .insurance-widget__confirm[aria-disabled="true"] {
-    background: rgba(148, 163, 184, 0.5);
+  .mercury-widget__button[aria-disabled="true"] {
+    opacity: 0.6;
     cursor: not-allowed;
     box-shadow: none;
   }
 
-  .insurance-widget__footnote {
-    margin: 0;
-    font-size: 12px;
-    color: rgba(15, 23, 42, 0.5);
+  .mercury-widget__error {
+    font-size: 13px;
+    color: #fee2e2;
+    min-height: 18px;
   }
 
-  @media (prefers-color-scheme: dark) {
-    .insurance-widget__footnote {
-      color: rgba(148, 163, 184, 0.65);
+  .mercury-widget__footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.82);
+  }
+
+  .mercury-widget__footer a {
+    color: inherit;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .mercury-widget__footer a:hover {
+    text-decoration: underline;
+  }
+
+  .mercury-widget__footnote {
+    font-size: 11px;
+    color: rgba(226, 232, 240, 0.75);
+    margin: 0;
+  }
+
+  @media (max-width: 640px) {
+    .mercury-widget {
+      padding: 24px;
+      border-radius: 22px;
+    }
+
+    .mercury-widget__fields {
+      grid-template-columns: 1fr;
     }
   }
 
-  .insurance-widget__empty {
-    padding: 16px 12px;
-    font-size: 13px;
-    text-align: center;
-    color: rgba(15, 23, 42, 0.55);
-  }
-
   @media (prefers-color-scheme: dark) {
-    .insurance-widget__empty {
-      color: rgba(226, 232, 240, 0.6);
+    .mercury-widget__label {
+      color: rgba(203, 213, 225, 0.92);
+    }
+
+    .mercury-widget__control {
+      background: rgba(226, 232, 240, 0.96);
+      color: #0f172a;
+    }
+
+    .mercury-widget__button {
+      color: #78350f;
+    }
+
+    .mercury-widget__error {
+      color: #fecaca;
     }
   }
 </style>
@@ -322,296 +287,353 @@ INSURANCE_STATE_WIDGET_HTML = """
       { code: "WV", name: "West Virginia" },
       { code: "WI", name: "Wisconsin" },
       { code: "WY", name: "Wyoming" }
-    ].map((state) => ({
-      ...state,
-      nameLower: state.name.toLowerCase(),
-      codeLower: state.code.toLowerCase(),
-    }));
+    ];
+
+    const PRODUCTS = [
+      { value: "auto", label: "Auto Insurance" },
+      { value: "home", label: "Home Insurance" },
+      { value: "renters", label: "Renters Insurance" },
+      { value: "condo", label: "Condo Insurance" },
+      { value: "umbrella", label: "Umbrella Insurance" }
+    ];
 
     const container = document.createElement("div");
-    container.className = "insurance-widget";
+    container.className = "mercury-widget";
+
+    const content = document.createElement("div");
+    content.className = "mercury-widget__content";
 
     const eyebrow = document.createElement("span");
-    eyebrow.className = "insurance-widget__eyebrow";
-    eyebrow.textContent = "Insurance quote";
+    eyebrow.className = "mercury-widget__eyebrow";
+    eyebrow.textContent = "Drivers save";
 
-    const title = document.createElement("h2");
-    title.className = "insurance-widget__title";
-    title.textContent = "Where should we quote coverage?";
+    const headline = document.createElement("h2");
+    headline.className = "mercury-widget__headline";
+    headline.innerHTML = "Drivers save <strong>hundreds*</strong> when switching to Mercury Insurance";
 
-    const description = document.createElement("p");
-    description.className = "insurance-widget__description";
-    description.textContent =
-      "Insurance availability and pricing vary by state. Tell us where you live so we can pull the right plans.";
+    const subhead = document.createElement("p");
+    subhead.className = "mercury-widget__subhead";
+    subhead.textContent = "Enter your details below to jump straight into your Mercury quote.";
 
-    const searchBlock = document.createElement("div");
-    searchBlock.className = "insurance-widget__search";
+    const form = document.createElement("form");
+    form.className = "mercury-widget__form";
+    form.setAttribute("novalidate", "novalidate");
 
-    const label = document.createElement("label");
-    label.className = "insurance-widget__label";
-    label.setAttribute("for", "insurance-state-search");
-    label.textContent = "Search for your state";
+    const fields = document.createElement("div");
+    fields.className = "mercury-widget__fields";
 
-    const inputWrapper = document.createElement("div");
-    inputWrapper.className = "insurance-widget__input";
+    const productField = document.createElement("div");
+    productField.className = "mercury-widget__field";
+    const productLabel = document.createElement("label");
+    productLabel.className = "mercury-widget__label";
+    productLabel.setAttribute("for", "mercury-product");
+    productLabel.textContent = "Insurance product";
+    const productSelect = document.createElement("select");
+    productSelect.id = "mercury-product";
+    productSelect.className = "mercury-widget__control";
+    PRODUCTS.forEach((option) {
+      const opt = document.createElement("option");
+      opt.value = option.value;
+      opt.textContent = option.label;
+      productSelect.appendChild(opt);
+    });
+    productField.appendChild(productLabel);
+    productField.appendChild(productSelect);
 
-    const input = document.createElement("input");
-    input.id = "insurance-state-search";
-    input.setAttribute("placeholder", "Type a state name or abbreviation");
-    input.setAttribute("autocomplete", "off");
-    input.setAttribute("aria-controls", "insurance-state-options");
-    inputWrapper.appendChild(input);
+    const stateField = document.createElement("div");
+    stateField.className = "mercury-widget__field";
+    const stateLabel = document.createElement("label");
+    stateLabel.className = "mercury-widget__label";
+    stateLabel.setAttribute("for", "mercury-state");
+    stateLabel.textContent = "Your state";
+    const stateSelect = document.createElement("select");
+    stateSelect.id = "mercury-state";
+    stateSelect.className = "mercury-widget__control";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select a state";
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    stateSelect.appendChild(placeholder);
+    STATES.forEach((state) => {
+      const opt = document.createElement("option");
+      opt.value = state.code;
+      opt.textContent = `${state.name} (${state.code})`;
+      stateSelect.appendChild(opt);
+    });
+    stateField.appendChild(stateLabel);
+    stateField.appendChild(stateSelect);
 
-    const options = document.createElement("div");
-    options.id = "insurance-state-options";
-    options.className = "insurance-widget__options";
-    options.setAttribute("role", "listbox");
-    options.setAttribute("aria-label", "State options");
+    const zipField = document.createElement("div");
+    zipField.className = "mercury-widget__field";
+    const zipLabel = document.createElement("label");
+    zipLabel.className = "mercury-widget__label";
+    zipLabel.setAttribute("for", "mercury-zip");
+    zipLabel.textContent = "Zip code";
+    const zipInput = document.createElement("input");
+    zipInput.id = "mercury-zip";
+    zipInput.className = "mercury-widget__control";
+    zipInput.type = "text";
+    zipInput.inputMode = "numeric";
+    zipInput.placeholder = "Enter ZIP";
+    zipInput.setAttribute("maxlength", "10");
+    zipField.appendChild(zipLabel);
+    zipField.appendChild(zipInput);
 
-    const selection = document.createElement("div");
-    selection.className = "insurance-widget__selection";
+    const zipError = document.createElement("div");
+    zipError.className = "mercury-widget__error";
 
-    const confirm = document.createElement("button");
-    confirm.type = "button";
-    confirm.className = "insurance-widget__confirm";
-    confirm.textContent = "Share state with the assistant";
-    confirm.setAttribute("aria-disabled", "true");
-    confirm.disabled = true;
+    const button = document.createElement("button");
+    button.type = "submit";
+    button.className = "mercury-widget__button";
+    button.textContent = "Get a quote";
+    button.setAttribute("aria-disabled", "true");
+    button.disabled = true;
+
+    const footer = document.createElement("div");
+    footer.className = "mercury-widget__footer";
+    footer.innerHTML = `Or call <a href="tel:18009563728">(800) 956-3728</a> · <a href="https://www.mercuryinsurance.com/agent" target="_blank" rel="noopener">Find an agent</a> · <a href="https://www.mercuryinsurance.com/payment" target="_blank" rel="noopener">Make a one-time payment</a>`;
 
     const footnote = document.createElement("p");
-    footnote.className = "insurance-widget__footnote";
-    footnote.textContent =
-      "We’ll tailor the follow-up questions once we know your location.";
+    footnote.className = "mercury-widget__footnote";
+    footnote.textContent = "*Savings data based on Mercury internal analysis.";
 
-    searchBlock.appendChild(label);
-    searchBlock.appendChild(inputWrapper);
+    fields.appendChild(productField);
+    fields.appendChild(stateField);
+    fields.appendChild(zipField);
 
-    container.appendChild(eyebrow);
-    container.appendChild(title);
-    container.appendChild(description);
-    container.appendChild(searchBlock);
-    container.appendChild(options);
-    container.appendChild(selection);
-    container.appendChild(confirm);
-    container.appendChild(footnote);
+    form.appendChild(fields);
+    form.appendChild(zipError);
+    form.appendChild(button);
 
+    content.appendChild(eyebrow);
+    content.appendChild(headline);
+    content.appendChild(subhead);
+    content.appendChild(form);
+    content.appendChild(footer);
+    content.appendChild(footnote);
+
+    container.appendChild(content);
     root.appendChild(container);
 
-    let selectedCode = null;
     let isSending = false;
 
-    function getStateByCode(code) {
+    function findState(code) {
       if (!code) return null;
       return STATES.find((state) => state.code === code.toUpperCase()) ?? null;
     }
 
-    function getStateByName(name) {
-      if (!name) return null;
-      const normalized = name.trim().toLowerCase();
-      if (!normalized) return null;
-      return (
-        STATES.find((state) => state.nameLower === normalized) ??
-        STATES.find((state) => state.codeLower === normalized) ??
-        null
-      );
+    function getGlobals() {
+      if (typeof window === "undefined" || !window.openai) return {};
+      return window.openai;
     }
 
-    function getStateByValue(value) {
-      return getStateByCode(value) ?? getStateByName(value);
-    }
-
-    function updateSelectionDisplay(code) {
-      const state = getStateByValue(code);
-      selectedCode = state ? state.code : null;
-      if (state) {
-        selection.textContent =
-          "Selected state: " + state.name + " (" + state.code + ")";
-        confirm.disabled = false;
-        confirm.setAttribute("aria-disabled", "false");
-      } else {
-        selection.textContent = "No state selected yet.";
-        confirm.disabled = true;
-        confirm.setAttribute("aria-disabled", "true");
-      }
-
-      Array.from(options.querySelectorAll("[data-state-code]"))
-        .forEach((button) => {
-          const codeAttr = button.getAttribute("data-state-code");
-          const isSelected = codeAttr === selectedCode;
-          button.classList.toggle("is-selected", isSelected);
-          button.setAttribute("aria-selected", isSelected ? "true" : "false");
-        });
-    }
-
-    function pushWidgetState(state) {
-      if (!window.openai || typeof window.openai.setWidgetState !== "function") {
-        return;
-      }
-      if (!state) return;
+    function persistWidgetState() {
+      const globals = getGlobals();
+      if (!globals || typeof globals.setWidgetState !== "function") return;
+      const state = stateSelect.value;
+      const stateMeta = findState(state);
+      const payload = {
+        state: stateMeta ? stateMeta.name : state || null,
+        stateCode: stateMeta ? stateMeta.code : state || null,
+        zip: zipInput.value.trim(),
+        product: productSelect.value,
+      };
       try {
-        void window.openai.setWidgetState({ state: state.name });
+        void globals.setWidgetState(payload);
       } catch (error) {
         console.warn("Failed to persist widget state", error);
       }
     }
 
-    function renderOptions() {
-      const term = input.value.trim().toLowerCase();
-      const matches = term
-        ? STATES.filter(
-            (state) =>
-              state.nameLower.includes(term) || state.codeLower.includes(term)
-          )
-        : STATES;
+    function validateZip(value) {
+      if (!value) return false;
+      const trimmed = value.trim();
+      return /^[0-9]{5}(?:-[0-9]{4})?$/.test(trimmed);
+    }
 
-      options.innerHTML = "";
+    function updateButtonState() {
+      const hasState = !!stateSelect.value;
+      const zipValid = validateZip(zipInput.value);
+      const enabled = hasState && zipValid && !isSending;
+      button.disabled = !enabled;
+      button.setAttribute("aria-disabled", enabled ? "false" : "true");
+      if (!zipValid && zipInput.value.trim().length > 0) {
+        zipError.textContent = "Enter a valid 5-digit ZIP (optionally with +4).";
+      } else {
+        zipError.textContent = "";
+      }
+    }
 
-      if (!matches.length) {
-        const empty = document.createElement("div");
-        empty.className = "insurance-widget__empty";
-        empty.textContent = "No states match your search.";
-        options.appendChild(empty);
+    function openQuote(url) {
+      const globals = getGlobals();
+      if (globals && typeof globals.openExternal === "function") {
+        globals.openExternal({ href: url });
+        return;
+      }
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+
+    async function notifyAssistant(stateMeta, zip, product) {
+      const globals = getGlobals();
+      if (!globals || typeof globals.sendFollowUpMessage !== "function") return;
+      const prettyState = stateMeta ? `${stateMeta.name} (${stateMeta.code})` : stateSelect.value;
+      const message = `I'm starting a Mercury ${product} insurance quote for ${prettyState} at ZIP ${zip}.`;
+      try {
+        await globals.sendFollowUpMessage({ prompt: message });
+      } catch (error) {
+        console.warn("Failed to notify assistant", error);
+      }
+    }
+
+    stateSelect.addEventListener("change", () => {
+      persistWidgetState();
+      updateButtonState();
+    });
+
+    productSelect.addEventListener("change", () => {
+      persistWidgetState();
+    });
+
+    zipInput.addEventListener("input", () => {
+      persistWidgetState();
+      updateButtonState();
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (isSending) return;
+      const selectedState = findState(stateSelect.value);
+      const zip = zipInput.value.trim();
+      const product = productSelect.value || "auto";
+      if (!selectedState || !validateZip(zip)) {
+        updateButtonState();
         return;
       }
 
-      matches.forEach((state) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "insurance-widget__option";
-        button.setAttribute("data-state-code", state.code);
-        button.setAttribute("role", "option");
-        button.setAttribute(
-          "aria-selected",
-          state.code === selectedCode ? "true" : "false"
-        );
+      const url = `https://buy.mercuryinsurance.com/${product}/create?zip=${encodeURIComponent(zip)}&state=${encodeURIComponent(selectedState.code)}`;
 
-        const nameSpan = document.createElement("span");
-        nameSpan.textContent = state.name;
-
-        const codeSpan = document.createElement("span");
-        codeSpan.className = "insurance-widget__option-code";
-        codeSpan.textContent = state.code;
-
-        button.appendChild(nameSpan);
-        button.appendChild(codeSpan);
-
-        button.addEventListener("click", () => {
-          updateSelectionDisplay(state.code);
-          pushWidgetState(state);
-          input.focus();
-        });
-
-        options.appendChild(button);
-      });
-    }
-
-    function sendSelectionToAssistant(state) {
-      if (!window.openai || typeof window.openai.sendFollowUpMessage !== "function") {
-        return Promise.resolve();
-      }
-      if (!state) return Promise.resolve();
-      const prompt =
-        "My state for insurance purposes is " +
-        state.name +
-        " (" +
-        state.code +
-        ").";
-      return window.openai.sendFollowUpMessage({ prompt });
-    }
-
-    confirm.addEventListener("click", async () => {
-      if (!selectedCode || isSending) return;
-      const state = getStateByCode(selectedCode);
-      if (!state) return;
       isSending = true;
-      confirm.textContent = "Sending to assistant…";
-      confirm.setAttribute("aria-disabled", "true");
-      confirm.disabled = true;
+      button.textContent = "Opening quote…";
+      updateButtonState();
 
       try {
-        pushWidgetState(state);
-        await sendSelectionToAssistant(state);
-      } catch (error) {
-        console.warn("Failed to share state with assistant", error);
+        openQuote(url);
+        await notifyAssistant(selectedState, zip, productSelect.options[productSelect.selectedIndex].textContent || product);
       } finally {
         isSending = false;
-        confirm.textContent = "Share state with the assistant";
-        updateSelectionDisplay(selectedCode);
+        button.textContent = "Get a quote";
+        updateButtonState();
       }
     });
 
-    input.addEventListener("input", () => {
-      renderOptions();
-    });
-
-    input.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" && !event.shiftKey) {
-        const topMatch = options.querySelector("[data-state-code]");
-        if (topMatch) {
-          topMatch.click();
-          event.preventDefault();
-        }
-      }
-    });
-
-    const initialFromState = (() => {
-      const globals = window.openai ?? {};
-      const widgetState =
-        globals.widgetState && typeof globals.widgetState === "object"
-          ? globals.widgetState
-          : null;
-      const toolOutput =
-        globals.toolOutput && typeof globals.toolOutput === "object"
-          ? globals.toolOutput
-          : null;
-      const stateValue =
-        (toolOutput && typeof toolOutput.state === "string"
-          ? toolOutput.state
-          : null) ||
-        (widgetState && typeof widgetState.state === "string"
-          ? widgetState.state
-          : null);
-      return typeof stateValue === "string" ? stateValue : null;
+    const globals = getGlobals();
+    const initialStateValue = (() => {
+      const toolOutput = globals.toolOutput && typeof globals.toolOutput === "object" ? globals.toolOutput : null;
+      const widgetState = globals.widgetState && typeof globals.widgetState === "object" ? globals.widgetState : null;
+      const stateFromTool = toolOutput && typeof toolOutput.stateCode === "string" ? toolOutput.stateCode : null;
+      const stateFromWidget = widgetState && typeof widgetState.stateCode === "string" ? widgetState.stateCode : null;
+      const fallbackName = toolOutput && typeof toolOutput.state === "string" ? toolOutput.state : null;
+      const fallbackWidgetName = widgetState && typeof widgetState.state === "string" ? widgetState.state : null;
+      return stateFromTool || stateFromWidget || fallbackName || fallbackWidgetName || "";
     })();
 
-    renderOptions();
-    const initialState = getStateByValue(initialFromState);
-    updateSelectionDisplay(initialState ? initialState.code : null);
+    const initialZipValue = (() => {
+      const toolOutput = globals.toolOutput && typeof globals.toolOutput === "object" ? globals.toolOutput : null;
+      const widgetState = globals.widgetState && typeof globals.widgetState === "object" ? globals.widgetState : null;
+      const fromTool = toolOutput && typeof toolOutput.zip === "string" ? toolOutput.zip : null;
+      const fromWidget = widgetState && typeof widgetState.zip === "string" ? widgetState.zip : null;
+      return fromTool || fromWidget || "";
+    })();
 
-    if (initialState) {
-      pushWidgetState(initialState);
+    const initialProductValue = (() => {
+      const toolOutput = globals.toolOutput && typeof globals.toolOutput === "object" ? globals.toolOutput : null;
+      const widgetState = globals.widgetState && typeof globals.widgetState === "object" ? globals.widgetState : null;
+      const fromTool = toolOutput && typeof toolOutput.product === "string" ? toolOutput.product : null;
+      const fromWidget = widgetState && typeof widgetState.product === "string" ? widgetState.product : null;
+      return fromTool || fromWidget || "auto";
+    })();
+
+    const normalizedInitialState = (() => {
+      if (!initialStateValue) return "";
+      const fromCode = findState(initialStateValue);
+      if (fromCode) return fromCode.code;
+      const normalized = STATES.find((state) => state.name.toLowerCase() === String(initialStateValue).toLowerCase());
+      return normalized ? normalized.code : "";
+    })();
+
+    if (normalizedInitialState) {
+      stateSelect.value = normalizedInitialState;
     }
+
+    if (initialZipValue) {
+      zipInput.value = initialZipValue;
+    }
+
+    if (initialProductValue) {
+      const exists = PRODUCTS.some((item) => item.value === initialProductValue);
+      productSelect.value = exists ? initialProductValue : "auto";
+    }
+
+    persistWidgetState();
+    updateButtonState();
 
     window.addEventListener("openai:set_globals", (event) => {
       const detail = event.detail;
       if (!detail || !detail.globals) return;
-      const globals = detail.globals;
-      const maybeState = (() => {
-        if (
-          globals.toolOutput &&
-          typeof globals.toolOutput === "object" &&
-          globals.toolOutput !== null &&
-          typeof globals.toolOutput.state === "string"
-        ) {
-          return globals.toolOutput.state;
-        }
-        if (
-          globals.widgetState &&
-          typeof globals.widgetState === "object" &&
-          globals.widgetState !== null &&
-          typeof globals.widgetState.state === "string"
-        ) {
-          return globals.widgetState.state;
-        }
-        return null;
-      })();
+      const { globals: updated } = detail;
 
-      if (typeof maybeState === "string") {
-        const normalized = getStateByValue(maybeState);
-        if (normalized && normalized.code !== selectedCode) {
-          updateSelectionDisplay(normalized.code);
+      if (updated.toolOutput && typeof updated.toolOutput === "object" && updated.toolOutput !== null) {
+        if (typeof updated.toolOutput.stateCode === "string") {
+          const state = findState(updated.toolOutput.stateCode);
+          if (state) {
+            stateSelect.value = state.code;
+          }
+        } else if (typeof updated.toolOutput.state === "string") {
+          const state = findState(updated.toolOutput.state) || STATES.find((item) => item.name === updated.toolOutput.state);
+          if (state) {
+            stateSelect.value = state.code;
+          }
+        }
+
+        if (typeof updated.toolOutput.zip === "string") {
+          zipInput.value = updated.toolOutput.zip;
+        }
+
+        if (typeof updated.toolOutput.product === "string") {
+          const exists = PRODUCTS.some((item) => item.value === updated.toolOutput.product);
+          if (exists) {
+            productSelect.value = updated.toolOutput.product;
+          }
         }
       }
+
+      if (updated.widgetState && typeof updated.widgetState === "object" && updated.widgetState !== null) {
+        if (typeof updated.widgetState.stateCode === "string") {
+          const state = findState(updated.widgetState.stateCode);
+          if (state) {
+            stateSelect.value = state.code;
+          }
+        } else if (typeof updated.widgetState.state === "string") {
+          const state = findState(updated.widgetState.state) || STATES.find((item) => item.name === updated.widgetState.state);
+          if (state) {
+            stateSelect.value = state.code;
+          }
+        }
+
+        if (typeof updated.widgetState.zip === "string") {
+          zipInput.value = updated.widgetState.zip;
+        }
+
+        if (typeof updated.widgetState.product === "string") {
+          const exists = PRODUCTS.some((item) => item.value === updated.widgetState.product);
+          if (exists) {
+            productSelect.value = updated.widgetState.product;
+          }
+        }
+      }
+
+      updateButtonState();
     });
   })();
 </script>
