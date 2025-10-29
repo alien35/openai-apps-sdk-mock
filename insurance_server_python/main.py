@@ -69,7 +69,7 @@ class WidgetDefinition:
     invoking: str
     invoked: str
     html: str
-    response_text: str
+    response_text: Optional[str]
     input_schema: Optional[Dict[str, Any]]
     tool_description: Optional[str] = None
 
@@ -92,7 +92,7 @@ class ToolRegistration:
 
     tool: types.Tool
     handler: ToolHandler
-    default_response_text: str
+    default_response_text: Optional[str]
     default_meta: Optional[Dict[str, Any]] = None
 
 
@@ -233,8 +233,7 @@ DEFAULT_WIDGETS: Tuple[WidgetDefinition, ...] = (
         invoking="Collecting a customer's state",
         invoked="Captured the customer's state",
         html=INSURANCE_STATE_WIDGET_HTML,
-        response_text=
-            "Let's confirm the customer's state so we can gather their driver and vehicle details for the quote.",
+        response_text=None,
         input_schema=INSURANCE_STATE_INPUT_SCHEMA,
         tool_description=
             "Collects the customer's U.S. state so the assistant can continue gathering driver and vehicle information for their AIS auto quote.",
@@ -1443,9 +1442,6 @@ def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocatio
     widget = WIDGETS_BY_ID[INSURANCE_STATE_WIDGET_IDENTIFIER]
     return {
         "structured_content": {},
-        "response_text": (
-            "Let's confirm the customer's state so we can gather their driver and vehicle details for the quote."
-        ),
         "meta": {
             **_tool_meta(widget),
             "openai.com/widget": _embedded_widget_resource(widget).model_dump(mode="json"),
@@ -2146,12 +2142,15 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
 
     handler_payload: ToolInvocationResult = handler_result or {}
     structured_content = handler_payload.get("structured_content") or {}
-    response_text = (
-        handler_payload.get("response_text") or registration.default_response_text
-    )
+    response_text = handler_payload.get("response_text")
+    if response_text is None:
+        response_text = registration.default_response_text
     content = handler_payload.get("content")
     if content is None:
-        content = [types.TextContent(type="text", text=response_text)]
+        if response_text is not None:
+            content = [types.TextContent(type="text", text=response_text)]
+        else:
+            content = []
     meta = handler_payload.get("meta") or registration.default_meta
 
     return types.ServerResult(
