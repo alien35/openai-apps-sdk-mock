@@ -39,6 +39,18 @@ This boots a FastAPI app with uvicorn on `http://127.0.0.1:8000` (equivalently `
 - `GET /mcp` exposes the SSE stream.
 - `POST /mcp/messages?sessionId=...` accepts follow-up messages for an active session.
 
+### Enable debug logging
+
+The insurance tool handlers now emit structured INFO/DEBUG messages (including request identifiers) whenever the state selector validates input or falls back to the widget. To surface those logs while testing, set the `INSURANCE_LOG_LEVEL` environment variable before starting the server:
+
+```bash
+INSURANCE_LOG_LEVEL=DEBUG python main.py
+# or when running uvicorn directly
+INSURANCE_LOG_LEVEL=DEBUG uvicorn insurance_server_python.main:app --host 0.0.0.0 --port 8000
+```
+
+`LOG_LEVEL` or `UVICORN_LOG_LEVEL` are also honored if you already export those in your environment.
+
 Cross-origin requests are allowed so you can drive the server from local tooling or the MCP Inspector. Each tool returns structured content and metadata that point to the insurance widget shell so the Apps SDK can hydrate the UI alongside assistant responses.
 
 ## Insurance state selector checklist

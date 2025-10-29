@@ -61,6 +61,23 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
+_configured_log_level = (
+    os.getenv("INSURANCE_LOG_LEVEL")
+    or os.getenv("LOG_LEVEL")
+    or os.getenv("UVICORN_LOG_LEVEL")
+    or "INFO"
+)
+try:
+    _log_level_value = getattr(logging, _configured_log_level.upper(), logging.INFO)
+except AttributeError:  # pragma: no cover - defensive guard for unexpected values
+    _log_level_value = logging.INFO
+
+root_logger = logging.getLogger()
+if not root_logger.handlers:
+    logging.basicConfig(level=_log_level_value)
+
+logger.setLevel(_log_level_value)
+
 
 @dataclass(frozen=True)
 class WidgetDefinition:
@@ -496,6 +513,34 @@ def _extract_identifier(arguments: Mapping[str, Any]) -> Optional[str]:
 
     normalized = raw_identifier.strip()
     return normalized.upper() if normalized else None
+
+
+def _extract_request_id(arguments: Mapping[str, Any]) -> Optional[str]:
+    """Best-effort extraction of an OpenAI request identifier."""
+
+    candidate_keys = (
+        "openai/requestId",
+        "openai.toolInvocation/requestId",
+        "requestId",
+        "request_id",
+    )
+
+    for key in candidate_keys:
+        value = arguments.get(key)
+        if isinstance(value, str):
+            normalized = value.strip()
+            if normalized:
+                return normalized
+
+    nested_keys = ("openai", "metadata", "meta", "context")
+    for key in nested_keys:
+        nested = arguments.get(key)
+        if isinstance(nested, Mapping):
+            nested_id = _extract_request_id(nested)
+            if nested_id:
+                return nested_id
+
+    return None
 
 
 def _normalize_coverage_value(value: Optional[str], mapping: Mapping[str, str]) -> Optional[str]:
@@ -1509,7 +1554,20 @@ def _sanitize_personal_auto_rate_request(request_body: Dict[str, Any]) -> None:
             }
 
 def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocationResult:
-    payload = InsuranceStateInput.model_validate(arguments)
+    widget_identifier = INSURANCE_STATE_WIDGET_IDENTIFIER
+    request_id = _extract_request_id(arguments) or "<unknown>"
+
+    try:
+        payload = InsuranceStateInput.model_validate(arguments)
+    except ValidationError as error:
+        logger.info(
+            "Insurance state widget validation failed for %s (request_id=%s): %s",
+            widget_identifier,
+            request_id,
+            error.errors(),
+        )
+        raise
+
     state = payload.state
     insurance_type = payload.insurance_type
     zip_code = payload.zip_code
@@ -1527,6 +1585,14 @@ def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocatio
         response_text = (
             f"Captured {insurance_label} insurance details for {state} (ZIP {zip_code})."
         )
+        logger.info(
+            "Insurance state widget accepted input for %s (request_id=%s): state=%s, insurance_type=%s, zip=%s",
+            widget_identifier,
+            request_id,
+            state,
+            insurance_type,
+            zip_code,
+        )
         return {
             "structured_content": structured_content,
             "response_text": response_text,
@@ -1540,6 +1606,14 @@ def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocatio
 
     # Details missing: return the widget meta so the client can render the picker
     widget = WIDGETS_BY_ID[INSURANCE_STATE_WIDGET_IDENTIFIER]
+    logger.debug(
+        "Insurance state widget returning selector for %s (request_id=%s): state=%s, insurance_type=%s, zip=%s",
+        widget_identifier,
+        request_id,
+        state,
+        insurance_type,
+        zip_code,
+    )
     return {
         "structured_content": structured_content,
         "meta": {
