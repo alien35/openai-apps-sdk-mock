@@ -330,6 +330,34 @@ INSURANCE_STATE_WIDGET_HTML = """
     const root = document.getElementById("insurance-state-root");
     if (!root) return;
 
+    const LOG_PREFIX = "[insurance-state-widget]";
+
+    function notifyIssue(level, message, error) {
+      const fullMessage = `${LOG_PREFIX} ${message}`;
+      const reporter =
+        window.openai && typeof window.openai.reportError === "function"
+          ? window.openai.reportError
+          : null;
+
+      if (reporter) {
+        try {
+          reporter(fullMessage);
+        } catch (reportError) {
+          console.error(`${LOG_PREFIX} Failed to report widget issue`, reportError);
+        }
+      }
+
+      const logArgs = error ? [fullMessage, error] : [fullMessage];
+      if (level === "error") {
+        console.error(...logArgs);
+      } else {
+        console.warn(...logArgs);
+      }
+    }
+
+    let missingSetWidgetStateNotified = false;
+    let missingSendFollowUpNotified = false;
+
     const STATES = [
       { code: "AL", name: "Alabama" },
       { code: "AK", name: "Alaska" },
@@ -622,6 +650,13 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     function pushWidgetState(state) {
       if (!window.openai || typeof window.openai.setWidgetState !== "function") {
+        if (!missingSetWidgetStateNotified) {
+          notifyIssue(
+            "warn",
+            "OpenAI setWidgetState helper is unavailable; insurance selections will not persist to the assistant."
+          );
+          missingSetWidgetStateNotified = true;
+        }
         return;
       }
 
@@ -644,7 +679,11 @@ INSURANCE_STATE_WIDGET_HTML = """
       try {
         void window.openai.setWidgetState(payload);
       } catch (error) {
-        console.warn("Failed to persist widget state", error);
+        notifyIssue(
+          "error",
+          "Failed to persist insurance widget state details to the assistant.",
+          error
+        );
       }
     }
 
@@ -748,6 +787,13 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     function sendSelectionToAssistant(state) {
       if (!window.openai || typeof window.openai.sendFollowUpMessage !== "function") {
+        if (!missingSendFollowUpNotified) {
+          notifyIssue(
+            "warn",
+            "OpenAI sendFollowUpMessage helper is unavailable; the assistant will not receive insurance preferences from the widget."
+          );
+          missingSendFollowUpNotified = true;
+        }
         return Promise.resolve();
       }
       if (!state || !selectedInsuranceType || !normalizedZipCode) {
@@ -787,7 +833,11 @@ INSURANCE_STATE_WIDGET_HTML = """
         pushWidgetState(state);
         await sendSelectionToAssistant(state);
       } catch (error) {
-        console.warn("Failed to share state with assistant", error);
+        notifyIssue(
+          "error",
+          `Failed to share insurance preferences for ${state.name} (${normalizedZipCode}).`,
+          error
+        );
       } finally {
         isSending = false;
         confirm.textContent = DEFAULT_CONFIRM_TEXT;
