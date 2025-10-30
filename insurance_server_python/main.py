@@ -252,29 +252,7 @@ def state_abbreviation(value: Optional[str]) -> Optional[str]:
 
 INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
     "type": "object",
-    "properties": {
-        "state": {
-            "type": "string",
-            "description": (
-                "Full U.S. state or District of Columbia name (for example, \"California\"). "
-                "Two-letter abbreviations like \"CA\" are also accepted and normalized."
-            ),
-            "minLength": 2,
-        },
-        "insuranceType": {
-            "type": "string",
-            "description": "Type of insurance to quote (personal-auto, homeowners, renters).",
-            "enum": sorted(INSURANCE_TYPE_ALLOWED_VALUES.keys()),
-        },
-        "zipCode": {
-            "type": "string",
-            "description": "Customer ZIP code (5 digits or ZIP+4).",
-            "pattern": r"^\\d{5}(?:-\\d{4})?$",
-            "minLength": 5,
-            "maxLength": 10,
-        },
-    },
-    "required": [],
+    "properties": {},
     "additionalProperties": False,
 }
 
@@ -392,78 +370,7 @@ if INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
 class InsuranceStateInput(BaseModel):
     """Schema for the insurance state selector tool."""
 
-    state: Optional[str] = Field(
-        default=None,
-        min_length=2,
-        description=(
-            "Full U.S. state or District of Columbia name (for example, \"California\"). "
-            "Two-letter abbreviations like \"CA\" are also accepted and normalized."
-        ),
-    )
-
-    insurance_type: Optional[str] = Field(
-        default=None,
-        alias="insuranceType",
-        description="Type of insurance to quote. Supported values: personal-auto, homeowners, renters.",
-    )
-
-    zip_code: Optional[str] = Field(
-        default=None,
-        alias="zipCode",
-        min_length=5,
-        max_length=10,
-        description="Customer ZIP code (5 digits or ZIP+4).",
-    )
-
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
-
-    @field_validator("state", mode="before")
-    @classmethod
-    def _strip_state(cls, value: Optional[str]) -> Optional[str]:
-        if value is None or not isinstance(value, str):
-            return value
-        return value.strip()
-
-    @field_validator("state")
-    @classmethod
-    def _normalize_state(cls, value: Optional[str]) -> Optional[str]:
-        return normalize_state_name(value)
-
-    @field_validator("insurance_type", mode="before")
-    @classmethod
-    def _normalize_insurance_type(cls, value: Optional[str]) -> Optional[str]:
-        if value is None:
-            return None
-        if not isinstance(value, str):
-            raise TypeError("insuranceType must be a string")
-
-        normalized = _normalize_enum_value(value, INSURANCE_TYPE_MAPPINGS)
-        if normalized is None:
-            return None
-        if normalized not in INSURANCE_TYPE_ALLOWED_VALUES:
-            allowed = ", ".join(sorted(INSURANCE_TYPE_ALLOWED_VALUES))
-            raise ValueError(f"insuranceType must be one of: {allowed}")
-        return normalized
-
-    @field_validator("zip_code", mode="before")
-    @classmethod
-    def _normalize_zip(cls, value: Optional[str]) -> Optional[str]:
-        if value is None:
-            return None
-        if not isinstance(value, str):
-            raise TypeError("zipCode must be a string")
-
-        stripped = value.strip()
-        if not stripped:
-            return None
-
-        digits = ZIP_CODE_NORMALIZATION_PATTERN.sub("", stripped)
-        if len(digits) == 5:
-            return digits
-        if len(digits) == 9:
-            return f"{digits[:5]}-{digits[5:]}"
-
-        raise ValueError("zipCode must be a valid 5-digit or ZIP+4 code")
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
 
 def _strip_string(value: Any) -> Any:
@@ -1558,7 +1465,7 @@ def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocatio
     request_id = _extract_request_id(arguments) or "<unknown>"
 
     try:
-        payload = InsuranceStateInput.model_validate(arguments)
+        InsuranceStateInput.model_validate(arguments)
     except ValidationError as error:
         logger.info(
             "Insurance state widget validation failed for %s (request_id=%s): %s",
@@ -1568,54 +1475,14 @@ def _insurance_state_tool_handler(arguments: Mapping[str, Any]) -> ToolInvocatio
         )
         raise
 
-    state = payload.state
-    insurance_type = payload.insurance_type
-    zip_code = payload.zip_code
-
-    structured_content: Dict[str, Any] = {}
-    if state:
-        structured_content["state"] = state
-    if insurance_type:
-        structured_content["insuranceType"] = insurance_type
-    if zip_code:
-        structured_content["zipCode"] = zip_code
-
-    if state and insurance_type and zip_code:
-        insurance_label = INSURANCE_TYPE_ALLOWED_VALUES.get(insurance_type, insurance_type)
-        response_text = (
-            f"Captured {insurance_label} insurance details for {state} (ZIP {zip_code})."
-        )
-        logger.info(
-            "Insurance state widget accepted input for %s (request_id=%s): state=%s, insurance_type=%s, zip=%s",
-            widget_identifier,
-            request_id,
-            state,
-            insurance_type,
-            zip_code,
-        )
-        return {
-            "structured_content": structured_content,
-            "response_text": response_text,
-            "meta": {
-                # Turn off widget production for this result
-                "openai/resultCanProduceWidget": False,
-                "openai/widgetAccessible": False,
-                # IMPORTANT: do NOT include "openai.com/widget" here
-            },
-        }
-
-    # Details missing: return the widget meta so the client can render the picker
     widget = WIDGETS_BY_ID[INSURANCE_STATE_WIDGET_IDENTIFIER]
     logger.debug(
-        "Insurance state widget returning selector for %s (request_id=%s): state=%s, insurance_type=%s, zip=%s",
+        "Insurance state widget returning selector for %s (request_id=%s)",
         widget_identifier,
         request_id,
-        state,
-        insurance_type,
-        zip_code,
     )
     return {
-        "structured_content": structured_content,
+        "structured_content": {},
         "meta": {
             **_tool_meta(widget),
             "openai.com/widget": _embedded_widget_resource(widget).model_dump(mode="json"),
