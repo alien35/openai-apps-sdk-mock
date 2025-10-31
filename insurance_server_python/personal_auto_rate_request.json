@@ -1,5 +1,5 @@
 {
-  "BumpLimits": "No Bumping",
+  "BumpLimits": "Bump Up",
   "CarrierInformation": {
     "Products": [
       {
@@ -65,13 +65,12 @@
       "ZipCode": "90210"
     },
     "ContactInformation": {
-      "EmailAddress": "jsmith@gmail.com",
-      "HomePhone": "772-522-1122"
+      "EmailAddress": "jsmith@gmail.com"
     },
     "DeclinedEmail": false,
     "DeclinedPhone": false,
     "FirstName": "John",
-    "Identifier": "CUST-001",
+    "Identifier": "JS-CA-2025",
     "LastName": "Smith",
     "MonthsAtResidence": 24,
     "PriorInsuranceInformation": {
@@ -79,13 +78,13 @@
       "ReasonForNoInsurance": "Other"
     }
   },
-  "EffectiveDate": "2025-10-22T00:00:00Z",
-  "Identifier": "QUOTE-001",
+  "EffectiveDate": "2025-10-28T00:00:00Z",
+  "Identifier": "JS-CA-2025",
   "PaymentMethod": "Electronic Funds Transfer",
   "PolicyCoverages": {
     "AccidentalDeathLimit": "None",
-    "LiabilityBiLimit": "30000/60000",
-    "LiabilityPdLimit": "15000",
+    "LiabilityBiLimit": "15000/30000",
+    "LiabilityPdLimit": "5000",
     "MedPayLimit": "None",
     "UninsuredMotoristBiLimit": "30000/60000",
     "UninsuredMotoristPd/CollisionDamageWaiver": false
@@ -141,9 +140,8 @@
         "ZipCode": "90210"
       },
       "LeasedVehicle": false,
-      "Make": "Toyota",
-      "MilesToWork": 20,
-      "Model": "Camry",
+      "Make": "Honda",
+      "Model": "Civic",
       "PurchaseType": "New",
       "RideShare": false,
       "Salvaged": false,
