@@ -277,27 +277,140 @@ INSURANCE_STATE_WIDGET_HTML = """
     }
   }
 
-  .insurance-widget__confirm {
-    border: none;
-    border-radius: 12px;
-    padding: 12px 16px;
+  .insurance-widget__steps {
+    display: flex;
+    gap: 8px;
+    background: rgba(79, 70, 229, 0.06);
+    padding: 8px;
+    border-radius: 14px;
+  }
+
+  .insurance-widget__step-indicator {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(99, 102, 241, 0.15);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: rgba(79, 70, 229, 0.75);
+    background: rgba(255, 255, 255, 0.72);
+    position: relative;
+    transition: border 150ms ease, background 150ms ease, color 150ms ease,
+      box-shadow 150ms ease;
+  }
+
+  .insurance-widget__step-indicator::before {
+    content: attr(data-step);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.12);
+    color: rgba(67, 56, 202, 0.9);
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  .insurance-widget__step-indicator.is-active {
+    border-color: rgba(99, 102, 241, 0.45);
+    color: rgba(49, 46, 129, 0.92);
+    background: rgba(224, 231, 255, 0.65);
+    box-shadow: 0 10px 22px rgba(99, 102, 241, 0.18);
+  }
+
+  .insurance-widget__step-indicator.is-active::before {
     background: linear-gradient(135deg, #6366f1, #4338ca);
     color: #fff;
+  }
+
+  .insurance-widget__step-indicator.is-complete {
+    background: rgba(224, 231, 255, 0.45);
+    border-color: rgba(99, 102, 241, 0.3);
+    color: rgba(67, 56, 202, 0.85);
+  }
+
+  .insurance-widget__panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .insurance-widget__panel.is-hidden {
+    display: none;
+  }
+
+  .insurance-widget__actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .insurance-widget__actions button {
+    flex-shrink: 0;
+  }
+
+  .insurance-widget__button {
+    border-radius: 12px;
+    padding: 11px 18px;
     font-weight: 600;
     font-size: 14px;
     cursor: pointer;
-    transition: transform 150ms ease, box-shadow 150ms ease;
+    border: 1px solid transparent;
+    transition: transform 150ms ease, box-shadow 150ms ease,
+      background 150ms ease, border 150ms ease;
   }
 
-  .insurance-widget__confirm:hover:not([aria-disabled="true"]) {
+  .insurance-widget__button--secondary {
+    background: rgba(99, 102, 241, 0.08);
+    color: rgba(67, 56, 202, 0.95);
+    border-color: rgba(99, 102, 241, 0.2);
+  }
+
+  .insurance-widget__button--secondary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.15);
+  }
+
+  .insurance-widget__button--primary {
+    background: linear-gradient(135deg, #6366f1, #4338ca);
+    color: #fff;
+    border-color: transparent;
+  }
+
+  .insurance-widget__button--primary:hover:not([aria-disabled="true"]) {
     transform: translateY(-1px);
     box-shadow: 0 12px 28px rgba(79, 70, 229, 0.32);
   }
 
-  .insurance-widget__confirm[aria-disabled="true"] {
-    background: rgba(148, 163, 184, 0.5);
+  .insurance-widget__button[aria-disabled="true"],
+  .insurance-widget__button:disabled {
+    background: rgba(148, 163, 184, 0.4);
+    color: rgba(255, 255, 255, 0.78);
     cursor: not-allowed;
     box-shadow: none;
+    transform: none;
+    border-color: rgba(148, 163, 184, 0.32);
+  }
+
+  .insurance-widget__status {
+    font-size: 13px;
+    min-height: 18px;
+    color: rgba(22, 101, 52, 0.85);
+    background: rgba(187, 247, 208, 0.45);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  .insurance-widget__status[hidden] {
+    display: none;
   }
 
   .insurance-widget__footnote {
@@ -309,6 +422,49 @@ INSURANCE_STATE_WIDGET_HTML = """
   @media (prefers-color-scheme: dark) {
     .insurance-widget__footnote {
       color: rgba(148, 163, 184, 0.65);
+    }
+
+    .insurance-widget__steps {
+      background: rgba(30, 64, 175, 0.22);
+    }
+
+    .insurance-widget__step-indicator {
+      border-color: rgba(129, 140, 248, 0.32);
+      background: rgba(30, 41, 59, 0.85);
+      color: rgba(191, 219, 254, 0.8);
+    }
+
+    .insurance-widget__step-indicator::before {
+      background: rgba(99, 102, 241, 0.25);
+      color: rgba(224, 231, 255, 0.95);
+    }
+
+    .insurance-widget__step-indicator.is-active {
+      background: rgba(79, 70, 229, 0.32);
+      border-color: rgba(129, 140, 248, 0.6);
+      color: rgba(224, 231, 255, 0.95);
+      box-shadow: 0 12px 28px rgba(30, 64, 175, 0.4);
+    }
+
+    .insurance-widget__step-indicator.is-active::before {
+      background: linear-gradient(135deg, rgba(129, 140, 248, 0.92), rgba(99, 102, 241, 0.92));
+    }
+
+    .insurance-widget__step-indicator.is-complete {
+      background: rgba(76, 29, 149, 0.3);
+      border-color: rgba(165, 180, 252, 0.45);
+      color: rgba(199, 210, 254, 0.92);
+    }
+
+    .insurance-widget__button--secondary {
+      background: rgba(99, 102, 241, 0.18);
+      color: rgba(224, 231, 255, 0.95);
+      border-color: rgba(129, 140, 248, 0.32);
+    }
+
+    .insurance-widget__status {
+      color: rgba(187, 247, 208, 0.95);
+      background: rgba(21, 128, 61, 0.28);
     }
   }
 
@@ -356,7 +512,6 @@ INSURANCE_STATE_WIDGET_HTML = """
     }
 
     let missingSetWidgetStateNotified = false;
-    let missingSendFollowUpNotified = false;
 
     const STATES = [
       { code: "AL", name: "Alabama" },
@@ -437,6 +592,30 @@ INSURANCE_STATE_WIDGET_HTML = """
     description.className = "insurance-widget__description";
     description.textContent =
       "Choose the insurance type, confirm your state, and share your ZIP code so we can surface the right plans.";
+
+    function createStepIndicator(stepNumber, labelText) {
+      const indicator = document.createElement("div");
+      indicator.className = "insurance-widget__step-indicator";
+      indicator.setAttribute("data-step", stepNumber);
+      indicator.textContent = labelText;
+      return indicator;
+    }
+
+    const steps = document.createElement("div");
+    steps.className = "insurance-widget__steps";
+    const stepOneIndicator = createStepIndicator(
+      "1",
+      "Coverage basics"
+    );
+    const stepTwoIndicator = createStepIndicator(
+      "2",
+      "Additional details"
+    );
+    steps.appendChild(stepOneIndicator);
+    steps.appendChild(stepTwoIndicator);
+
+    const stepOnePanel = document.createElement("div");
+    stepOnePanel.className = "insurance-widget__panel";
 
     const typeField = document.createElement("div");
     typeField.className = "insurance-widget__field";
@@ -525,13 +704,141 @@ INSURANCE_STATE_WIDGET_HTML = """
     selection.textContent =
       "Select your insurance type, state, and ZIP code to continue.";
 
-    const confirm = document.createElement("button");
-    confirm.type = "button";
-    confirm.className = "insurance-widget__confirm";
-    const DEFAULT_CONFIRM_TEXT = "Share details with the assistant";
-    confirm.textContent = DEFAULT_CONFIRM_TEXT;
-    confirm.setAttribute("aria-disabled", "true");
-    confirm.disabled = true;
+    const stepOneActions = document.createElement("div");
+    stepOneActions.className = "insurance-widget__actions";
+
+    const continueButton = document.createElement("button");
+    continueButton.type = "button";
+    continueButton.className =
+      "insurance-widget__button insurance-widget__button--primary";
+    continueButton.textContent = "Continue to additional details";
+    continueButton.setAttribute("aria-disabled", "true");
+    continueButton.disabled = true;
+
+    stepOneActions.appendChild(continueButton);
+
+    stepOnePanel.appendChild(typeField);
+    stepOnePanel.appendChild(searchBlock);
+    stepOnePanel.appendChild(options);
+    stepOnePanel.appendChild(zipField);
+    stepOnePanel.appendChild(selection);
+    stepOnePanel.appendChild(stepOneActions);
+
+    const stepTwoPanel = document.createElement("div");
+    stepTwoPanel.className = "insurance-widget__panel is-hidden";
+
+    const stepTwoIntro = document.createElement("p");
+    stepTwoIntro.className = "insurance-widget__description";
+    stepTwoIntro.textContent =
+      "Add a few extra details so we can prepare everything for the MCP server.";
+
+    const vehicleField = document.createElement("div");
+    vehicleField.className = "insurance-widget__field";
+
+    const vehicleLabel = document.createElement("label");
+    vehicleLabel.className = "insurance-widget__label";
+    vehicleLabel.setAttribute("for", "insurance-vehicle-input");
+    vehicleLabel.textContent = "Vehicle make & model";
+
+    const vehicleWrapper = document.createElement("div");
+    vehicleWrapper.className = "insurance-widget__input";
+
+    const vehicleInput = document.createElement("input");
+    vehicleInput.id = "insurance-vehicle-input";
+    vehicleInput.setAttribute("placeholder", "e.g. 2021 Toyota Camry");
+    vehicleWrapper.appendChild(vehicleInput);
+
+    vehicleField.appendChild(vehicleLabel);
+    vehicleField.appendChild(vehicleWrapper);
+
+    const timelineField = document.createElement("div");
+    timelineField.className = "insurance-widget__field";
+
+    const timelineLabel = document.createElement("label");
+    timelineLabel.className = "insurance-widget__label";
+    timelineLabel.setAttribute("for", "insurance-coverage-timeline");
+    timelineLabel.textContent = "When do you need coverage to start?";
+
+    const timelineWrapper = document.createElement("div");
+    timelineWrapper.className = "insurance-widget__select";
+
+    const timelineSelect = document.createElement("select");
+    timelineSelect.id = "insurance-coverage-timeline";
+    timelineSelect.setAttribute("aria-label", "Coverage start timeline");
+
+    const timelinePlaceholder = document.createElement("option");
+    timelinePlaceholder.value = "";
+    timelinePlaceholder.textContent = "Select a timeframe";
+    timelineSelect.appendChild(timelinePlaceholder);
+
+    [
+      { value: "immediately", label: "Immediately" },
+      { value: "30-days", label: "Within 30 days" },
+      { value: "60-days", label: "Within 60 days" },
+      { value: "just-looking", label: "Just browsing options" },
+    ].forEach((option) => {
+      const opt = document.createElement("option");
+      opt.value = option.value;
+      opt.textContent = option.label;
+      timelineSelect.appendChild(opt);
+    });
+
+    timelineWrapper.appendChild(timelineSelect);
+    timelineField.appendChild(timelineLabel);
+    timelineField.appendChild(timelineWrapper);
+
+    const driversField = document.createElement("div");
+    driversField.className = "insurance-widget__field";
+
+    const driversLabel = document.createElement("label");
+    driversLabel.className = "insurance-widget__label";
+    driversLabel.setAttribute("for", "insurance-driver-count");
+    driversLabel.textContent = "How many drivers are on the policy?";
+
+    const driversWrapper = document.createElement("div");
+    driversWrapper.className = "insurance-widget__input";
+
+    const driversInput = document.createElement("input");
+    driversInput.id = "insurance-driver-count";
+    driversInput.setAttribute("type", "number");
+    driversInput.setAttribute("min", "1");
+    driversInput.setAttribute("step", "1");
+    driversInput.setAttribute(
+      "placeholder",
+      "Number of drivers in the household"
+    );
+    driversWrapper.appendChild(driversInput);
+
+    driversField.appendChild(driversLabel);
+    driversField.appendChild(driversWrapper);
+
+    const stepTwoActions = document.createElement("div");
+    stepTwoActions.className = "insurance-widget__actions";
+
+    const backButton = document.createElement("button");
+    backButton.type = "button";
+    backButton.className =
+      "insurance-widget__button insurance-widget__button--secondary";
+    backButton.textContent = "Back";
+
+    const saveButton = document.createElement("button");
+    saveButton.type = "button";
+    saveButton.className =
+      "insurance-widget__button insurance-widget__button--primary";
+    saveButton.textContent = "Save details";
+
+    stepTwoActions.appendChild(backButton);
+    stepTwoActions.appendChild(saveButton);
+
+    stepTwoPanel.appendChild(stepTwoIntro);
+    stepTwoPanel.appendChild(vehicleField);
+    stepTwoPanel.appendChild(timelineField);
+    stepTwoPanel.appendChild(driversField);
+    stepTwoPanel.appendChild(stepTwoActions);
+
+    const statusMessage = document.createElement("div");
+    statusMessage.className = "insurance-widget__status";
+    statusMessage.hidden = true;
 
     const footnote = document.createElement("p");
     footnote.className = "insurance-widget__footnote";
@@ -544,12 +851,10 @@ INSURANCE_STATE_WIDGET_HTML = """
     container.appendChild(eyebrow);
     container.appendChild(title);
     container.appendChild(description);
-    container.appendChild(typeField);
-    container.appendChild(searchBlock);
-    container.appendChild(options);
-    container.appendChild(zipField);
-    container.appendChild(selection);
-    container.appendChild(confirm);
+    container.appendChild(steps);
+    container.appendChild(stepOnePanel);
+    container.appendChild(stepTwoPanel);
+    container.appendChild(statusMessage);
     container.appendChild(footnote);
 
     root.appendChild(container);
@@ -557,7 +862,46 @@ INSURANCE_STATE_WIDGET_HTML = """
     let selectedCode = null;
     let selectedInsuranceType = null;
     let normalizedZipCode = null;
-    let isSending = false;
+    let currentStep = 1;
+    let additionalDetailsSaved = false;
+    const additionalDetails = {
+      vehicle: "",
+      coverageTimeline: "",
+      drivers: "",
+    };
+
+    function updateStepIndicators() {
+      stepOneIndicator.classList.toggle("is-active", currentStep === 1);
+      stepOneIndicator.classList.toggle(
+        "is-complete",
+        currentStep > 1 || additionalDetailsSaved
+      );
+      stepTwoIndicator.classList.toggle("is-active", currentStep === 2);
+      stepTwoIndicator.classList.toggle(
+        "is-complete",
+        additionalDetailsSaved
+      );
+    }
+
+    function goToStep(step) {
+      const nextStep = step === 2 ? 2 : 1;
+      currentStep = nextStep;
+      stepOnePanel.classList.toggle("is-hidden", nextStep !== 1);
+      stepTwoPanel.classList.toggle("is-hidden", nextStep !== 2);
+      if (nextStep === 1) {
+        statusMessage.hidden = true;
+        if (!continueButton.disabled) {
+          continueButton.focus();
+        } else {
+          typeSelect.focus();
+        }
+      } else {
+        vehicleInput.focus();
+      }
+      updateStepIndicators();
+    }
+
+    updateStepIndicators();
 
     function getStateByCode(code) {
       if (!code) return null;
@@ -627,16 +971,15 @@ INSURANCE_STATE_WIDGET_HTML = """
       }
 
       const ready = Boolean(state && selectedInsuranceType && normalizedZipCode);
-      if (ready && !isSending) {
-        confirm.disabled = false;
-        confirm.setAttribute("aria-disabled", "false");
+      if (ready) {
+        continueButton.disabled = false;
+        continueButton.setAttribute("aria-disabled", "false");
       } else {
-        confirm.disabled = true;
-        confirm.setAttribute("aria-disabled", "true");
-      }
-
-      if (!isSending) {
-        confirm.textContent = DEFAULT_CONFIRM_TEXT;
+        continueButton.disabled = true;
+        continueButton.setAttribute("aria-disabled", "true");
+        if (currentStep === 2) {
+          goToStep(1);
+        }
       }
 
       Array.from(options.querySelectorAll("[data-state-code]"))
@@ -670,6 +1013,15 @@ INSURANCE_STATE_WIDGET_HTML = """
       }
       if (normalizedZipCode) {
         payload.zipCode = normalizedZipCode;
+      }
+      if (additionalDetails.vehicle) {
+        payload.vehicle = additionalDetails.vehicle;
+      }
+      if (additionalDetails.coverageTimeline) {
+        payload.coverageTimeline = additionalDetails.coverageTimeline;
+      }
+      if (additionalDetails.drivers) {
+        payload.drivers = additionalDetails.drivers;
       }
 
       if (Object.keys(payload).length === 0) {
@@ -785,64 +1137,47 @@ INSURANCE_STATE_WIDGET_HTML = """
       updateZipFromInput(zipInput.value);
     });
 
-    function sendSelectionToAssistant(state) {
-      if (!window.openai || typeof window.openai.sendFollowUpMessage !== "function") {
-        if (!missingSendFollowUpNotified) {
-          notifyIssue(
-            "warn",
-            "OpenAI sendFollowUpMessage helper is unavailable; the assistant will not receive insurance preferences from the widget."
-          );
-          missingSendFollowUpNotified = true;
-        }
-        return Promise.resolve();
-      }
-      if (!state || !selectedInsuranceType || !normalizedZipCode) {
-        return Promise.resolve();
-      }
-      const insuranceLabel =
-        getInsuranceTypeLabel(selectedInsuranceType) ?? selectedInsuranceType;
-      const prompt =
-        "I'm shopping for " +
-        insuranceLabel.toLowerCase() +
-        " insurance in " +
-        state.name +
-        " (ZIP " +
-        normalizedZipCode +
-        ").";
-      const metadata = {
-        state: state.name,
-        stateCode: state.code,
-        insuranceType: selectedInsuranceType,
-        insuranceTypeLabel: insuranceLabel,
-        zipCode: normalizedZipCode,
-      };
-      return window.openai.sendFollowUpMessage({ prompt, metadata });
+    function handleAdditionalDetailChange() {
+      additionalDetailsSaved = false;
+      statusMessage.hidden = true;
+      updateStepIndicators();
+      pushWidgetState(getStateByCode(selectedCode));
     }
 
-    confirm.addEventListener("click", async () => {
-      if (!selectedCode || isSending) return;
-      if (!selectedInsuranceType || !normalizedZipCode) return;
-      const state = getStateByCode(selectedCode);
-      if (!state) return;
-      isSending = true;
-      confirm.textContent = "Sending to assistant…";
-      confirm.setAttribute("aria-disabled", "true");
-      confirm.disabled = true;
+    continueButton.addEventListener("click", () => {
+      if (continueButton.disabled) return;
+      pushWidgetState(getStateByCode(selectedCode));
+      goToStep(2);
+    });
 
-      try {
-        pushWidgetState(state);
-        await sendSelectionToAssistant(state);
-      } catch (error) {
-        notifyIssue(
-          "error",
-          `Failed to share insurance preferences for ${state.name} (${normalizedZipCode}).`,
-          error
-        );
-      } finally {
-        isSending = false;
-        confirm.textContent = DEFAULT_CONFIRM_TEXT;
-        updateSelectionDisplay(selectedCode);
-      }
+    backButton.addEventListener("click", () => {
+      goToStep(1);
+    });
+
+    saveButton.addEventListener("click", () => {
+      pushWidgetState(getStateByCode(selectedCode));
+      additionalDetailsSaved = true;
+      statusMessage.textContent =
+        "Additional details saved. We'll share them with the MCP server when you're ready.";
+      statusMessage.hidden = false;
+      updateStepIndicators();
+    });
+
+    vehicleInput.addEventListener("input", () => {
+      additionalDetails.vehicle = vehicleInput.value.trim();
+      handleAdditionalDetailChange();
+    });
+
+    timelineSelect.addEventListener("change", () => {
+      additionalDetails.coverageTimeline = timelineSelect.value || "";
+      handleAdditionalDetailChange();
+    });
+
+    driversInput.addEventListener("input", () => {
+      const digits = driversInput.value.replace(/\D/g, "");
+      driversInput.value = digits;
+      additionalDetails.drivers = digits;
+      handleAdditionalDetailChange();
     });
 
     input.addEventListener("input", () => {
@@ -879,6 +1214,17 @@ INSURANCE_STATE_WIDGET_HTML = """
             : null,
         zipCode:
           source && typeof source.zipCode === "string" ? source.zipCode : null,
+        vehicle:
+          source && typeof source.vehicle === "string" ? source.vehicle : null,
+        coverageTimeline:
+          source && typeof source.coverageTimeline === "string"
+            ? source.coverageTimeline
+            : null,
+        drivers:
+          source &&
+          (typeof source.drivers === "string" || typeof source.drivers === "number")
+            ? String(source.drivers)
+            : null,
       });
 
       const fromTool = extract(toolOutput);
@@ -888,6 +1234,10 @@ INSURANCE_STATE_WIDGET_HTML = """
         state: fromTool.state ?? fromWidget.state ?? null,
         insuranceType: fromTool.insuranceType ?? fromWidget.insuranceType ?? null,
         zipCode: fromTool.zipCode ?? fromWidget.zipCode ?? null,
+        vehicle: fromTool.vehicle ?? fromWidget.vehicle ?? null,
+        coverageTimeline:
+          fromTool.coverageTimeline ?? fromWidget.coverageTimeline ?? null,
+        drivers: fromTool.drivers ?? fromWidget.drivers ?? null,
       };
     })();
 
@@ -909,6 +1259,45 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     updateZipFromInput(initialDetails.zipCode ?? "", { persist: false });
 
+    if (typeof initialDetails.vehicle === "string") {
+      vehicleInput.value = initialDetails.vehicle;
+    } else {
+      vehicleInput.value = "";
+    }
+    additionalDetails.vehicle = vehicleInput.value.trim();
+
+    const timelineOptionValues = new Set(
+      Array.from(timelineSelect.options).map((option) => option.value)
+    );
+    if (
+      typeof initialDetails.coverageTimeline === "string" &&
+      timelineOptionValues.has(initialDetails.coverageTimeline)
+    ) {
+      timelineSelect.value = initialDetails.coverageTimeline;
+    } else {
+      timelineSelect.value = "";
+    }
+    additionalDetails.coverageTimeline = timelineSelect.value || "";
+
+    if (initialDetails.drivers !== null && initialDetails.drivers !== undefined) {
+      const digits = String(initialDetails.drivers).replace(/\D/g, "");
+      driversInput.value = digits;
+      additionalDetails.drivers = digits;
+    } else {
+      driversInput.value = "";
+      additionalDetails.drivers = "";
+    }
+
+    additionalDetailsSaved = Boolean(
+      additionalDetails.vehicle ||
+        additionalDetails.coverageTimeline ||
+        additionalDetails.drivers
+    );
+    if (!additionalDetailsSaved) {
+      statusMessage.hidden = true;
+    }
+    updateStepIndicators();
+
     renderOptions();
     updateSelectionDisplay(initialStateCode);
 
@@ -925,6 +1314,17 @@ INSURANCE_STATE_WIDGET_HTML = """
             : null,
         zipCode:
           source && typeof source.zipCode === "string" ? source.zipCode : null,
+        vehicle:
+          source && typeof source.vehicle === "string" ? source.vehicle : null,
+        coverageTimeline:
+          source && typeof source.coverageTimeline === "string"
+            ? source.coverageTimeline
+            : null,
+        drivers:
+          source &&
+          (typeof source.drivers === "string" || typeof source.drivers === "number")
+            ? String(source.drivers)
+            : null,
       });
 
       const fromTool = extract(globals.toolOutput);
@@ -935,6 +1335,10 @@ INSURANCE_STATE_WIDGET_HTML = """
       const typeProvided =
         fromTool.insuranceType !== null || fromWidget.insuranceType !== null;
       const nextZip = fromTool.zipCode ?? fromWidget.zipCode ?? null;
+      const nextVehicle = fromTool.vehicle ?? fromWidget.vehicle ?? null;
+      const nextTimeline =
+        fromTool.coverageTimeline ?? fromWidget.coverageTimeline ?? null;
+      const nextDrivers = fromTool.drivers ?? fromWidget.drivers ?? null;
 
       if (typeof nextState === "string") {
         const normalized = getStateByValue(nextState);
@@ -960,6 +1364,42 @@ INSURANCE_STATE_WIDGET_HTML = """
       if (typeof nextZip === "string") {
         updateZipFromInput(nextZip, { persist: false });
       }
+
+      if (typeof nextVehicle === "string") {
+        vehicleInput.value = nextVehicle;
+        additionalDetails.vehicle = nextVehicle.trim();
+      } else {
+        vehicleInput.value = "";
+        additionalDetails.vehicle = "";
+      }
+
+      if (
+        typeof nextTimeline === "string" &&
+        timelineOptionValues.has(nextTimeline)
+      ) {
+        timelineSelect.value = nextTimeline;
+        additionalDetails.coverageTimeline = nextTimeline;
+      } else {
+        timelineSelect.value = "";
+        additionalDetails.coverageTimeline = "";
+      }
+
+      if (nextDrivers !== null && nextDrivers !== undefined) {
+        const digits = String(nextDrivers).replace(/\D/g, "");
+        driversInput.value = digits;
+        additionalDetails.drivers = digits;
+      } else {
+        driversInput.value = "";
+        additionalDetails.drivers = "";
+      }
+
+      additionalDetailsSaved = Boolean(
+        additionalDetails.vehicle ||
+          additionalDetails.coverageTimeline ||
+          additionalDetails.drivers
+      );
+      statusMessage.hidden = true;
+      updateStepIndicators();
     });
   })();
 </script>
