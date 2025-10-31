@@ -324,6 +324,133 @@ INSURANCE_STATE_WIDGET_HTML = """
       color: rgba(226, 232, 240, 0.6);
     }
   }
+
+  .insurance-widget__stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .insurance-widget__step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .insurance-widget__step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    background: rgba(148, 163, 184, 0.2);
+    color: rgba(15, 23, 42, 0.6);
+    transition: all 200ms ease;
+  }
+
+  .insurance-widget__step.is-active .insurance-widget__step-circle {
+    background: rgba(99, 102, 241, 0.9);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  }
+
+  .insurance-widget__step.is-completed .insurance-widget__step-circle {
+    background: rgba(34, 197, 94, 0.85);
+    color: #fff;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .insurance-widget__step-circle {
+      background: rgba(148, 163, 184, 0.3);
+      color: rgba(226, 232, 240, 0.7);
+    }
+
+    .insurance-widget__step.is-active .insurance-widget__step-circle {
+      background: rgba(129, 140, 248, 0.9);
+      color: #fff;
+    }
+
+    .insurance-widget__step.is-completed .insurance-widget__step-circle {
+      background: rgba(34, 197, 94, 0.9);
+    }
+  }
+
+  .insurance-widget__step-divider {
+    width: 40px;
+    height: 2px;
+    background: rgba(148, 163, 184, 0.3);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .insurance-widget__step-divider {
+      background: rgba(148, 163, 184, 0.4);
+    }
+  }
+
+  .insurance-widget__step-content {
+    display: none;
+  }
+
+  .insurance-widget__step-content.is-active {
+    display: block;
+  }
+
+  .insurance-widget__actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .insurance-widget__button {
+    flex: 1;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+
+  .insurance-widget__button--secondary {
+    background: rgba(148, 163, 184, 0.15);
+    color: rgba(15, 23, 42, 0.8);
+  }
+
+  .insurance-widget__button--secondary:hover {
+    background: rgba(148, 163, 184, 0.25);
+  }
+
+  .insurance-widget__button--primary {
+    background: linear-gradient(135deg, #6366f1, #4338ca);
+    color: #fff;
+  }
+
+  .insurance-widget__button--primary:hover:not([aria-disabled="true"]) {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px rgba(79, 70, 229, 0.32);
+  }
+
+  .insurance-widget__button[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .insurance-widget__button--secondary {
+      background: rgba(148, 163, 184, 0.2);
+      color: rgba(226, 232, 240, 0.9);
+    }
+
+    .insurance-widget__button--secondary:hover {
+      background: rgba(148, 163, 184, 0.3);
+    }
+  }
 </style>
 <script type="module">
   (function () {
@@ -431,12 +558,44 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     const title = document.createElement("h2");
     title.className = "insurance-widget__title";
-    title.textContent = "Help us tailor your insurance quote";
+    title.textContent = "Help us tailor your insurance quote (2)";
 
     const description = document.createElement("p");
     description.className = "insurance-widget__description";
     description.textContent =
       "Choose the insurance type, confirm your state, and share your ZIP code so we can surface the right plans.";
+
+    // Stepper UI
+    const stepper = document.createElement("div");
+    stepper.className = "insurance-widget__stepper";
+
+    const step1Wrapper = document.createElement("div");
+    step1Wrapper.className = "insurance-widget__step is-active";
+    step1Wrapper.setAttribute("data-step", "1");
+    const step1Circle = document.createElement("div");
+    step1Circle.className = "insurance-widget__step-circle";
+    step1Circle.textContent = "1";
+    step1Wrapper.appendChild(step1Circle);
+
+    const divider = document.createElement("div");
+    divider.className = "insurance-widget__step-divider";
+
+    const step2Wrapper = document.createElement("div");
+    step2Wrapper.className = "insurance-widget__step";
+    step2Wrapper.setAttribute("data-step", "2");
+    const step2Circle = document.createElement("div");
+    step2Circle.className = "insurance-widget__step-circle";
+    step2Circle.textContent = "2";
+    step2Wrapper.appendChild(step2Circle);
+
+    stepper.appendChild(step1Wrapper);
+    stepper.appendChild(divider);
+    stepper.appendChild(step2Wrapper);
+
+    // Step 1 content wrapper
+    const step1Content = document.createElement("div");
+    step1Content.className = "insurance-widget__step-content is-active";
+    step1Content.setAttribute("data-step-content", "1");
 
     const typeField = document.createElement("div");
     typeField.className = "insurance-widget__field";
@@ -541,15 +700,126 @@ INSURANCE_STATE_WIDGET_HTML = """
     searchBlock.appendChild(label);
     searchBlock.appendChild(inputWrapper);
 
+    // Add step 1 fields to step 1 content
+    step1Content.appendChild(typeField);
+    step1Content.appendChild(searchBlock);
+    step1Content.appendChild(options);
+    step1Content.appendChild(zipField);
+
+    // Step 2 content wrapper with additional fields
+    const step2Content = document.createElement("div");
+    step2Content.className = "insurance-widget__step-content";
+    step2Content.setAttribute("data-step-content", "2");
+
+    // Additional fields for step 2
+    const coverageField = document.createElement("div");
+    coverageField.className = "insurance-widget__field";
+    const coverageLabel = document.createElement("label");
+    coverageLabel.className = "insurance-widget__label";
+    coverageLabel.setAttribute("for", "coverage-amount");
+    coverageLabel.textContent = "Desired coverage amount";
+    const coverageWrapper = document.createElement("div");
+    coverageWrapper.className = "insurance-widget__select";
+    const coverageSelect = document.createElement("select");
+    coverageSelect.id = "coverage-amount";
+    const coveragePlaceholder = document.createElement("option");
+    coveragePlaceholder.value = "";
+    coveragePlaceholder.textContent = "Select coverage amount";
+    coverageSelect.appendChild(coveragePlaceholder);
+    [
+      { value: "100000", label: "$100,000" },
+      { value: "250000", label: "$250,000" },
+      { value: "500000", label: "$500,000" },
+      { value: "1000000", label: "$1,000,000" }
+    ].forEach((opt) => {
+      const option = document.createElement("option");
+      option.value = opt.value;
+      option.textContent = opt.label;
+      coverageSelect.appendChild(option);
+    });
+    coverageWrapper.appendChild(coverageSelect);
+    coverageField.appendChild(coverageLabel);
+    coverageField.appendChild(coverageWrapper);
+
+    const deductibleField = document.createElement("div");
+    deductibleField.className = "insurance-widget__field";
+    const deductibleLabel = document.createElement("label");
+    deductibleLabel.className = "insurance-widget__label";
+    deductibleLabel.setAttribute("for", "deductible-amount");
+    deductibleLabel.textContent = "Preferred deductible";
+    const deductibleWrapper = document.createElement("div");
+    deductibleWrapper.className = "insurance-widget__select";
+    const deductibleSelect = document.createElement("select");
+    deductibleSelect.id = "deductible-amount";
+    const deductiblePlaceholder = document.createElement("option");
+    deductiblePlaceholder.value = "";
+    deductiblePlaceholder.textContent = "Select deductible";
+    deductibleSelect.appendChild(deductiblePlaceholder);
+    [
+      { value: "500", label: "$500" },
+      { value: "1000", label: "$1,000" },
+      { value: "2500", label: "$2,500" },
+      { value: "5000", label: "$5,000" }
+    ].forEach((opt) => {
+      const option = document.createElement("option");
+      option.value = opt.value;
+      option.textContent = opt.label;
+      deductibleSelect.appendChild(option);
+    });
+    deductibleWrapper.appendChild(deductibleSelect);
+    deductibleField.appendChild(deductibleLabel);
+    deductibleField.appendChild(deductibleWrapper);
+
+    const vehicleCountField = document.createElement("div");
+    vehicleCountField.className = "insurance-widget__field";
+    const vehicleCountLabel = document.createElement("label");
+    vehicleCountLabel.className = "insurance-widget__label";
+    vehicleCountLabel.setAttribute("for", "vehicle-count");
+    vehicleCountLabel.textContent = "Number of vehicles to insure";
+    const vehicleCountWrapper = document.createElement("div");
+    vehicleCountWrapper.className = "insurance-widget__input";
+    const vehicleCountInput = document.createElement("input");
+    vehicleCountInput.id = "vehicle-count";
+    vehicleCountInput.type = "number";
+    vehicleCountInput.min = "1";
+    vehicleCountInput.max = "10";
+    vehicleCountInput.placeholder = "Enter number of vehicles";
+    vehicleCountWrapper.appendChild(vehicleCountInput);
+    vehicleCountField.appendChild(vehicleCountLabel);
+    vehicleCountField.appendChild(vehicleCountWrapper);
+
+    step2Content.appendChild(coverageField);
+    step2Content.appendChild(deductibleField);
+    step2Content.appendChild(vehicleCountField);
+
+    // Navigation buttons
+    const actions = document.createElement("div");
+    actions.className = "insurance-widget__actions";
+
+    const prevButton = document.createElement("button");
+    prevButton.type = "button";
+    prevButton.className = "insurance-widget__button insurance-widget__button--secondary";
+    prevButton.textContent = "Previous";
+    prevButton.style.display = "none";
+
+    const nextButton = document.createElement("button");
+    nextButton.type = "button";
+    nextButton.className = "insurance-widget__button insurance-widget__button--primary";
+    nextButton.textContent = "Next";
+    nextButton.setAttribute("aria-disabled", "true");
+    nextButton.disabled = true;
+
+    actions.appendChild(prevButton);
+    actions.appendChild(nextButton);
+
     container.appendChild(eyebrow);
     container.appendChild(title);
     container.appendChild(description);
-    container.appendChild(typeField);
-    container.appendChild(searchBlock);
-    container.appendChild(options);
-    container.appendChild(zipField);
+    container.appendChild(stepper);
+    container.appendChild(step1Content);
+    container.appendChild(step2Content);
     container.appendChild(selection);
-    container.appendChild(confirm);
+    container.appendChild(actions);
     container.appendChild(footnote);
 
     root.appendChild(container);
@@ -558,6 +828,97 @@ INSURANCE_STATE_WIDGET_HTML = """
     let selectedInsuranceType = null;
     let normalizedZipCode = null;
     let isSending = false;
+    let currentStep = 1;
+    let coverageAmount = null;
+    let deductibleAmount = null;
+    let vehicleCount = null;
+
+    function goToStep(stepNumber) {
+      currentStep = stepNumber;
+
+      // Update step indicators
+      const stepWrappers = container.querySelectorAll(".insurance-widget__step");
+      stepWrappers.forEach((wrapper) => {
+        const step = parseInt(wrapper.getAttribute("data-step"));
+        wrapper.classList.remove("is-active", "is-completed");
+        if (step === currentStep) {
+          wrapper.classList.add("is-active");
+        } else if (step < currentStep) {
+          wrapper.classList.add("is-completed");
+        }
+      });
+
+      // Update step content visibility
+      const stepContents = container.querySelectorAll(".insurance-widget__step-content");
+      stepContents.forEach((content) => {
+        const step = parseInt(content.getAttribute("data-step-content"));
+        content.classList.toggle("is-active", step === currentStep);
+      });
+
+      // Update button visibility and state
+      if (currentStep === 1) {
+        prevButton.style.display = "none";
+        nextButton.textContent = "Next";
+        updateStep1ButtonState();
+      } else if (currentStep === 2) {
+        prevButton.style.display = "block";
+        nextButton.textContent = "Share details with the assistant";
+        updateStep2ButtonState();
+      }
+
+      // Update selection display
+      updateSelectionDisplay(selectedCode);
+    }
+
+    function updateStep1ButtonState() {
+      const ready = Boolean(selectedCode && selectedInsuranceType && normalizedZipCode);
+      nextButton.disabled = !ready;
+      nextButton.setAttribute("aria-disabled", ready ? "false" : "true");
+    }
+
+    function updateStep2ButtonState() {
+      // All fields optional on step 2, so always enabled
+      nextButton.disabled = false;
+      nextButton.setAttribute("aria-disabled", "false");
+    }
+
+    nextButton.addEventListener("click", async () => {
+      if (currentStep === 1) {
+        goToStep(2);
+      } else if (currentStep === 2) {
+        if (!selectedCode || isSending) return;
+        const state = getStateByCode(selectedCode);
+        if (!state) return;
+
+        isSending = true;
+        nextButton.textContent = "Sending to assistant…";
+        nextButton.setAttribute("aria-disabled", "true");
+        nextButton.disabled = true;
+        prevButton.disabled = true;
+
+        try {
+          pushWidgetState(state);
+          await sendSelectionToAssistant(state);
+        } catch (error) {
+          notifyIssue(
+            "error",
+            `Failed to share insurance preferences for ${state.name} (${normalizedZipCode}).`,
+            error
+          );
+        } finally {
+          isSending = false;
+          nextButton.textContent = "Share details with the assistant";
+          prevButton.disabled = false;
+          updateSelectionDisplay(selectedCode);
+        }
+      }
+    });
+
+    prevButton.addEventListener("click", () => {
+      if (currentStep === 2) {
+        goToStep(1);
+      }
+    });
 
     function getStateByCode(code) {
       if (!code) return null;
@@ -619,6 +980,30 @@ INSURANCE_STATE_WIDGET_HTML = """
         parts.push("ZIP " + normalizedZipCode);
       }
 
+      if (currentStep === 2) {
+        if (coverageAmount) {
+          const amount = parseInt(coverageAmount);
+          const formatted = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 0
+          }).format(amount);
+          parts.push("Coverage: " + formatted);
+        }
+        if (deductibleAmount) {
+          const amount = parseInt(deductibleAmount);
+          const formatted = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 0
+          }).format(amount);
+          parts.push("Deductible: " + formatted);
+        }
+        if (vehicleCount) {
+          parts.push(vehicleCount + " vehicle" + (vehicleCount > 1 ? "s" : ""));
+        }
+      }
+
       if (parts.length) {
         selection.textContent = "Details ready: " + parts.join(" • ") + ".";
       } else {
@@ -626,17 +1011,11 @@ INSURANCE_STATE_WIDGET_HTML = """
           "Select your insurance type, state, and ZIP code to continue.";
       }
 
-      const ready = Boolean(state && selectedInsuranceType && normalizedZipCode);
-      if (ready && !isSending) {
-        confirm.disabled = false;
-        confirm.setAttribute("aria-disabled", "false");
-      } else {
-        confirm.disabled = true;
-        confirm.setAttribute("aria-disabled", "true");
-      }
-
-      if (!isSending) {
-        confirm.textContent = DEFAULT_CONFIRM_TEXT;
+      // Update button state based on current step
+      if (currentStep === 1) {
+        updateStep1ButtonState();
+      } else if (currentStep === 2) {
+        updateStep2ButtonState();
       }
 
       Array.from(options.querySelectorAll("[data-state-code]"))
@@ -785,6 +1164,23 @@ INSURANCE_STATE_WIDGET_HTML = """
       updateZipFromInput(zipInput.value);
     });
 
+    // Step 2 field listeners
+    coverageSelect.addEventListener("change", () => {
+      coverageAmount = coverageSelect.value || null;
+      updateSelectionDisplay(selectedCode);
+    });
+
+    deductibleSelect.addEventListener("change", () => {
+      deductibleAmount = deductibleSelect.value || null;
+      updateSelectionDisplay(selectedCode);
+    });
+
+    vehicleCountInput.addEventListener("input", () => {
+      const value = vehicleCountInput.value;
+      vehicleCount = value && value > 0 ? value : null;
+      updateSelectionDisplay(selectedCode);
+    });
+
     function sendSelectionToAssistant(state) {
       if (!window.openai || typeof window.openai.sendFollowUpMessage !== "function") {
         if (!missingSendFollowUpNotified) {
@@ -801,7 +1197,8 @@ INSURANCE_STATE_WIDGET_HTML = """
       }
       const insuranceLabel =
         getInsuranceTypeLabel(selectedInsuranceType) ?? selectedInsuranceType;
-      const prompt =
+
+      let prompt =
         "I'm shopping for " +
         insuranceLabel.toLowerCase() +
         " insurance in " +
@@ -809,41 +1206,49 @@ INSURANCE_STATE_WIDGET_HTML = """
         " (ZIP " +
         normalizedZipCode +
         ").";
+
+      // Add step 2 details if provided
+      const additionalDetails = [];
+      if (coverageAmount) {
+        const amount = parseInt(coverageAmount);
+        const formatted = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 0
+        }).format(amount);
+        additionalDetails.push("desired coverage of " + formatted);
+      }
+      if (deductibleAmount) {
+        const amount = parseInt(deductibleAmount);
+        const formatted = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 0
+        }).format(amount);
+        additionalDetails.push("preferred deductible of " + formatted);
+      }
+      if (vehicleCount) {
+        additionalDetails.push(vehicleCount + " vehicle" + (vehicleCount > 1 ? "s" : ""));
+      }
+
+      if (additionalDetails.length > 0) {
+        prompt += " I need " + additionalDetails.join(", ") + ".";
+      }
+
       const metadata = {
         state: state.name,
         stateCode: state.code,
         insuranceType: selectedInsuranceType,
         insuranceTypeLabel: insuranceLabel,
         zipCode: normalizedZipCode,
+        coverageAmount: coverageAmount || undefined,
+        deductibleAmount: deductibleAmount || undefined,
+        vehicleCount: vehicleCount || undefined,
       };
       return window.openai.sendFollowUpMessage({ prompt, metadata });
     }
 
-    confirm.addEventListener("click", async () => {
-      if (!selectedCode || isSending) return;
-      if (!selectedInsuranceType || !normalizedZipCode) return;
-      const state = getStateByCode(selectedCode);
-      if (!state) return;
-      isSending = true;
-      confirm.textContent = "Sending to assistant…";
-      confirm.setAttribute("aria-disabled", "true");
-      confirm.disabled = true;
-
-      try {
-        pushWidgetState(state);
-        await sendSelectionToAssistant(state);
-      } catch (error) {
-        notifyIssue(
-          "error",
-          `Failed to share insurance preferences for ${state.name} (${normalizedZipCode}).`,
-          error
-        );
-      } finally {
-        isSending = false;
-        confirm.textContent = DEFAULT_CONFIRM_TEXT;
-        updateSelectionDisplay(selectedCode);
-      }
-    });
+    // Submission is now handled by nextButton in step 2
 
     input.addEventListener("input", () => {
       renderOptions();
