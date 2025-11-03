@@ -62,16 +62,6 @@ INSURANCE_LOG_LEVEL=DEBUG uvicorn insurance_server_python.main:app --port 8000
 pytest insurance_server_python/tests/
 ```
 
-**Solar System Server:**
-```bash
-# Setup (can reuse same venv)
-source .venv/bin/activate
-pip install -r solar-system_server_python/requirements.txt
-
-# Run server
-uvicorn solar-system_server_python.main:app --port 8000
-```
-
 ## Architecture
 
 ### Frontend Widget Structure
@@ -122,7 +112,6 @@ return {
 - `src/` - React widget source code
 - `assets/` - Built widget bundles (git-tracked, versioned by hash)
 - `insurance_server_python/` - Insurance intake MCP server with multi-step flow tools
-- `solar-system_server_python/` - 3D solar system viewer MCP server
 - `build-all.mts` - Build orchestrator that produces hashed bundles
 - `vite.config.mts` - Dev server config with multi-entry support
 

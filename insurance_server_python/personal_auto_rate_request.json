@@ -1,5 +1,5 @@
 {
-  "BumpLimits": "Bump Up",
+  "BumpLimits": "No Bumping",
   "CarrierInformation": {
     "Products": [
       {
@@ -61,16 +61,14 @@
     "Address": {
       "City": "Beverly Hills",
       "State": "California",
-      "Street1": "123 Boulevard Dr.",
+      "Street1": "123 Beverly Dr",
       "ZipCode": "90210"
     },
-    "ContactInformation": {
-      "EmailAddress": "jsmith@gmail.com"
-    },
+    "ContactInformation": {},
     "DeclinedEmail": false,
     "DeclinedPhone": false,
     "FirstName": "John",
-    "Identifier": "JS-CA-2025",
+    "Identifier": "CUST001",
     "LastName": "Smith",
     "MonthsAtResidence": 24,
     "PriorInsuranceInformation": {
@@ -78,13 +76,14 @@
       "ReasonForNoInsurance": "Other"
     }
   },
-  "EffectiveDate": "2025-10-28T00:00:00Z",
-  "Identifier": "JS-CA-2025",
-  "PaymentMethod": "Electronic Funds Transfer",
+  "CustomerDeclinedCredit": false,
+  "EffectiveDate": "2025-11-03T00:00:00Z",
+  "Identifier": "JS-CA-90210-001",
+  "PaymentMethod": "Standard",
   "PolicyCoverages": {
     "AccidentalDeathLimit": "None",
-    "LiabilityBiLimit": "15000/30000",
-    "LiabilityPdLimit": "5000",
+    "LiabilityBiLimit": "30000/60000",
+    "LiabilityPdLimit": "15000",
     "MedPayLimit": "None",
     "UninsuredMotoristBiLimit": "30000/60000",
     "UninsuredMotoristPd/CollisionDamageWaiver": false
@@ -93,12 +92,13 @@
   "RatedDrivers": [
     {
       "Attributes": {
+        "OccasionalOperator": false,
         "PropertyInsurance": false,
         "Relation": "Insured",
         "ResidencyStatus": "Own",
         "ResidencyType": "Home"
       },
-      "DateOfBirth": "1990-01-01T00:00:00Z",
+      "DateOfBirth": "1985-06-15T00:00:00Z",
       "DriverId": 1,
       "FirstName": "John",
       "Gender": "Male",
@@ -116,13 +116,12 @@
         "MonthsSuspended": 0,
         "StateLicensed": "California"
       },
-      "MaritalStatus": "Married"
+      "MaritalStatus": "Single"
     }
   ],
   "Term": "Semi Annual",
   "Vehicles": [
     {
-      "AnnualMiles": 5000,
       "AssignedDriverId": 1,
       "CoverageInformation": {
         "CollisionDeductible": "None",
@@ -136,19 +135,18 @@
       "GaragingAddress": {
         "City": "Beverly Hills",
         "State": "California",
-        "Street1": "123 Boulevard Dr.",
+        "Street1": "123 Beverly Dr",
         "ZipCode": "90210"
       },
       "LeasedVehicle": false,
       "Make": "Honda",
       "Model": "Civic",
-      "PurchaseType": "New",
       "RideShare": false,
       "Salvaged": false,
-      "Usage": "Pleasure",
+      "Usage": "Commute",
       "VehicleId": 1,
       "Vin": "2FMPK4J99J",
-      "Year": 2020
+      "Year": 2010
     }
   ]
 }
