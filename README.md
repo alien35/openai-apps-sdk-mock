@@ -24,7 +24,6 @@ The MCP servers in this demo highlight how each tool can light up widgets by com
 - `src/` – Source for each widget example.
 - `assets/` – Generated HTML, JS, and CSS bundles after running the build step.
 - `insurance_server_python/` – Python MCP server that serves the insurance widgets.
-- `solar-system_server_python/` – Python MCP server for the 3D solar system widget.
 - `build-all.mts` – Vite build orchestrator that produces hashed bundles for every widget entrypoint.
 
 ## Prerequisites
@@ -74,7 +73,6 @@ The assets are exposed at [`http://localhost:4444`](http://localhost:4444) with 
 The repository ships several demo MCP servers that highlight different widget bundles:
 
 - **Insurance intake (Python)** – tools for collecting insurance quoting details and rendering the insurance state selector
-- **Solar system (Python)** – 3D solar system viewer
 
 Every tool response includes plain text content, structured JSON, and `_meta.openai/outputTemplate` metadata so the Apps SDK can hydrate the matching widget.
 
@@ -85,15 +83,6 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r insurance_server_python/requirements.txt
 uvicorn insurance_server_python.main:app --port 8000
-```
-
-### Solar system Python server
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r solar-system_server_python/requirements.txt
-uvicorn solar-system_server_python.main:app --port 8000
 ```
 
 You can reuse the same virtual environment for all Python servers—install the dependencies once and run whichever entry point you need.
@@ -116,7 +105,7 @@ For example: `https://<custom_endpoint>.ngrok-free.app/mcp`
 
 ## Next steps
 
-- Customize the widget data: edit the handlers in `insurance_server_python/main.py` or the solar system server to fetch data from your systems.
+- Customize the widget data: edit the handlers in `insurance_server_python/main.py` server to fetch data from your systems.
 - Create your own components and add them to the gallery: drop new entries into `src/` and they will be picked up automatically by the build script.
 
 ## Contributing

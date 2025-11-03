@@ -1439,10 +1439,76 @@ INSURANCE_WIZARD_WIDGET_HTML = r"""
       }
     });
 
+    function validateForm() {
+      const errors = [];
+
+      // Step 1: Policy Setup
+      if (!formData.effectiveDate) {
+        errors.push('Effective Date is required');
+      }
+
+      // Step 2: Customer Information
+      if (!formData.firstName || !formData.firstName.trim()) {
+        errors.push('Customer First Name is required');
+      }
+      if (!formData.lastName || !formData.lastName.trim()) {
+        errors.push('Customer Last Name is required');
+      }
+      if (!formData.street || !formData.street.trim()) {
+        errors.push('Customer Street Address is required');
+      }
+      if (!formData.city || !formData.city.trim()) {
+        errors.push('Customer City is required');
+      }
+      if (!formData.state || !formData.state.trim()) {
+        errors.push('Customer State is required');
+      }
+      if (!formData.zipCode || !formData.zipCode.trim()) {
+        errors.push('Customer ZIP Code is required');
+      }
+
+      // Step 3: Vehicle Details
+      if (!formData.make || !formData.make.trim()) {
+        errors.push('Vehicle Make is required');
+      }
+      if (!formData.model || !formData.model.trim()) {
+        errors.push('Vehicle Model is required');
+      }
+      if (!formData.year) {
+        errors.push('Vehicle Year is required');
+      }
+
+      // Step 4: Driver Information
+      if (!formData.driverFirstName || !formData.driverFirstName.trim()) {
+        errors.push('Driver First Name is required');
+      }
+      if (!formData.driverLastName || !formData.driverLastName.trim()) {
+        errors.push('Driver Last Name is required');
+      }
+      if (!formData.dateOfBirth || !formData.dateOfBirth.trim()) {
+        errors.push('Driver Date of Birth is required');
+      }
+      if (!formData.stateLicensed || !formData.stateLicensed.trim()) {
+        if (!formData.state || !formData.state.trim()) {
+          errors.push('Driver State Licensed is required');
+        }
+      }
+
+      return errors;
+    }
+
     nextBtn.addEventListener('click', async () => {
       if (currentStep < 5) {
         goToStep(currentStep + 1);
       } else {
+        // Validate before submit
+        const validationErrors = validateForm();
+        if (validationErrors.length > 0) {
+          const errorMessage = 'Please complete all required fields:\\n\\n' + validationErrors.join('\\n');
+          alert(errorMessage);
+          return;
+        }
+
         // Submit
         if (isSending) return;
         isSending = true;
