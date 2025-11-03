@@ -80,6 +80,43 @@ if not root_logger.handlers:
 logger.setLevel(_log_level_value)
 
 
+def _sanitize_headers_for_logging(headers: Mapping[str, str]) -> Dict[str, str]:
+    """Return a copy of headers with sensitive values masked."""
+
+    sanitized = dict(headers)
+    if "x-api-key" in sanitized:
+        sanitized["x-api-key"] = "***redacted***"
+    return sanitized
+
+
+def _log_network_request(
+    *, method: str, url: str, headers: Mapping[str, str], payload: Mapping[str, Any] | None
+) -> None:
+    """Log an outgoing network request."""
+
+    logger.info(
+        "Sending %s request to %s with headers=%s payload=%s",
+        method,
+        url,
+        _sanitize_headers_for_logging(headers),
+        payload,
+    )
+
+
+def _log_network_response(
+    *, method: str, url: str, status: int, response_text: str
+) -> None:
+    """Log the response received for a network request."""
+
+    logger.info(
+        "Received %s response from %s with status=%s body=%s",
+        method,
+        url,
+        status,
+        response_text,
+    )
+
+
 @dataclass(frozen=True)
 class WidgetDefinition:
     identifier: str
@@ -1758,6 +1795,8 @@ async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvoc
 
     headers = _personal_auto_rate_headers()
 
+    _log_network_request(method="POST", url=url, headers=headers, payload=request_body)
+
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
             response = await client.post(
@@ -1766,10 +1805,14 @@ async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvoc
                 json=request_body,
             )
     except httpx.HTTPError as exc:  # pragma: no cover - network error handling
+        logger.exception("Personal auto rate request failed due to network error")
         raise RuntimeError(f"Failed to request personal auto rate: {exc}") from exc
 
     status_code = response.status_code
     response_text = response.text
+    _log_network_response(
+        method="POST", url=url, status=status_code, response_text=response_text
+    )
     parsed_response: Any = {}
     if response_text.strip():
         try:
@@ -1788,20 +1831,36 @@ async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvoc
     rate_results: Any = None
     rate_results_status: Optional[int] = None
     if transaction_id:
+        results_url = PERSONAL_AUTO_RATE_RESULTS_ENDPOINT
+        _log_network_request(
+            method="GET",
+            url=results_url,
+            headers=headers,
+            payload={"params": {"Id": transaction_id}},
+        )
         try:
             async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
                 rate_results_response = await client.get(
-                    PERSONAL_AUTO_RATE_RESULTS_ENDPOINT,
+                    results_url,
                     headers=headers,
                     params={"Id": transaction_id},
                 )
         except httpx.HTTPError as exc:  # pragma: no cover - network error handling
+            logger.exception(
+                "Personal auto rate results request failed due to network error"
+            )
             raise RuntimeError(
                 f"Failed to request personal auto rate results: {exc}"
             ) from exc
 
         rate_results_status = rate_results_response.status_code
         rate_results_text = rate_results_response.text
+        _log_network_response(
+            method="GET",
+            url=results_url,
+            status=rate_results_status,
+            response_text=rate_results_text,
+        )
         if rate_results_response.is_error:
             raise RuntimeError(
                 "Personal auto rate results request failed with "
@@ -1843,6 +1902,13 @@ async def _retrieve_personal_auto_rate_results(
 
     headers = _personal_auto_rate_headers()
 
+    _log_network_request(
+        method="GET",
+        url=PERSONAL_AUTO_RATE_RESULTS_ENDPOINT,
+        headers=headers,
+        payload={"params": {"Id": identifier}},
+    )
+
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
             response = await client.get(
@@ -1851,12 +1917,21 @@ async def _retrieve_personal_auto_rate_results(
                 params={"Id": identifier},
             )
     except httpx.HTTPError as exc:  # pragma: no cover - network error handling
+        logger.exception(
+            "Personal auto rate results retrieval failed due to network error"
+        )
         raise RuntimeError(
             f"Failed to retrieve personal auto rate results: {exc}"
         ) from exc
 
     status_code = response.status_code
     response_text = response.text
+    _log_network_response(
+        method="GET",
+        url=PERSONAL_AUTO_RATE_RESULTS_ENDPOINT,
+        status=status_code,
+        response_text=response_text,
+    )
     rate_results: Any = None
     if response_text.strip():
         try:
