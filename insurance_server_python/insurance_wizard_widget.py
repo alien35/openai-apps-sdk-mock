@@ -476,7 +476,6 @@ INSURANCE_WIZARD_WIDGET_HTML = r"""
       reasonForNoInsurance: 'Other',
 
       // Step 3: Vehicle Details
-      vin: '',
       make: '',
       model: '',
       year: null,
@@ -511,7 +510,6 @@ INSURANCE_WIZARD_WIDGET_HTML = r"""
       occupation: '',
       industry: '',
       monthsEmployed: 0,
-      licenseNumber: '',
       licenseStatus: 'Valid',
       monthsLicensed: 335,
       monthsStateLicensed: 335,
@@ -655,9 +653,10 @@ INSURANCE_WIZARD_WIDGET_HTML = r"""
                 <label class="wizard__label">Payment Method</label>
                 <div class="wizard__input-wrapper">
                   <select class="wizard__select" data-field="paymentMethod">
-                    <option value="Electronic Funds Transfer">EFT</option>
-                    <option value="Standard">Credit Card</option>
+                    <option value="Standard">Standard</option>
+                    <option value="Electronic Funds Transfer">Electronic Funds Transfer</option>
                     <option value="Paid In Full">Paid In Full</option>
+                    <option value="Default">Default</option>
                   </select>
                 </div>
               </div>
@@ -833,12 +832,6 @@ INSURANCE_WIZARD_WIDGET_HTML = r"""
             <h3 class="wizard__section-title">Vehicle Information</h3>
             <div class="wizard__grid">
               <div class="wizard__field">
-                <label class="wizard__label">VIN</label>
-                <div class="wizard__input-wrapper">
-                  <input type="text" class="wizard__input" placeholder="2FMPK4J99J" data-field="vin">
-                </div>
-              </div>
-              <div class="wizard__field">
                 <label class="wizard__label">Make *</label>
                 <div class="wizard__input-wrapper">
                   <input type="text" class="wizard__input" placeholder="FORD" data-field="make" required>
@@ -889,9 +882,11 @@ INSURANCE_WIZARD_WIDGET_HTML = r"""
                 <label class="wizard__label">Usage</label>
                 <div class="wizard__input-wrapper">
                   <select class="wizard__select" data-field="usage">
-                    <option value="Work School">Work School</option>
+                    <option value="Artisan Use">Artisan Use</option>
+                    <option value="Business Use">Business Use</option>
+                    <option value="Farm">Farm</option>
                     <option value="Pleasure">Pleasure</option>
-                    <option value="Business">Business</option>
+                    <option value="Work School">Work School</option>
                   </select>
                 </div>
               </div>
@@ -1100,12 +1095,6 @@ INSURANCE_WIZARD_WIDGET_HTML = r"""
           <div class="wizard__form-section">
             <h3 class="wizard__section-title">License Information</h3>
             <div class="wizard__grid">
-              <div class="wizard__field">
-                <label class="wizard__label">License Number</label>
-                <div class="wizard__input-wrapper">
-                  <input type="text" class="wizard__input" data-field="licenseNumber">
-                </div>
-              </div>
               <div class="wizard__field">
                 <label class="wizard__label">License Status</label>
                 <div class="wizard__input-wrapper">
@@ -1417,8 +1406,6 @@ INSURANCE_WIZARD_WIDGET_HTML = r"""
           <div class="wizard__review-grid">
             <span class="wizard__review-label">Vehicle:</span>
             <span class="wizard__review-value">\${formData.year || ''} \${formData.make} \${formData.model}</span>
-            <span class="wizard__review-label">VIN:</span>
-            <span class="wizard__review-value">\${formData.vin || 'Not provided'}</span>
             <span class="wizard__review-label">Usage:</span>
             <span class="wizard__review-value">\${formData.usage}</span>
           </div>
@@ -1532,7 +1519,6 @@ INSURANCE_WIZARD_WIDGET_HTML = r"""
           "Industry": formData.industry || "",
           "Occupation": formData.occupation || "",
           "LicenseInformation": {
-            "LicenseNumber": formData.licenseNumber || "",
             "LicenseStatus": formData.licenseStatus,
             "MonthsForeignLicense": 0,
             "MonthsLicensed": formData.monthsLicensed || 335,
@@ -1572,7 +1558,6 @@ INSURANCE_WIZARD_WIDGET_HTML = r"""
         }],
         "Vehicles": [{
           "VehicleId": 1,
-          "Vin": formData.vin || "2FMPK4J99J",
           "Make": formData.make,
           "Model": formData.model,
           "Year": formData.year || 2018,
