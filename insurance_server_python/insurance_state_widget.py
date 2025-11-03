@@ -891,9 +891,14 @@ INSURANCE_STATE_WIDGET_HTML = """
     paymentMethodPlaceholder.value = "";
     paymentMethodPlaceholder.textContent = "Select payment method";
     paymentMethodSelect.appendChild(paymentMethodPlaceholder);
-    ["EFT", "Credit Card", "Check", "Cash"].forEach((pm) => {
+    [
+      "Standard",
+      "Electronic Funds Transfer",
+      "Paid In Full",
+      "Default"
+    ].forEach((pm) => {
       const opt = document.createElement("option");
-      opt.value = pm.toLowerCase().replace(" ", "-");
+      opt.value = pm;
       opt.textContent = pm;
       paymentMethodSelect.appendChild(opt);
     });
@@ -1145,7 +1150,6 @@ INSURANCE_STATE_WIDGET_HTML = """
     };
 
     // Vehicle basic info
-    const vinField = createInputField("vehicle-vin", "VIN", "text", "Enter VIN");
     const makeField = createInputField("vehicle-make", "Make", "text", "Enter make");
     const modelField = createInputField("vehicle-model", "Model", "text", "Enter model");
     const yearField = createInputField("vehicle-year", "Year", "number", "Enter year");
@@ -1160,7 +1164,13 @@ INSURANCE_STATE_WIDGET_HTML = """
     const purchaseTypeField = createSelectField("vehicle-purchase-type", "Purchase Type", ["New", "Used", "Lease"]);
     const rideShareField = createToggleField("vehicle-rideshare", "RideShare?");
     const salvagedField = createToggleField("vehicle-salvaged", "Salvaged?");
-    const usageField = createSelectField("vehicle-usage", "Usage", ["Commute", "Business", "Pleasure", "Farm"]);
+    const usageField = createSelectField("vehicle-usage", "Usage", [
+      { value: "Artisan Use", label: "Artisan Use" },
+      { value: "Business Use", label: "Business Use" },
+      { value: "Farm", label: "Farm" },
+      { value: "Pleasure", label: "Pleasure" },
+      { value: "Work School", label: "Work School" }
+    ]);
     const odometerField = createInputField("vehicle-odometer", "Odometer", "number", "Enter odometer reading");
 
     // Garaging Address section
@@ -1188,7 +1198,6 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     // Append all fields to step 3 content
     step3Content.appendChild(step3Title);
-    step3Content.appendChild(vinField);
     step3Content.appendChild(makeField);
     step3Content.appendChild(modelField);
     step3Content.appendChild(yearField);
@@ -1240,7 +1249,6 @@ INSURANCE_STATE_WIDGET_HTML = """
     licenseTitle.className = "insurance-widget__subsection-title";
     licenseTitle.textContent = "License Information";
 
-    const licenseNumberField = createInputField("license-number", "License Number", "text", "Enter license number");
     const licenseStatusField = createSelectField("license-status", "License Status", ["Valid", "Suspended", "Expired", "Learner's Permit"]);
     const monthsLicensedField = createInputField("months-licensed", "Months Licensed", "number", "Enter months");
     const stateLicensedField = createSelectField("state-licensed", "State Licensed", STATES.map(s => ({ value: s.code, label: s.name })));
@@ -1292,7 +1300,6 @@ INSURANCE_STATE_WIDGET_HTML = """
     step4Content.appendChild(industryField);
     step4Content.appendChild(monthsEmployedField);
     step4Content.appendChild(licenseTitle);
-    step4Content.appendChild(licenseNumberField);
     step4Content.appendChild(licenseStatusField);
     step4Content.appendChild(monthsLicensedField);
     step4Content.appendChild(stateLicensedField);
@@ -1529,7 +1536,6 @@ INSURANCE_STATE_WIDGET_HTML = """
 
       // Vehicle section
       const vehicleFields = [
-        { label: "VIN", id: "vehicle-vin" },
         { label: "Make", id: "vehicle-make" },
         { label: "Model", id: "vehicle-model" },
         { label: "Year", id: "vehicle-year" },
@@ -1542,7 +1548,6 @@ INSURANCE_STATE_WIDGET_HTML = """
         { label: "First Name", id: "driver-first-name" },
         { label: "Last Name", id: "driver-last-name" },
         { label: "Date of Birth", id: "driver-dob" },
-        { label: "License Number", id: "license-number" },
         { label: "License Status", id: "license-status" }
       ];
       reviewContainer.appendChild(createReviewSection("Driver Information", driverFields, 4));
@@ -1633,7 +1638,6 @@ INSURANCE_STATE_WIDGET_HTML = """
         },
         // Step 3: Vehicle Details
         vehicle: {
-          vin: getFieldValue("vehicle-vin"),
           make: getFieldValue("vehicle-make"),
           model: getFieldValue("vehicle-model"),
           year: getFieldValue("vehicle-year"),
@@ -1674,7 +1678,6 @@ INSURANCE_STATE_WIDGET_HTML = """
           industry: getFieldValue("driver-industry"),
           monthsEmployed: getFieldValue("driver-months-employed"),
           license: {
-            number: getFieldValue("license-number"),
             status: getFieldValue("license-status"),
             monthsLicensed: getFieldValue("months-licensed"),
             stateLicensed: getFieldValue("state-licensed"),
