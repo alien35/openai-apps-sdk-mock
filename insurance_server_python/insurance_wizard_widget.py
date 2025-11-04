@@ -1,7 +1,12 @@
 """5-step insurance wizard widget for personal auto quotes."""
 
-INSURANCE_WIZARD_WIDGET_HTML = r"""
-<div id="insurance-wizard-root"></div>
+def generate_insurance_wizard_html(is_testing: bool = False) -> str:
+    """Generate the insurance wizard widget HTML with optional testing mode."""
+    testing_script = ""
+    if is_testing:
+        testing_script = "<script>window.IS_TESTING = true;</script>\n"
+
+    return testing_script + r"""<div id="insurance-wizard-root"></div>
 <style>
   :root {
     color-scheme: light dark;
@@ -1297,6 +1302,11 @@ INSURANCE_WIZARD_WIDGET_HTML = r"""
         <button type="button" class="wizard__button wizard__button--secondary" id="prevBtn">Previous</button>
         <button type="button" class="wizard__button wizard__button--primary" id="nextBtn">Next</button>
       </div>
+      <div id="testDataBtn" style="display: none; text-align: center; margin-top: 16px;">
+        <button type="button" class="wizard__button wizard__button--secondary" style="background: rgba(99, 102, 241, 0.1); color: rgba(99, 102, 241, 0.9); border: 1px solid rgba(99, 102, 241, 0.3);">
+          🧪 Fill Test Data
+        </button>
+      </div>
     \`;
 
     root.appendChild(wizard);
@@ -1304,6 +1314,8 @@ INSURANCE_WIZARD_WIDGET_HTML = r"""
     const prevBtn = wizard.querySelector('#prevBtn');
     const nextBtn = wizard.querySelector('#nextBtn');
     const reviewContainer = wizard.querySelector('#review-container');
+    const testDataBtnContainer = wizard.querySelector('#testDataBtn');
+    const testDataBtn = testDataBtnContainer?.querySelector('button');
 
     // Bind form inputs to formData
     function bindInputs() {
@@ -1716,7 +1728,7 @@ INSURANCE_WIZARD_WIDGET_HTML = r"""
       if (window.openai && typeof window.openai.sendFollowUpMessage === "function") {
         try {
           await window.openai.sendFollowUpMessage({
-            prompt: \`I've completed the insurance application form. Please submit this quote for rating.\`,
+            prompt: \`I've completed the insurance application form. Please call the request-personal-auto-rate tool with the following exact payload (do not modify any fields):\n\n\${JSON.stringify(payload, null, 2)}\`,
             metadata: { quotePayload: payload }
           });
           nextBtn.textContent = 'Submitted!';
@@ -1738,6 +1750,57 @@ INSURANCE_WIZARD_WIDGET_HTML = r"""
     if (effectiveDateInput) {
       effectiveDateInput.value = today;
     }
+
+    // Function to fill test data
+    function fillTestData() {
+      console.log('[insurance-wizard] Filling form with test data');
+
+      // Step 1: Policy Setup (already has defaults)
+      formData.effectiveDate = today;
+
+      // Step 2: Customer Information
+      formData.firstName = 'John';
+      formData.lastName = 'Smith';
+      formData.street = '123 Beverly Dr';
+      formData.city = 'Beverly Hills';
+      formData.state = 'California';
+      formData.zipCode = '90210';
+      formData.mobilePhone = '555-123-4567';
+      formData.emailAddress = 'john.smith@example.com';
+      formData.monthsAtResidence = 24;
+
+      // Step 3: Vehicle Details
+      formData.make = 'Honda';
+      formData.model = 'Civic';
+      formData.year = 2018;
+      formData.annualMiles = 12000;
+      formData.milesToWork = 10;
+      formData.usage = 'Commute';
+
+      // Step 4: Driver Information
+      formData.driverFirstName = 'John';
+      formData.driverLastName = 'Smith';
+      formData.dateOfBirth = '1990-01-15';
+      formData.gender = 'Male';
+      formData.maritalStatus = 'Single';
+      formData.stateLicensed = 'California';
+      formData.monthsLicensed = 120;
+      formData.monthsStateLicensed = 120;
+
+      // Re-bind inputs to show the filled data
+      bindInputs();
+    }
+
+    // Show test data button if testing mode is enabled
+    if (window.IS_TESTING && testDataBtnContainer && testDataBtn) {
+      console.log('[insurance-wizard] Testing mode enabled - showing test data button');
+      testDataBtnContainer.style.display = 'block';
+      testDataBtn.addEventListener('click', fillTestData);
+    }
   })();
 </script>
 """.strip()
+
+
+# Backward compatibility: provide the HTML with testing disabled by default
+INSURANCE_WIZARD_WIDGET_HTML = generate_insurance_wizard_html(is_testing=False)
