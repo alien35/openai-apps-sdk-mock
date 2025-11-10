@@ -55,7 +55,6 @@ from .insurance_quote_options_widget import (
 from .insurance_rate_results_widget import (
     INSURANCE_RATE_RESULTS_WIDGET_HTML,
 )
-from .insurance_wizard_widget import generate_insurance_wizard_html
 
 
 logger = logging.getLogger(__name__)
@@ -310,9 +309,6 @@ DEFAULT_WIDGETS: Tuple[WidgetDefinition, ...] = (
     ),
 )
 
-# Read testing mode from environment
-_IS_TESTING = os.getenv("IS_TESTING", "").lower() in ("true", "1", "yes")
-
 ADDITIONAL_WIDGETS: Tuple[WidgetDefinition, ...] = (
     WidgetDefinition(
         identifier="insurance-quote-options",
@@ -340,21 +336,7 @@ ADDITIONAL_WIDGETS: Tuple[WidgetDefinition, ...] = (
         tool_description=(
             "Summarizes carrier premiums, payment plans, and shared coverages for a personal auto quote."
         ),
-    ),
-    WidgetDefinition(
-        identifier="insurance-wizard",
-        title="Complete personal auto quote",
-        template_uri="ui://widget/insurance-wizard.html",
-        invoking="Collecting comprehensive personal auto quote information",
-        invoked="Captured complete personal auto quote",
-        html=generate_insurance_wizard_html(is_testing=_IS_TESTING),
-        response_text="Let's complete your personal auto quote with this comprehensive wizard.",
-        input_schema=None,
-        tool_description=(
-            "5-step wizard that collects all information needed for a personal auto quote: policy setup, "
-            "customer information, vehicle details, driver information, and review/submit."
-        ),
-    ),
+    )
 )
 
 widgets: Tuple[WidgetDefinition, ...] = DEFAULT_WIDGETS + ADDITIONAL_WIDGETS
@@ -365,8 +347,6 @@ INSURANCE_QUOTE_OPTIONS_WIDGET_IDENTIFIER = "insurance-quote-options"
 INSURANCE_QUOTE_OPTIONS_WIDGET_TEMPLATE_URI = "ui://widget/insurance-quote-options.html"
 INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER = "insurance-rate-results"
 INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI = "ui://widget/insurance-rate-results.html"
-INSURANCE_WIZARD_WIDGET_IDENTIFIER = "insurance-wizard"
-INSURANCE_WIZARD_WIDGET_TEMPLATE_URI = "ui://widget/insurance-wizard.html"
 
 
 MIME_TYPE = "text/html+skybridge"
@@ -420,21 +400,6 @@ if INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
     msg = (
         "Personal auto rate results widget must expose the correct template URI; "
         f"expected '{INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI}' in widgets"
-    )
-    raise RuntimeError(msg)
-
-
-if INSURANCE_WIZARD_WIDGET_IDENTIFIER not in WIDGETS_BY_ID:
-    msg = (
-        "Insurance wizard widget must be registered; "
-        f"expected identifier '{INSURANCE_WIZARD_WIDGET_IDENTIFIER}' in widgets"
-    )
-    raise RuntimeError(msg)
-
-if INSURANCE_WIZARD_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
-    msg = (
-        "Insurance wizard widget must expose the correct template URI; "
-        f"expected '{INSURANCE_WIZARD_WIDGET_TEMPLATE_URI}' in widgets"
     )
     raise RuntimeError(msg)
 
