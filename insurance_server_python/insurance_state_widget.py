@@ -1709,6 +1709,123 @@ INSURANCE_STATE_WIDGET_HTML = """
       };
     }
 
+    // Function to transform form data to PersonalAutoRateRequest format
+    function transformToRateRequest(formData) {
+      const rateRequest = {
+        Identifier: `quote-${Date.now()}`,
+        EffectiveDate: formData.policy.effectiveDate || new Date().toISOString().split('T')[0],
+        CustomerDeclinedCredit: formData.policy.declinedCredit || false,
+        BumpLimits: formData.policy.bumpLimits || "No Bumping",
+        Term: formData.policy.term || "Semi Annual",
+        PaymentMethod: formData.policy.paymentMethod || "Default",
+        PolicyType: formData.policy.policyType || "Standard",
+        Customer: {
+          FirstName: formData.customer.firstName || "Unknown",
+          MiddleName: formData.customer.middleName || "",
+          LastName: formData.customer.lastName || "Unknown",
+          DeclinedEmail: formData.customer.declinedEmail || false,
+          DeclinedPhone: formData.customer.declinedPhone || false,
+          MonthsAtResidence: parseInt(formData.customer.monthsAtResidence) || 24,
+          Address: {
+            Street: formData.customer.address.street || "",
+            City: formData.customer.address.city || "",
+            State: formData.customer.address.state || "",
+            County: formData.customer.address.county || "",
+            ZipCode: formData.customer.address.zipCode || ""
+          },
+          MobilePhone: formData.customer.contact.mobilePhone || "",
+          HomePhone: formData.customer.contact.homePhone || "",
+          WorkPhone: formData.customer.contact.workPhone || "",
+          Email: formData.customer.contact.email || "",
+          PriorInsuranceInformation: {
+            PriorInsurance: formData.customer.priorInsurance || false,
+            ReasonForNoInsurance: formData.customer.noInsuranceReason || "Other"
+          }
+        },
+        PolicyCoverages: {},
+        RatedDrivers: [
+          {
+            DriverId: 1,
+            FirstName: formData.driver.firstName || "Unknown",
+            MiddleName: formData.driver.middleName || "",
+            LastName: formData.driver.lastName || "Unknown",
+            DateOfBirth: formData.driver.dateOfBirth || "1990-01-01",
+            Gender: formData.driver.gender || "Male",
+            MaritalStatus: formData.driver.maritalStatus || "Single",
+            Occupation: formData.driver.occupation || "",
+            Industry: formData.driver.industry || "",
+            MonthsEmployed: parseInt(formData.driver.monthsEmployed) || 0,
+            LicenseInformation: {
+              LicenseStatus: formData.driver.license.status || "Valid",
+              MonthsLicensed: parseInt(formData.driver.license.monthsLicensed) || 24,
+              StateLicensed: formData.driver.license.stateLicensed || formData.customer.address.state,
+              MonthsStateLicensed: parseInt(formData.driver.license.monthsLicensed) || 24,
+              MonthsMvrExperience: parseInt(formData.driver.license.mvrExperience) || 24,
+              MonthsSuspended: parseInt(formData.driver.license.suspendedMonths) || 0,
+              ForeignNational: formData.driver.license.foreignNational || false,
+              InternationalDriversLicense: formData.driver.license.internationalLicense || false,
+              LicenseNumber: "UNKNOWN0000",
+              MonthsForeignLicense: 0,
+              CountryOfOrigin: "None"
+            },
+            Attributes: {
+              EducationLevel: formData.driver.attributes.educationLevel || "",
+              Relation: formData.driver.attributes.relation || "",
+              ResidencyType: formData.driver.attributes.residencyType || "",
+              MilesToWork: parseInt(formData.driver.attributes.milesToWork) || 0,
+              PropertyInsurance: formData.driver.attributes.propertyInsurance || false
+            },
+            Discounts: {
+              DefensiveDriving: formData.driver.discounts.defensiveDriving || false,
+              GoodStudent: formData.driver.discounts.goodStudent || false,
+              Senior: formData.driver.discounts.senior || false,
+              MultiplePolicies: formData.driver.discounts.multiplePolicies || false
+            },
+            SR22Required: formData.driver.sr22.required || false,
+            SR22Reason: formData.driver.sr22.reason || "",
+            SR22State: formData.driver.sr22.state || "",
+            SR22Date: formData.driver.sr22.date || ""
+          }
+        ],
+        Vehicles: [
+          {
+            VehicleId: 1,
+            AssignedDriverId: 1,
+            Make: formData.vehicle.make || "",
+            Model: formData.vehicle.model || "",
+            Year: parseInt(formData.vehicle.year) || new Date().getFullYear(),
+            AnnualMiles: parseInt(formData.vehicle.annualMiles) || 12000,
+            MilesToWork: parseInt(formData.vehicle.milesToWork) || 0,
+            LeasedVehicle: formData.vehicle.leased || false,
+            PercentToWork: parseInt(formData.vehicle.percentToWork) || 0,
+            PurchaseType: formData.vehicle.purchaseType || "",
+            RideShare: formData.vehicle.rideShare || false,
+            Salvaged: formData.vehicle.salvaged || false,
+            Usage: formData.vehicle.usage || "Work School",
+            Odometer: parseInt(formData.vehicle.odometer) || 0,
+            Vin: "2FMPK4J99J",
+            GaragingAddress: {
+              Street: formData.vehicle.garagingAddress.street || formData.customer.address.street || "",
+              City: formData.vehicle.garagingAddress.city || formData.customer.address.city || "",
+              State: formData.vehicle.garagingAddress.state || formData.customer.address.state || "",
+              ZipCode: formData.vehicle.garagingAddress.zipCode || formData.customer.address.zipCode || ""
+            },
+            CoverageInformation: {
+              CollisionDeductible: formData.vehicle.coverage.collisionDeductible || "None",
+              ComprehensiveDeductible: formData.vehicle.coverage.comprehensiveDeductible || "None",
+              RentalLimit: formData.vehicle.coverage.rentalLimit || "None",
+              GapCoverage: formData.vehicle.coverage.gapCoverage || false,
+              CustomEquipmentValue: parseInt(formData.vehicle.coverage.customEquipmentValue) || 0,
+              SafetyGlassCoverage: formData.vehicle.coverage.safetyGlassCoverage || false,
+              TowingLimit: formData.vehicle.coverage.towingLimit || "None"
+            }
+          }
+        ]
+      };
+
+      return rateRequest;
+    }
+
     // Function to send form data to assistant
     async function sendFormToAssistant() {
       if (!window.openai || typeof window.openai.sendFollowUpMessage !== "function") {
@@ -1723,38 +1840,13 @@ INSURANCE_STATE_WIDGET_HTML = """
       }
 
       const formData = collectFormData();
+      const rateRequest = transformToRateRequest(formData);
 
-      // Build a human-readable prompt
-      let prompt = "I would like to request an insurance quote with the following details:\\n\\n";
+      // Build a human-readable prompt that tells the assistant to call the rate tool
+      let prompt = "I've submitted my insurance quote request form. Please call the 'request-personal-auto-rate' tool with the following data:\\n\\n";
+      prompt += JSON.stringify(rateRequest, null, 2);
 
-      if (formData.customer.firstName && formData.customer.lastName) {
-        prompt += `Customer: ${formData.customer.firstName} ${formData.customer.lastName}\\n`;
-      }
-
-      if (formData.customer.address.city && formData.customer.address.state) {
-        prompt += `Location: ${formData.customer.address.city}, ${formData.customer.address.state}`;
-        if (formData.customer.address.zipCode) {
-          prompt += ` ${formData.customer.address.zipCode}`;
-        }
-        prompt += "\\n";
-      }
-
-      if (formData.vehicle.make && formData.vehicle.model && formData.vehicle.year) {
-        prompt += `Vehicle: ${formData.vehicle.year} ${formData.vehicle.make} ${formData.vehicle.model}\\n`;
-      }
-
-      if (formData.driver.firstName && formData.driver.lastName) {
-        prompt += `Driver: ${formData.driver.firstName} ${formData.driver.lastName}\\n`;
-      }
-
-      prompt += "\\nPlease provide a quote based on this information.";
-
-      const metadata = {
-        formData: formData,
-        submittedAt: new Date().toISOString()
-      };
-
-      return window.openai.sendFollowUpMessage({ prompt, metadata });
+      return window.openai.sendFollowUpMessage({ prompt });
     }
 
     // Initialize widget on step 1
