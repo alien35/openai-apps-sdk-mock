@@ -1711,15 +1711,20 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     // Function to transform form data to PersonalAutoRateRequest format
     function transformToRateRequest(formData) {
+      // Generate unique identifiers
+      const timestamp = Date.now();
+      const customerId = `${formData.customer.address.state || 'XX'}-${formData.customer.firstName || 'Customer'}-${timestamp}`;
+
       const rateRequest = {
-        Identifier: `quote-${Date.now()}`,
-        EffectiveDate: formData.policy.effectiveDate || new Date().toISOString().split('T')[0],
+        Identifier: `quote-${timestamp}`,
+        EffectiveDate: formData.policy.effectiveDate ? `${formData.policy.effectiveDate}T00:00:00` : new Date().toISOString(),
         CustomerDeclinedCredit: formData.policy.declinedCredit || false,
         BumpLimits: formData.policy.bumpLimits || "No Bumping",
         Term: formData.policy.term || "Semi Annual",
         PaymentMethod: formData.policy.paymentMethod || "Default",
         PolicyType: formData.policy.policyType || "Standard",
         Customer: {
+          Identifier: customerId,
           FirstName: formData.customer.firstName || "Unknown",
           MiddleName: formData.customer.middleName || "",
           LastName: formData.customer.lastName || "Unknown",
@@ -1727,88 +1732,105 @@ INSURANCE_STATE_WIDGET_HTML = """
           DeclinedPhone: formData.customer.declinedPhone || false,
           MonthsAtResidence: parseInt(formData.customer.monthsAtResidence) || 24,
           Address: {
-            Street: formData.customer.address.street || "",
-            City: formData.customer.address.city || "",
-            State: formData.customer.address.state || "",
-            County: formData.customer.address.county || "",
-            ZipCode: formData.customer.address.zipCode || ""
+            Street1: formData.customer.address.street || "Unknown Street",
+            City: formData.customer.address.city || "Unknown",
+            State: formData.customer.address.state || "CA",
+            County: formData.customer.address.county || null,
+            ZipCode: formData.customer.address.zipCode || "00000"
           },
-          MobilePhone: formData.customer.contact.mobilePhone || "",
-          HomePhone: formData.customer.contact.homePhone || "",
-          WorkPhone: formData.customer.contact.workPhone || "",
-          Email: formData.customer.contact.email || "",
+          ContactInformation: {
+            MobilePhone: formData.customer.contact.mobilePhone || "",
+            HomePhone: formData.customer.contact.homePhone || "",
+            WorkPhone: formData.customer.contact.workPhone || "",
+            EmailAddress: formData.customer.contact.email || ""
+          },
           PriorInsuranceInformation: {
             PriorInsurance: formData.customer.priorInsurance || false,
             ReasonForNoInsurance: formData.customer.noInsuranceReason || "Other"
           }
         },
-        PolicyCoverages: {},
+        PolicyCoverages: {
+          LiabilityBiLimit: "30000/60000",
+          LiabilityPdLimit: "15000",
+          MedPayLimit: "None",
+          UninsuredMotoristBiLimit: "30000/60000",
+          AccidentalDeathLimit: "None",
+          "UninsuredMotoristPd/CollisionDamageWaiver": false
+        },
         RatedDrivers: [
           {
             DriverId: 1,
-            FirstName: formData.driver.firstName || "Unknown",
+            FirstName: formData.driver.firstName || formData.customer.firstName || "Unknown",
             MiddleName: formData.driver.middleName || "",
-            LastName: formData.driver.lastName || "Unknown",
-            DateOfBirth: formData.driver.dateOfBirth || "1990-01-01",
+            LastName: formData.driver.lastName || formData.customer.lastName || "Unknown",
+            DateOfBirth: formData.driver.dateOfBirth ? `${formData.driver.dateOfBirth}T00:00:00` : "1990-01-01T00:00:00",
             Gender: formData.driver.gender || "Male",
             MaritalStatus: formData.driver.maritalStatus || "Single",
-            Occupation: formData.driver.occupation || "",
-            Industry: formData.driver.industry || "",
-            MonthsEmployed: parseInt(formData.driver.monthsEmployed) || 0,
+            Occupation: formData.driver.occupation || null,
+            Industry: formData.driver.industry || null,
+            MonthsEmployed: parseInt(formData.driver.monthsEmployed) || null,
             LicenseInformation: {
+              LicenseNumber: "UNKNOWN0000",
               LicenseStatus: formData.driver.license.status || "Valid",
+              MonthsForeignLicense: 0,
               MonthsLicensed: parseInt(formData.driver.license.monthsLicensed) || 24,
-              StateLicensed: formData.driver.license.stateLicensed || formData.customer.address.state,
               MonthsStateLicensed: parseInt(formData.driver.license.monthsLicensed) || 24,
               MonthsMvrExperience: parseInt(formData.driver.license.mvrExperience) || 24,
               MonthsSuspended: parseInt(formData.driver.license.suspendedMonths) || 0,
+              StateLicensed: formData.driver.license.stateLicensed || formData.customer.address.state || "CA",
+              CountryOfOrigin: "None",
               ForeignNational: formData.driver.license.foreignNational || false,
-              InternationalDriversLicense: formData.driver.license.internationalLicense || false,
-              LicenseNumber: "UNKNOWN0000",
-              MonthsForeignLicense: 0,
-              CountryOfOrigin: "None"
+              InternationalDriversLicense: formData.driver.license.internationalLicense || false
             },
             Attributes: {
-              EducationLevel: formData.driver.attributes.educationLevel || "",
-              Relation: formData.driver.attributes.relation || "",
-              ResidencyType: formData.driver.attributes.residencyType || "",
-              MilesToWork: parseInt(formData.driver.attributes.milesToWork) || 0,
-              PropertyInsurance: formData.driver.attributes.propertyInsurance || false
+              EducationLevel: formData.driver.attributes.educationLevel || null,
+              OccasionalOperator: false,
+              PropertyInsurance: formData.driver.attributes.propertyInsurance || false,
+              Relation: formData.driver.attributes.relation || null,
+              ResidencyStatus: formData.driver.attributes.residencyType || null,
+              ResidencyType: formData.driver.attributes.residencyType || null,
+              MilesToWork: parseInt(formData.driver.attributes.milesToWork) || 0
             },
             Discounts: {
-              DefensiveDriving: formData.driver.discounts.defensiveDriving || false,
+              DistantStudent: "None",
+              DriversTraining: false,
+              DrugAwareness: false,
               GoodStudent: formData.driver.discounts.goodStudent || false,
-              Senior: formData.driver.discounts.senior || false,
-              MultiplePolicies: formData.driver.discounts.multiplePolicies || false
+              SingleParent: false,
+              SeniorDriverDiscount: formData.driver.discounts.senior || false,
+              MultiplePolicies: formData.driver.discounts.multiplePolicies || false,
+              DefensiveDriving: formData.driver.discounts.defensiveDriving || false
             },
-            SR22Required: formData.driver.sr22.required || false,
-            SR22Reason: formData.driver.sr22.reason || "",
-            SR22State: formData.driver.sr22.state || "",
-            SR22Date: formData.driver.sr22.date || ""
+            FinancialResponsibilityInformation: {
+              Sr22: formData.driver.sr22.required || false,
+              Sr22Reason: formData.driver.sr22.reason || "Other",
+              Sr22State: formData.driver.sr22.state || formData.customer.address.state || "CA",
+              Sr22Date: formData.driver.sr22.date ? `${formData.driver.sr22.date}T00:00:00` : new Date().toISOString()
+            }
           }
         ],
         Vehicles: [
           {
             VehicleId: 1,
+            Vin: "2FMPK4J99J",
             AssignedDriverId: 1,
-            Make: formData.vehicle.make || "",
-            Model: formData.vehicle.model || "",
+            Make: formData.vehicle.make || "UNKNOWN",
+            Model: formData.vehicle.model || "UNKNOWN",
             Year: parseInt(formData.vehicle.year) || new Date().getFullYear(),
             AnnualMiles: parseInt(formData.vehicle.annualMiles) || 12000,
             MilesToWork: parseInt(formData.vehicle.milesToWork) || 0,
+            Odometer: parseInt(formData.vehicle.odometer) || 0,
             LeasedVehicle: formData.vehicle.leased || false,
             PercentToWork: parseInt(formData.vehicle.percentToWork) || 0,
-            PurchaseType: formData.vehicle.purchaseType || "",
+            PurchaseType: formData.vehicle.purchaseType || null,
             RideShare: formData.vehicle.rideShare || false,
             Salvaged: formData.vehicle.salvaged || false,
             Usage: formData.vehicle.usage || "Work School",
-            Odometer: parseInt(formData.vehicle.odometer) || 0,
-            Vin: "2FMPK4J99J",
             GaragingAddress: {
-              Street: formData.vehicle.garagingAddress.street || formData.customer.address.street || "",
-              City: formData.vehicle.garagingAddress.city || formData.customer.address.city || "",
-              State: formData.vehicle.garagingAddress.state || formData.customer.address.state || "",
-              ZipCode: formData.vehicle.garagingAddress.zipCode || formData.customer.address.zipCode || ""
+              Street1: formData.vehicle.garagingAddress.street || formData.customer.address.street || "Unknown Street",
+              City: formData.vehicle.garagingAddress.city || formData.customer.address.city || "Unknown",
+              State: formData.vehicle.garagingAddress.state || formData.customer.address.state || "CA",
+              ZipCode: formData.vehicle.garagingAddress.zipCode || formData.customer.address.zipCode || "00000"
             },
             CoverageInformation: {
               CollisionDeductible: formData.vehicle.coverage.collisionDeductible || "None",
