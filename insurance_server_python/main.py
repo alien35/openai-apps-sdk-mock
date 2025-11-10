@@ -536,7 +536,7 @@ class ContactInformationInput(BaseModel):
 
 
 class PriorInsuranceInformationInput(BaseModel):
-    prior_insurance: bool = Field(alias="PriorInsurance")
+    prior_insurance: bool = Field(default=False, alias="PriorInsurance")
     reason_for_no_insurance: Optional[str] = Field(
         default=None, alias="ReasonForNoInsurance"
     )
