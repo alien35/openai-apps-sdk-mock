@@ -1266,7 +1266,8 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     const educationLevelField = createSelectField("education-level", "Education Level", ["High School", "Some College", "Associate's", "Bachelor's", "Master's", "Doctorate"]);
     const relationField = createSelectField("relation", "Relation to Insured", ["Self", "Spouse", "Child", "Parent", "Other"]);
-    const residencyTypeField = createSelectField("residency-type", "Residency Type", ["Own", "Home", "Rent", "Other"]);
+    const residencyStatusField = createSelectField("residency-status", "Residency Status", ["Own", "Rent", "Lease"]);
+    const residencyTypeField = createSelectField("residency-type", "Residency Type", ["Home", "Apartment", "Condo", "Mobile Home", "Fixed Mobile Home"]);
     const driverMilesToWorkField = createInputField("driver-miles-to-work", "Miles To Work", "number", "Enter miles to work");
     const propertyInsuranceField = createToggleField("property-insurance", "Property Insurance?");
 
@@ -1312,6 +1313,7 @@ INSURANCE_STATE_WIDGET_HTML = """
     step4Content.appendChild(attributesTitle);
     step4Content.appendChild(educationLevelField);
     step4Content.appendChild(relationField);
+    step4Content.appendChild(residencyStatusField);
     step4Content.appendChild(residencyTypeField);
     step4Content.appendChild(driverMilesToWorkField);
     step4Content.appendChild(propertyInsuranceField);
@@ -1570,11 +1572,13 @@ INSURANCE_STATE_WIDGET_HTML = """
         selection.textContent = "Submitting quote request...";
         selection.style.color = "";
 
+        let identifier = null;
         try {
-          await sendFormToAssistant();
-          selection.textContent = "✓ Quote request submitted successfully!";
-          selection.style.color = "rgba(34, 197, 94, 0.9)";
-          nextButton.textContent = "Submitted!";
+          const result = await sendFormToAssistant();
+          identifier = result;
+
+          // Completely change the UI to success state
+          showSuccessState(identifier);
         } catch (error) {
           console.error("Failed to submit insurance quote request:", error);
           notifyIssue("error", "Failed to submit insurance quote request.", error);
@@ -1725,6 +1729,7 @@ INSURANCE_STATE_WIDGET_HTML = """
           attributes: {
             educationLevel: getFieldValue("education-level"),
             relation: getFieldValue("relation"),
+            residencyStatus: getFieldValue("residency-status"),
             residencyType: getFieldValue("residency-type"),
             milesToWork: getFieldValue("driver-miles-to-work"),
             propertyInsurance: getFieldValue("property-insurance")
@@ -1822,8 +1827,8 @@ INSURANCE_STATE_WIDGET_HTML = """
               OccasionalOperator: false,
               PropertyInsurance: formData.driver.attributes.propertyInsurance || false,
               Relation: formData.driver.attributes.relation || "Self",
-              ResidencyStatus: formData.driver.attributes.residencyType || "Own",
-              ResidencyType: formData.driver.attributes.residencyType || "Own",
+              ResidencyStatus: formData.driver.attributes.residencyStatus || "Own",
+              ResidencyType: formData.driver.attributes.residencyType || "Home",
               MilesToWork: parseInt(formData.driver.attributes.milesToWork) || 0
             },
             Discounts: {
@@ -1892,14 +1897,86 @@ INSURANCE_STATE_WIDGET_HTML = """
           );
           missingSendFollowUpNotified = true;
         }
-        return Promise.resolve();
+        return Promise.resolve(null);
       }
 
       const formData = collectFormData();
       const rateRequest = transformToRateRequest(formData);
 
+      // Store the identifier we're sending
+      const identifier = rateRequest.Identifier;
+
       // Directly call the MCP tool with structured arguments
-      return window.openai.callTool("request-personal-auto-rate", rateRequest);
+      await window.openai.callTool("request-personal-auto-rate", rateRequest);
+
+      // Return our identifier (not the transactionId from the response)
+      return identifier;
+    }
+
+    // Function to show success state with check results button
+    function showSuccessState(identifier) {
+      // Hide all step content
+      const stepContents = container.querySelectorAll(".insurance-widget__step-content");
+      stepContents.forEach(content => content.style.display = "none");
+
+      // Hide stepper
+      stepper.style.display = "none";
+
+      // Update title and description
+      title.textContent = "Quote Request Submitted!";
+      description.textContent = "Your insurance quote request has been successfully submitted and is being processed.";
+
+      // Update selection/status message
+      selection.textContent = identifier
+        ? `Quote ID: ${identifier}`
+        : "Your quote is being processed.";
+      selection.style.color = "rgba(100, 116, 139, 0.8)";
+      selection.style.fontSize = "12px";
+      selection.style.fontFamily = "monospace";
+
+      // Clear and recreate actions with check results button
+      actions.innerHTML = "";
+
+      const checkResultsButton = document.createElement("button");
+      checkResultsButton.type = "button";
+      checkResultsButton.className = "insurance-widget__button insurance-widget__button--primary";
+      checkResultsButton.textContent = "Check Quote Results";
+      checkResultsButton.style.width = "100%";
+
+      if (!identifier) {
+        checkResultsButton.disabled = true;
+        checkResultsButton.setAttribute("aria-disabled", "true");
+        checkResultsButton.textContent = "No Quote ID Available";
+      } else {
+        checkResultsButton.addEventListener("click", async () => {
+          if (checkResultsButton.disabled) return;
+
+          checkResultsButton.disabled = true;
+          checkResultsButton.textContent = "Checking results...";
+          selection.textContent = "Fetching quote results...";
+          selection.style.color = "";
+
+          try {
+            await window.openai.callTool("retrieve-personal-auto-rate-results", {
+              Identifier: identifier
+            });
+            selection.textContent = "✓ Quote results retrieved successfully!";
+            selection.style.color = "rgba(34, 197, 94, 0.9)";
+            checkResultsButton.textContent = "Results Retrieved!";
+          } catch (error) {
+            console.error("Failed to retrieve quote results:", error);
+            selection.textContent = "❌ Failed to retrieve results. " + (error.message || "Please try again.");
+            selection.style.color = "rgba(220, 38, 38, 0.9)";
+            checkResultsButton.textContent = "Retry";
+            checkResultsButton.disabled = false;
+          }
+        });
+      }
+
+      actions.appendChild(checkResultsButton);
+
+      // Update footnote
+      footnote.textContent = "Click the button above to retrieve your personalized insurance quote results.";
     }
 
     // Initialize widget on step 1
