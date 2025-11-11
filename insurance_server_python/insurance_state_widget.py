@@ -1913,6 +1913,101 @@ INSURANCE_STATE_WIDGET_HTML = """
       return identifier;
     }
 
+    // Function to display quote results
+    function displayResults(response, identifier) {
+      // Update UI
+      title.textContent = "Your Insurance Quotes";
+      description.textContent = `Quote ID: ${identifier}`;
+      selection.style.display = "none";
+
+      // Parse the response to get carrier results
+      let carrierResults = [];
+      try {
+        // The response from callTool should have content array
+        if (response && response.content) {
+          // Find the structured content
+          for (const item of response.content) {
+            if (item.type === "text" && item.text) {
+              try {
+                const parsed = JSON.parse(item.text);
+                if (parsed.rate_results && parsed.rate_results.CarrierResults) {
+                  carrierResults = parsed.rate_results.CarrierResults;
+                  break;
+                }
+              } catch (e) {
+                // Not JSON, continue
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing results:", error);
+      }
+
+      console.log("Parsed carrier results:", carrierResults);
+
+      // Create results container
+      const resultsContainer = document.createElement("div");
+      resultsContainer.style.cssText = "display: flex; flex-direction: column; gap: 16px; margin: 20px 0;";
+
+      if (carrierResults.length === 0) {
+        resultsContainer.innerHTML = `<p style="color: rgba(100, 116, 139, 0.8); text-align: center; padding: 40px;">No quotes available. Please try again later.</p>`;
+      } else {
+        // Render each carrier result as a card
+        carrierResults.forEach((carrier, index) => {
+          const card = document.createElement("div");
+          card.style.cssText = `
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05));
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            transition: transform 0.2s, box-shadow 0.2s;
+          `;
+          card.onmouseenter = () => {
+            card.style.transform = "translateY(-2px)";
+            card.style.boxShadow = "0 8px 24px rgba(99, 102, 241, 0.2)";
+          };
+          card.onmouseleave = () => {
+            card.style.transform = "";
+            card.style.boxShadow = "";
+          };
+
+          const carrierName = carrier.CarrierName || carrier.ProductName || `Carrier ${index + 1}`;
+          const programName = carrier.ProgramName || carrier.Program || "";
+          const premium = carrier.TotalPremium || carrier.Premium || 0;
+          const term = carrier.Term || (carrier.TermMonths ? `${carrier.TermMonths} months` : "");
+
+          card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+              <div>
+                <h3 style="margin: 0; font-size: 20px; font-weight: 700; color: rgba(99, 102, 241, 1);">
+                  ${carrierName}
+                </h3>
+                ${programName ? `<p style="margin: 4px 0 0; font-size: 14px; color: rgba(100, 116, 139, 0.9);">${programName}</p>` : ''}
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 28px; font-weight: 700; color: rgba(34, 197, 94, 1);">
+                  $${premium.toFixed(2)}
+                </div>
+                ${term ? `<div style="font-size: 12px; color: rgba(100, 116, 139, 0.8); margin-top: 2px;">${term}</div>` : ''}
+              </div>
+            </div>
+          `;
+
+          resultsContainer.appendChild(card);
+        });
+      }
+
+      // Clear step content and insert results
+      const stepContents = container.querySelectorAll(".insurance-widget__step-content");
+      stepContents.forEach(content => content.remove());
+
+      container.insertBefore(resultsContainer, actions);
+
+      // Update footnote
+      footnote.textContent = `Found ${carrierResults.length} quote${carrierResults.length !== 1 ? 's' : ''} for your insurance needs.`;
+    }
+
     // Function to show success state with check results button
     function showSuccessState(identifier) {
       // Hide all step content
@@ -1957,12 +2052,15 @@ INSURANCE_STATE_WIDGET_HTML = """
           selection.style.color = "";
 
           try {
-            await window.openai.callTool("retrieve-personal-auto-rate-results", {
+            const response = await window.openai.callTool("retrieve-personal-auto-rate-results", {
               Identifier: identifier
             });
-            selection.textContent = "✓ Quote results retrieved successfully!";
-            selection.style.color = "rgba(34, 197, 94, 0.9)";
-            checkResultsButton.textContent = "Results Retrieved!";
+
+            console.log("Rate results response:", response);
+
+            // Display the results inline
+            displayResults(response, identifier);
+            checkResultsButton.style.display = "none";
           } catch (error) {
             console.error("Failed to retrieve quote results:", error);
             selection.textContent = "❌ Failed to retrieve results. " + (error.message || "Please try again.");

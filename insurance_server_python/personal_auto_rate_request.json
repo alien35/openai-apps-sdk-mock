@@ -61,7 +61,7 @@
     "Address": {
       "City": "Beverly Hills",
       "State": "California",
-      "Street1": "123 Boulevard Drive",
+      "Street1": "123 Boulevard Ave",
       "ZipCode": "90210"
     },
     "ContactInformation": {
@@ -70,7 +70,7 @@
     "DeclinedEmail": false,
     "DeclinedPhone": false,
     "FirstName": "John",
-    "Identifier": "CA-John-1762887171020",
+    "Identifier": "CA-John-1762887981255",
     "LastName": "Smith",
     "MiddleName": "",
     "MonthsAtResidence": 6,
@@ -81,7 +81,7 @@
   },
   "CustomerDeclinedCredit": false,
   "EffectiveDate": "2025-11-11T00:00:00Z",
-  "Identifier": "quote-1762887171020",
+  "Identifier": "quote-1762887981255",
   "PaymentMethod": "Electronic Funds Transfer",
   "PolicyCoverages": {
     "AccidentalDeathLimit": "None",
@@ -102,7 +102,7 @@
         "ResidencyStatus": "Own",
         "ResidencyType": "Home"
       },
-      "DateOfBirth": "1992-01-28T00:00:00Z",
+      "DateOfBirth": "1987-06-09T00:00:00Z",
       "Discounts": {
         "DefensiveDriving": false,
         "DistantStudent": "None",
@@ -116,7 +116,7 @@
       "DriverId": 1,
       "FinancialResponsibilityInformation": {
         "Sr22": false,
-        "Sr22Date": "2025-11-11T18:52:51.020Z",
+        "Sr22Date": "2025-11-11T19:06:21.255Z",
         "Sr22Reason": "Other",
         "Sr22State": "California"
       },
@@ -157,7 +157,7 @@
       "GaragingAddress": {
         "City": "Beverly Hills",
         "State": "California",
-        "Street1": "123 Boulevard Drive",
+        "Street1": "123 Boulevard Ave",
         "ZipCode": "90210"
       },
       "LeasedVehicle": false,
