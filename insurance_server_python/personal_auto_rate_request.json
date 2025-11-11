@@ -1,0 +1,178 @@
+{
+  "BumpLimits": "Bump Up",
+  "CarrierInformation": {
+    "Products": [
+      {
+        "AgencyId": "456494ef-0742-499c-92e0-db9fc8c78941",
+        "CarrierId": "0b0ab021-dd46-4d60-8cd5-e22901030008",
+        "CarrierLoginPassword": "",
+        "CarrierLoginUserName": "",
+        "CarrierName": "Anchor General Ins",
+        "CarrierPassword": "character99",
+        "CarrierUserName": "autoinsspec",
+        "ProducerCode": "92000",
+        "ProductId": "9c0220c6-49c4-4358-aefc-d5bc51630fe5",
+        "ProductName": "Anchor Gemini"
+      },
+      {
+        "AgencyId": "456494ef-0742-499c-92e0-db9fc8c78941",
+        "CarrierId": "0b0ab021-dd46-4d60-8cd5-e22901030008",
+        "CarrierLoginPassword": "",
+        "CarrierLoginUserName": "",
+        "CarrierName": "Anchor General Ins",
+        "CarrierPassword": "charachter99",
+        "CarrierUserName": "autoinsspec",
+        "ProducerCode": "92002",
+        "ProductId": "5e9d28df-214d-4dfc-b723-2f2abd3f5ee5",
+        "ProductName": "Anchor Motor Club",
+        "ProductQuestions": {
+          "AnchorMotorClubV3RTCollBuyback": {
+            "Id": "0-AnchorMotorClubV3RTCollBuyback",
+            "Value": "Yes"
+          }
+        }
+      },
+      {
+        "AgencyId": "456494ef-0742-499c-92e0-db9fc8c78941",
+        "CarrierId": "0b0ab021-dd46-4d60-8cd5-e22901030008",
+        "CarrierLoginPassword": "",
+        "CarrierLoginUserName": "",
+        "CarrierName": "Anchor General Ins",
+        "CarrierPassword": "charachter99",
+        "CarrierUserName": "autoinsspec",
+        "ProducerCode": "92840",
+        "ProductId": "bdd4c0f9-7c50-45dc-a5df-deac8ac717fe",
+        "ProductName": "Anchor Premier",
+        "ProductQuestions": {
+          "AnchorPremierV3MPP": {
+            "Id": "0-AnchorPremierV3MPP",
+            "Value": "Yes"
+          },
+          "AnchorPremierV3RTCollBuyback": {
+            "Id": "0-AnchorPremierV3RTCollBuyback",
+            "Value": "Yes"
+          }
+        }
+      }
+    ],
+    "UseExactCarrierInfo": false
+  },
+  "Customer": {
+    "Address": {
+      "City": "Beverly Hills",
+      "State": "California",
+      "Street1": "123 Boulevard Ave",
+      "ZipCode": "90210"
+    },
+    "ContactInformation": {
+      "EmailAddress": "jsmith@go.com"
+    },
+    "DeclinedEmail": false,
+    "DeclinedPhone": false,
+    "FirstName": "John",
+    "Identifier": "CA-John-1762879024757",
+    "LastName": "Smith",
+    "MiddleName": "",
+    "MonthsAtResidence": 6,
+    "PriorInsuranceInformation": {
+      "PriorInsurance": false,
+      "ReasonForNoInsurance": "Other"
+    }
+  },
+  "CustomerDeclinedCredit": false,
+  "EffectiveDate": "2025-11-11T00:00:00Z",
+  "Identifier": "quote-1762879024757",
+  "PaymentMethod": "Electronic Funds Transfer",
+  "PolicyCoverages": {
+    "AccidentalDeathLimit": "None",
+    "LiabilityBiLimit": "30000/60000",
+    "LiabilityPdLimit": "15000",
+    "MedPayLimit": "None",
+    "UninsuredMotoristBiLimit": "30000/60000",
+    "UninsuredMotoristPd/CollisionDamageWaiver": false
+  },
+  "PolicyType": "Standard",
+  "RatedDrivers": [
+    {
+      "Attributes": {
+        "MilesToWork": 0,
+        "OccasionalOperator": false,
+        "PropertyInsurance": false,
+        "Relation": "Insured",
+        "ResidencyStatus": "Own",
+        "ResidencyType": "Own"
+      },
+      "DateOfBirth": "1990-06-05T00:00:00Z",
+      "Discounts": {
+        "DefensiveDriving": false,
+        "DistantStudent": "None",
+        "DriversTraining": false,
+        "DrugAwareness": false,
+        "GoodStudent": false,
+        "MultiplePolicies": false,
+        "SeniorDriverDiscount": false,
+        "SingleParent": false
+      },
+      "DriverId": 1,
+      "FinancialResponsibilityInformation": {
+        "Sr22": false,
+        "Sr22Date": "2025-11-11T16:37:04.757Z",
+        "Sr22Reason": "Other",
+        "Sr22State": "California"
+      },
+      "FirstName": "John",
+      "Gender": "Male",
+      "LastName": "Smith",
+      "LicenseInformation": {
+        "CountryOfOrigin": "None",
+        "ForeignNational": false,
+        "InternationalDriversLicense": false,
+        "LicenseNumber": "UNKNOWN0000",
+        "LicenseStatus": "Valid",
+        "MonthsForeignLicense": 0,
+        "MonthsLicensed": 24,
+        "MonthsMvrExperience": 24,
+        "MonthsStateLicensed": 24,
+        "MonthsSuspended": 0,
+        "StateLicensed": "California"
+      },
+      "MaritalStatus": "Married",
+      "MiddleName": ""
+    }
+  ],
+  "Term": "Semi Annual",
+  "Vehicles": [
+    {
+      "AnnualMiles": 5000,
+      "AssignedDriverId": 1,
+      "CoverageInformation": {
+        "CollisionDeductible": "None",
+        "ComprehensiveDeductible": "None",
+        "CustomEquipmentValue": 0,
+        "GapCoverage": false,
+        "RentalLimit": "None",
+        "SafetyGlassCoverage": false,
+        "TowingLimit": "None"
+      },
+      "GaragingAddress": {
+        "City": "Beverly Hills",
+        "State": "California",
+        "Street1": "123 Boulevard Ave",
+        "ZipCode": "90210"
+      },
+      "LeasedVehicle": false,
+      "Make": "Honda",
+      "MilesToWork": 50,
+      "Model": "Civic",
+      "Odometer": 0,
+      "PercentToWork": 0,
+      "PurchaseType": "New",
+      "RideShare": false,
+      "Salvaged": false,
+      "Usage": "Pleasure",
+      "VehicleId": 1,
+      "Vin": "2FMPK4J99J",
+      "Year": 2010
+    }
+  ]
+}

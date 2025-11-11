@@ -548,10 +548,10 @@ class PriorInsuranceInformationInput(BaseModel):
     )(_strip_string)
 
     @model_validator(mode="after")
-    def _ensure_reason(cls, values: "PriorInsuranceInformationInput") -> "PriorInsuranceInformationInput":
-        if not values.prior_insurance and not values.reason_for_no_insurance:
-            values.reason_for_no_insurance = "Other"
-        return values
+    def _ensure_reason(self) -> "PriorInsuranceInformationInput":
+        if not self.prior_insurance and not self.reason_for_no_insurance:
+            self.reason_for_no_insurance = "Other"
+        return self
 
 
 class CustomerProfileInput(BaseModel):
@@ -1949,57 +1949,20 @@ def _register_personal_auto_intake_tools() -> None:
         "openai.com/widget": _embedded_widget_resource(rate_results_widget).model_dump(mode="json"),
     }
 
-    register_tool(
-        ToolRegistration(
-            tool=types.Tool(
-                name="collect-personal-auto-drivers",
-                title="Collect personal auto driver profiles",
-                description=(
-                    "Validate one or more rated drivers for a personal auto quote, "
-                    "including residency details in each driver's Attributes block."
-                ),
-                inputSchema=_model_schema(PersonalAutoDriverIntake),
-            ),
-            handler=_collect_personal_auto_drivers,
-            default_response_text="Captured rated driver information.",
-        )
-    )
-
-    register_tool(
-        ToolRegistration(
-            tool=types.Tool(
-                name="collect-personal-auto-driver-roster",
-                title="Collect personal auto driver roster",
-                description=(
-                    "Capture a lightweight roster of known drivers before gathering full profiles."
-                ),
-                inputSchema=_model_schema(PersonalAutoDriverRosterInput),
-            ),
-            handler=_collect_personal_auto_driver_roster,
-            default_response_text="Captured driver roster entries.",
-        )
-    )
-
-    register_tool(
-        ToolRegistration(
-            tool=types.Tool(
-                name="collect-personal-auto-vehicles",
-                title="Collect personal auto vehicle details",
-                description=(
-                    "Validate the vehicles to be included on a personal auto quote and "
-                    "confirm coverage selections for each vehicle."
-                ),
-                inputSchema=_model_schema(PersonalAutoVehicleIntake),
-            ),
-            handler=_collect_personal_auto_vehicles,
-            default_response_text="Captured vehicle information.",
-        )
-    )
 
     rate_tool_description = (
         "Submit a fully populated personal auto quote request and return the carrier response. "
         f"Coverage limits must match AIS enumerations ({AIS_POLICY_COVERAGE_SUMMARY})"
     )
+
+    rate_tool_meta = {
+        "openai/widgetAccessible": True,
+        "annotations": {
+            "destructiveHint": False,
+            "openWorldHint": False,
+            "readOnlyHint": False,
+        }
+    }
 
     register_tool(
         ToolRegistration(
@@ -2008,6 +1971,7 @@ def _register_personal_auto_intake_tools() -> None:
                 title="Request personal auto rate",
                 description=rate_tool_description,
                 inputSchema=_model_schema(PersonalAutoRateRequest),
+                _meta=rate_tool_meta,
             ),
             handler=_request_personal_auto_rate,
             default_response_text="Submitted personal auto rating request.",

@@ -269,6 +269,8 @@ INSURANCE_STATE_WIDGET_HTML = """
   .insurance-widget__selection {
     font-size: 13px;
     color: rgba(15, 23, 42, 0.68);
+    white-space: pre-line;
+    line-height: 1.5;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -866,9 +868,9 @@ INSURANCE_STATE_WIDGET_HTML = """
     termPlaceholder.value = "";
     termPlaceholder.textContent = "Select term";
     termSelect.appendChild(termPlaceholder);
-    ["Semi-Annual", "Annual", "Quarterly", "Monthly"].forEach((t) => {
+    ["Semi Annual", "Annual", "Quarterly", "Monthly"].forEach((t) => {
       const opt = document.createElement("option");
-      opt.value = t.toLowerCase().replace("-", "");
+      opt.value = t;
       opt.textContent = t;
       termSelect.appendChild(opt);
     });
@@ -923,7 +925,7 @@ INSURANCE_STATE_WIDGET_HTML = """
     policyTypeSelect.appendChild(policyTypePlaceholder);
     ["Standard", "Premium", "Basic"].forEach((pt) => {
       const opt = document.createElement("option");
-      opt.value = pt.toLowerCase();
+      opt.value = pt;
       opt.textContent = pt;
       policyTypeSelect.appendChild(opt);
     });
@@ -959,9 +961,9 @@ INSURANCE_STATE_WIDGET_HTML = """
     bumpLimitsPlaceholder.value = "";
     bumpLimitsPlaceholder.textContent = "Select option";
     bumpLimitsSelect.appendChild(bumpLimitsPlaceholder);
-    ["Bump Up", "Bump Down", "None"].forEach((bl) => {
+    ["Bump Up", "Bump Down", "No Bumping"].forEach((bl) => {
       const opt = document.createElement("option");
-      opt.value = bl.toLowerCase().replace(" ", "-");
+      opt.value = bl;
       opt.textContent = bl;
       bumpLimitsSelect.appendChild(opt);
     });
@@ -1139,7 +1141,7 @@ INSURANCE_STATE_WIDGET_HTML = """
       select.appendChild(placeholder);
       options.forEach((opt) => {
         const option = document.createElement("option");
-        option.value = typeof opt === "string" ? opt.toLowerCase().replace(/\\s+/g, "-") : opt.value;
+        option.value = typeof opt === "string" ? opt : opt.value;
         option.textContent = typeof opt === "string" ? opt : opt.label;
         select.appendChild(option);
       });
@@ -1238,8 +1240,8 @@ INSURANCE_STATE_WIDGET_HTML = """
     const driverMiddleNameField = createInputField("driver-middle-name", "Middle Name", "text", "Enter middle name");
     const driverLastNameField = createInputField("driver-last-name", "Last Name", "text", "Enter last name");
     const dobField = createInputField("driver-dob", "Date of Birth", "date", "");
-    const genderField = createSelectField("driver-gender", "Gender", ["Male", "Female", "Non-Binary", "Prefer not to say"]);
-    const maritalStatusField = createSelectField("driver-marital-status", "Marital Status", ["Single", "Married", "Divorced", "Widowed"]);
+    const genderField = createSelectField("driver-gender", "Gender", ["Male", "Female", "Non-Binary"]);
+    const maritalStatusField = createSelectField("driver-marital-status", "Marital Status", ["Single", "Married", "Divorced", "Widowed", "Separated", "Domestic Partner"]);
     const occupationField = createInputField("driver-occupation", "Occupation", "text", "Enter occupation");
     const industryField = createInputField("driver-industry", "Industry", "text", "Enter industry");
     const monthsEmployedField = createInputField("driver-months-employed", "Months Employed", "number", "Enter months");
@@ -1561,22 +1563,56 @@ INSURANCE_STATE_WIDGET_HTML = """
         if (isSending) return;
 
         isSending = true;
-        nextButton.textContent = "Sending to assistant…";
+        nextButton.textContent = "Submitting…";
         nextButton.setAttribute("aria-disabled", "true");
         nextButton.disabled = true;
         prevButton.disabled = true;
+        selection.textContent = "Submitting quote request...";
+        selection.style.color = "";
 
         try {
           await sendFormToAssistant();
+          selection.textContent = "✓ Quote request submitted successfully!";
+          selection.style.color = "rgba(34, 197, 94, 0.9)";
+          nextButton.textContent = "Submitted!";
         } catch (error) {
+          console.error("Failed to submit insurance quote request:", error);
           notifyIssue("error", "Failed to submit insurance quote request.", error);
-        } finally {
-          isSending = false;
-          nextButton.textContent = "Submit Quote Request";
-          prevButton.disabled = false;
+
+          // Display user-friendly error message
+          let errorMessage = "Failed to submit quote request.";
+          if (error && error.message) {
+            // Try to parse validation errors from the error message
+            if (error.message.includes("errors")) {
+              try {
+                const match = error.message.match(/errors":\[([^\]]+)\]/);
+                if (match) {
+                  const errors = match[1].split('","').map(e => e.replace(/"/g, ''));
+                  errorMessage = "Validation errors:\\n" + errors.slice(0, 3).join("\\n");
+                  if (errors.length > 3) {
+                    errorMessage += "\\n... and " + (errors.length - 3) + " more";
+                  }
+                }
+              } catch (parseError) {
+                errorMessage += " " + error.message.substring(0, 100);
+              }
+            } else {
+              errorMessage += " " + error.message.substring(0, 100);
+            }
+          }
+
+          selection.textContent = "❌ " + errorMessage;
+          selection.style.color = "rgba(220, 38, 38, 0.9)";
+          nextButton.textContent = "Retry Submission";
           nextButton.disabled = false;
           nextButton.setAttribute("aria-disabled", "false");
+          prevButton.disabled = false;
+          isSending = false;
+          return;
         }
+
+        isSending = false;
+        prevButton.disabled = false;
       }
     });
 
@@ -1739,14 +1775,14 @@ INSURANCE_STATE_WIDGET_HTML = """
             ZipCode: formData.customer.address.zipCode || "00000"
           },
           ContactInformation: {
-            MobilePhone: formData.customer.contact.mobilePhone || "",
-            HomePhone: formData.customer.contact.homePhone || "",
-            WorkPhone: formData.customer.contact.workPhone || "",
-            EmailAddress: formData.customer.contact.email || ""
+            MobilePhone: formData.customer.contact.mobilePhone || null,
+            HomePhone: formData.customer.contact.homePhone || null,
+            WorkPhone: formData.customer.contact.workPhone || null,
+            EmailAddress: formData.customer.contact.email || null
           },
           PriorInsuranceInformation: {
             PriorInsurance: formData.customer.priorInsurance || false,
-            ReasonForNoInsurance: formData.customer.noInsuranceReason || "Other"
+            ReasonForNoInsurance: "Other"
           }
         },
         PolicyCoverages: {
@@ -1770,7 +1806,6 @@ INSURANCE_STATE_WIDGET_HTML = """
             Industry: formData.driver.industry || null,
             MonthsEmployed: parseInt(formData.driver.monthsEmployed) || null,
             LicenseInformation: {
-              LicenseNumber: "UNKNOWN0000",
               LicenseStatus: formData.driver.license.status || "Valid",
               MonthsForeignLicense: 0,
               MonthsLicensed: parseInt(formData.driver.license.monthsLicensed) || 24,
@@ -1786,9 +1821,9 @@ INSURANCE_STATE_WIDGET_HTML = """
               EducationLevel: formData.driver.attributes.educationLevel || null,
               OccasionalOperator: false,
               PropertyInsurance: formData.driver.attributes.propertyInsurance || false,
-              Relation: formData.driver.attributes.relation || null,
-              ResidencyStatus: formData.driver.attributes.residencyType || null,
-              ResidencyType: formData.driver.attributes.residencyType || null,
+              Relation: formData.driver.attributes.relation || "Self",
+              ResidencyStatus: formData.driver.attributes.residencyType || "Own",
+              ResidencyType: formData.driver.attributes.residencyType || "Own",
               MilesToWork: parseInt(formData.driver.attributes.milesToWork) || 0
             },
             Discounts: {
@@ -1812,7 +1847,6 @@ INSURANCE_STATE_WIDGET_HTML = """
         Vehicles: [
           {
             VehicleId: 1,
-            Vin: "2FMPK4J99J",
             AssignedDriverId: 1,
             Make: formData.vehicle.make || "UNKNOWN",
             Model: formData.vehicle.model || "UNKNOWN",
@@ -1850,11 +1884,11 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     // Function to send form data to assistant
     async function sendFormToAssistant() {
-      if (!window.openai || typeof window.openai.sendFollowUpMessage !== "function") {
+      if (!window.openai || typeof window.openai.callTool !== "function") {
         if (!missingSendFollowUpNotified) {
           notifyIssue(
             "warn",
-            "OpenAI sendFollowUpMessage helper is unavailable; the assistant will not receive insurance quote request."
+            "OpenAI callTool helper is unavailable; the assistant will not receive insurance quote request."
           );
           missingSendFollowUpNotified = true;
         }
@@ -1864,11 +1898,8 @@ INSURANCE_STATE_WIDGET_HTML = """
       const formData = collectFormData();
       const rateRequest = transformToRateRequest(formData);
 
-      // Build a human-readable prompt that tells the assistant to call the rate tool
-      let prompt = "I've submitted my insurance quote request form. Please call the 'request-personal-auto-rate' tool with the following data:\\n\\n";
-      prompt += JSON.stringify(rateRequest, null, 2);
-
-      return window.openai.sendFollowUpMessage({ prompt });
+      // Directly call the MCP tool with structured arguments
+      return window.openai.callTool("request-personal-auto-rate", rateRequest);
     }
 
     // Initialize widget on step 1
