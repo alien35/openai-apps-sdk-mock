@@ -286,7 +286,12 @@ def state_abbreviation(value: Optional[str]) -> Optional[str]:
 
 INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
     "type": "object",
-    "properties": {},
+    "properties": {
+        "state": {
+            "type": "string",
+            "description": "Optional state code (e.g., CA, NY)"
+        }
+    },
     "additionalProperties": False,
 }
 
@@ -1943,7 +1948,10 @@ def _register_personal_auto_intake_tools() -> None:
     )
 
     rate_results_widget = WIDGETS_BY_ID[INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER]
-    rate_results_meta = _tool_meta(rate_results_widget)
+    rate_results_meta = {
+        **_tool_meta(rate_results_widget),
+        "openai/widgetAccessible": True,
+    }
     rate_results_default_meta = {
         **rate_results_meta,
         "openai.com/widget": _embedded_widget_resource(rate_results_widget).model_dump(mode="json"),
