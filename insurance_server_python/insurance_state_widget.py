@@ -1949,8 +1949,30 @@ INSURANCE_STATE_WIDGET_HTML = """
       }
 
       try {
-        // The response from callTool should have content array
-        if (response && response.content) {
+        // First, check if we have structuredContent with rate_results directly
+        if (response && response.structuredContent && response.structuredContent.rate_results) {
+          console.log("✓ Found structuredContent with rate_results");
+          const rateResults = response.structuredContent.rate_results;
+          console.log("Rate results:", rateResults);
+          console.log("Rate results type:", typeof rateResults);
+          console.log("Rate results keys:", Object.keys(rateResults));
+
+          // Try to find carrier results in the rate_results object
+          if (rateResults.carrierResults) {
+            console.log("✓ FOUND carrierResults in structuredContent.rate_results.carrierResults");
+            carrierResults = rateResults.carrierResults;
+          } else if (rateResults.CarrierResults) {
+            console.log("✓ FOUND CarrierResults in structuredContent.rate_results.CarrierResults");
+            carrierResults = rateResults.CarrierResults;
+          } else {
+            console.log("✗ No carrier results in structuredContent.rate_results");
+            console.log("  Available keys:", Object.keys(rateResults));
+          }
+        }
+
+        // If we didn't find it in structuredContent, fall back to parsing content array
+        if (carrierResults.length === 0 && response && response.content) {
+          console.log("Falling back to content array parsing");
           console.log("Content array length:", response.content.length);
           console.log("Content array is array:", Array.isArray(response.content));
 
@@ -2039,10 +2061,11 @@ INSURANCE_STATE_WIDGET_HTML = """
               console.log(`  - Skipping: not a text item with content`);
             }
           }
-        } else {
-          console.log("ERROR: No content array in response");
+        } else if (carrierResults.length === 0) {
+          console.log("No content array found and no structuredContent.rate_results");
           console.log("  - response exists:", !!response);
           console.log("  - response.content exists:", !!(response && response.content));
+          console.log("  - response.structuredContent exists:", !!(response && response.structuredContent));
         }
       } catch (error) {
         console.error("=== Error parsing results ===");
@@ -2257,10 +2280,9 @@ INSURANCE_STATE_WIDGET_HTML = """
               console.log("Response is falsy");
             }
 
-            selection.textContent = "✓ Quote results retrieved! Check the results above.";
-            selection.style.color = "rgba(34, 197, 94, 0.9)";
-            checkResultsButton.textContent = "Results Retrieved!";
-            checkResultsButton.disabled = true;
+            // Now display the results!
+            console.log("=== CALLING displayResults() ===");
+            displayResults(response, identifier);
           } catch (error) {
             console.error("=== FAILED TO RETRIEVE QUOTE RESULTS ===");
             console.error("Error:", error);

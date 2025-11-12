@@ -70,7 +70,7 @@
     "DeclinedEmail": false,
     "DeclinedPhone": false,
     "FirstName": "John",
-    "Identifier": "CA-John-1762961715436",
+    "Identifier": "CA-John-1762964297753",
     "LastName": "Smith",
     "MiddleName": "",
     "MonthsAtResidence": 6,
@@ -81,7 +81,7 @@
   },
   "CustomerDeclinedCredit": false,
   "EffectiveDate": "2025-11-12T00:00:00Z",
-  "Identifier": "quote-1762961715436",
+  "Identifier": "quote-1762964297753",
   "PaymentMethod": "Electronic Funds Transfer",
   "PolicyCoverages": {
     "AccidentalDeathLimit": "None",
@@ -102,7 +102,7 @@
         "ResidencyStatus": "Own",
         "ResidencyType": "Home"
       },
-      "DateOfBirth": "1991-10-15T00:00:00Z",
+      "DateOfBirth": "1995-06-06T00:00:00Z",
       "Discounts": {
         "DefensiveDriving": false,
         "DistantStudent": "None",
@@ -116,7 +116,7 @@
       "DriverId": 1,
       "FinancialResponsibilityInformation": {
         "Sr22": false,
-        "Sr22Date": "2025-11-12T15:35:15.436Z",
+        "Sr22Date": "2025-11-12T16:18:17.753Z",
         "Sr22Reason": "Other",
         "Sr22State": "California"
       },
@@ -163,7 +163,7 @@
       "LeasedVehicle": false,
       "Make": "Honda",
       "MilesToWork": 50,
-      "Model": "CIvic",
+      "Model": "Civic",
       "Odometer": 0,
       "PercentToWork": 0,
       "PurchaseType": "New",
