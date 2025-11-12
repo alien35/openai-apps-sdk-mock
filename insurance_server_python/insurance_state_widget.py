@@ -1915,6 +1915,14 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     // Function to display quote results
     function displayResults(response, identifier) {
+      console.log("=== DISPLAY RESULTS FUNCTION CALLED ===");
+      console.log("Arguments received:");
+      console.log("  - identifier:", identifier);
+      console.log("  - response:", response);
+      console.log("  - response type:", typeof response);
+      console.log("  - response is null:", response === null);
+      console.log("  - response is undefined:", response === undefined);
+
       // Update UI
       title.textContent = "Your Insurance Quotes";
       description.textContent = `Quote ID: ${identifier}`;
@@ -1922,29 +1930,129 @@ INSURANCE_STATE_WIDGET_HTML = """
 
       // Parse the response to get carrier results
       let carrierResults = [];
+      console.log("=== DEBUG: Starting to parse response ===");
+      console.log("Response object:", response);
+      console.log("Response type:", typeof response);
+      console.log("Has content?", response && response.content);
+
+      // Log the entire response structure
+      if (response) {
+        try {
+          const responseJson = JSON.stringify(response, null, 2);
+          console.log("Full response JSON (first 3000 chars):", responseJson.substring(0, 3000));
+          if (responseJson.length > 3000) {
+            console.log("... (response truncated, total length:", responseJson.length, ")");
+          }
+        } catch (e) {
+          console.log("Could not stringify response in displayResults:", e);
+        }
+      }
+
       try {
         // The response from callTool should have content array
         if (response && response.content) {
+          console.log("Content array length:", response.content.length);
+          console.log("Content array is array:", Array.isArray(response.content));
+
           // Find the structured content
-          for (const item of response.content) {
+          for (let i = 0; i < response.content.length; i++) {
+            const item = response.content[i];
+            console.log(`\n=== Processing Content item ${i} ===`);
+            console.log(`Full item:`, item);
+            console.log(`  - type: ${item.type}`);
+            console.log(`  - has text: ${!!item.text}`);
+            console.log(`  - text type: ${typeof item.text}`);
+
             if (item.type === "text" && item.text) {
+              console.log(`  - text length: ${item.text.length}`);
+              console.log(`  - text preview (first 300 chars): ${item.text.substring(0, 300)}`);
+              console.log(`  - text preview (chars 300-600): ${item.text.substring(300, 600)}`);
+
+              // Check if this looks like JSON
+              const trimmedText = item.text.trim();
+              console.log(`  - trimmed text starts with: ${trimmedText.substring(0, 10)}`);
+              console.log(`  - is likely JSON: ${trimmedText.startsWith('{') || trimmedText.startsWith('[')}`);
+
               try {
                 const parsed = JSON.parse(item.text);
+                console.log(`  - ✓ Successfully parsed as JSON`);
+                console.log(`  - Parsed type:`, typeof parsed);
+                console.log(`  - Parsed is array:`, Array.isArray(parsed));
+                console.log(`  - Parsed keys:`, Object.keys(parsed));
+
+                // Log the structure of the parsed object
+                console.log(`  - Parsed structure (first level):`);
+                for (const key in parsed) {
+                  if (parsed.hasOwnProperty(key)) {
+                    const value = parsed[key];
+                    console.log(`    - ${key}: type=${typeof value}, isArray=${Array.isArray(value)}, isNull=${value === null}`);
+                    if (Array.isArray(value)) {
+                      console.log(`      - array length: ${value.length}`);
+                    } else if (typeof value === 'object' && value !== null) {
+                      console.log(`      - object keys: ${Object.keys(value).join(', ')}`);
+                    }
+                  }
+                }
+
+                // Try multiple possible paths for carrier results
+                console.log(`  - Attempting to find carrier results...`);
+
                 if (parsed.rate_results && parsed.rate_results.CarrierResults) {
+                  console.log("  - ✓ FOUND at: parsed.rate_results.CarrierResults");
+                  console.log("  - Value:", parsed.rate_results.CarrierResults);
+                  console.log("  - Length:", parsed.rate_results.CarrierResults.length);
                   carrierResults = parsed.rate_results.CarrierResults;
                   break;
+                } else if (parsed.rate_results && parsed.rate_results.carrierResults) {
+                  console.log("  - ✓ FOUND at: parsed.rate_results.carrierResults");
+                  console.log("  - Value:", parsed.rate_results.carrierResults);
+                  console.log("  - Length:", parsed.rate_results.carrierResults.length);
+                  carrierResults = parsed.rate_results.carrierResults;
+                  break;
+                } else if (parsed.carrierResults) {
+                  console.log("  - ✓ FOUND at: parsed.carrierResults");
+                  console.log("  - Value:", parsed.carrierResults);
+                  console.log("  - Length:", parsed.carrierResults.length);
+                  carrierResults = parsed.carrierResults;
+                  break;
+                } else if (parsed.CarrierResults) {
+                  console.log("  - ✓ FOUND at: parsed.CarrierResults");
+                  console.log("  - Value:", parsed.CarrierResults);
+                  console.log("  - Length:", parsed.CarrierResults.length);
+                  carrierResults = parsed.CarrierResults;
+                  break;
+                } else {
+                  console.log("  - ✗ No carrier results found in this parsed object");
+                  console.log("  - Available top-level keys:", Object.keys(parsed));
+
+                  // Try to look deeper into the structure
+                  if (parsed.rate_results) {
+                    console.log("  - parsed.rate_results exists, keys:", Object.keys(parsed.rate_results));
+                  }
                 }
               } catch (e) {
-                // Not JSON, continue
+                console.log(`  - ✗ Failed to parse as JSON`);
+                console.log(`  - Parse error:`, e);
+                console.log(`  - Error message:`, e.message);
               }
+            } else {
+              console.log(`  - Skipping: not a text item with content`);
             }
           }
+        } else {
+          console.log("ERROR: No content array in response");
+          console.log("  - response exists:", !!response);
+          console.log("  - response.content exists:", !!(response && response.content));
         }
       } catch (error) {
-        console.error("Error parsing results:", error);
+        console.error("=== Error parsing results ===");
+        console.error("Error:", error);
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
       }
 
-      console.log("Parsed carrier results:", carrierResults);
+      console.log("=== Final carrier results count:", carrierResults.length, "===");
+      console.log("Carrier results:", carrierResults);
 
       // Create results container
       const resultsContainer = document.createElement("div");
@@ -1952,6 +2060,55 @@ INSURANCE_STATE_WIDGET_HTML = """
 
       if (carrierResults.length === 0) {
         resultsContainer.innerHTML = `<p style="color: rgba(100, 116, 139, 0.8); text-align: center; padding: 40px;">No quotes available. Please try again later.</p>`;
+
+        // Show the check results button again so user can retry
+        const retryButton = document.createElement("button");
+        retryButton.type = "button";
+        retryButton.className = "insurance-widget__button insurance-widget__button--primary";
+        retryButton.textContent = "Check Results Again";
+        retryButton.style.width = "100%";
+        retryButton.addEventListener("click", async () => {
+          retryButton.disabled = true;
+          retryButton.textContent = "Checking...";
+          try {
+            console.log("=== RETRY BUTTON CLICKED ===");
+            console.log("About to call retrieve-personal-auto-rate-results with identifier:", identifier);
+
+            const response = await window.openai.callTool("retrieve-personal-auto-rate-results", {
+              Identifier: identifier
+            });
+
+            console.log("=== RECEIVED RESPONSE FROM CALLTOOL ===");
+            console.log("Response:", response);
+            console.log("Response type:", typeof response);
+            console.log("Response constructor:", response?.constructor?.name);
+            console.log("Response keys:", response ? Object.keys(response) : "null");
+
+            // Log full response as JSON if possible
+            try {
+              console.log("Response as JSON:", JSON.stringify(response, null, 2));
+            } catch (jsonError) {
+              console.log("Could not stringify response:", jsonError);
+            }
+
+            // Remove old results and retry button
+            resultsContainer.remove();
+            retryButton.remove();
+            // Display new results
+            displayResults(response, identifier);
+          } catch (error) {
+            console.error("=== RETRY FAILED ===");
+            console.error("Error:", error);
+            console.error("Error type:", typeof error);
+            console.error("Error message:", error?.message);
+            console.error("Error stack:", error?.stack);
+            retryButton.textContent = "Try Again";
+            retryButton.disabled = false;
+          }
+        });
+
+        actions.innerHTML = "";
+        actions.appendChild(retryButton);
       } else {
         // Render each carrier result as a card
         carrierResults.forEach((carrier, index) => {
@@ -1972,10 +2129,12 @@ INSURANCE_STATE_WIDGET_HTML = """
             card.style.boxShadow = "";
           };
 
-          const carrierName = carrier.CarrierName || carrier.ProductName || `Carrier ${index + 1}`;
-          const programName = carrier.ProgramName || carrier.Program || "";
-          const premium = carrier.TotalPremium || carrier.Premium || 0;
-          const term = carrier.Term || (carrier.TermMonths ? `${carrier.TermMonths} months` : "");
+          // Extract carrier information from various possible field names
+          const carrierName = carrier.CarrierName || carrier.ProductName || carrier.Program || `Carrier ${index + 1}`;
+          const programName = carrier.ProgramName || carrier.CarrierTransactionID || "";
+          const premium = parseFloat(carrier.TotalPremium || carrier.Premium || 0);
+          const termMonths = carrier.Term || carrier.TermMonths || 0;
+          const term = termMonths ? `${termMonths} month${termMonths !== 1 ? 's' : ''}` : "";
 
           card.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
@@ -2052,17 +2211,62 @@ INSURANCE_STATE_WIDGET_HTML = """
           selection.style.color = "";
 
           try {
+            console.log("=== CHECK RESULTS BUTTON CLICKED ===");
+            console.log("Calling retrieve-personal-auto-rate-results with identifier:", identifier);
+            console.log("window.openai available:", !!window.openai);
+            console.log("window.openai.callTool available:", typeof window.openai?.callTool);
+
             const response = await window.openai.callTool("retrieve-personal-auto-rate-results", {
               Identifier: identifier
             });
 
-            console.log("Rate results response:", response);
+            console.log("=== RECEIVED RESPONSE FROM RETRIEVE TOOL ===");
+            console.log("Raw response:", response);
+            console.log("Response type:", typeof response);
+            console.log("Response is null:", response === null);
+            console.log("Response is undefined:", response === undefined);
+            console.log("Response constructor:", response?.constructor?.name);
 
-            // Display the results inline
-            displayResults(response, identifier);
-            checkResultsButton.style.display = "none";
+            if (response) {
+              console.log("Response has keys:", Object.keys(response));
+              console.log("Response.content exists:", !!response.content);
+              console.log("Response.content type:", typeof response.content);
+              console.log("Response.content is array:", Array.isArray(response.content));
+
+              if (response.content) {
+                console.log("Response.content length:", response.content.length);
+                response.content.forEach((item, idx) => {
+                  console.log(`Content[${idx}]:`, item);
+                  console.log(`  - type: ${item?.type}`);
+                  console.log(`  - text exists: ${!!item?.text}`);
+                  if (item?.text) {
+                    console.log(`  - text length: ${item.text.length}`);
+                    console.log(`  - text preview (first 500 chars): ${item.text.substring(0, 500)}`);
+                  }
+                });
+              }
+
+              // Try to stringify the whole response
+              try {
+                const responseStr = JSON.stringify(response, null, 2);
+                console.log("Full response JSON (first 2000 chars):", responseStr.substring(0, 2000));
+              } catch (e) {
+                console.log("Could not stringify response:", e);
+              }
+            } else {
+              console.log("Response is falsy");
+            }
+
+            selection.textContent = "✓ Quote results retrieved! Check the results above.";
+            selection.style.color = "rgba(34, 197, 94, 0.9)";
+            checkResultsButton.textContent = "Results Retrieved!";
+            checkResultsButton.disabled = true;
           } catch (error) {
-            console.error("Failed to retrieve quote results:", error);
+            console.error("=== FAILED TO RETRIEVE QUOTE RESULTS ===");
+            console.error("Error:", error);
+            console.error("Error type:", typeof error);
+            console.error("Error message:", error?.message);
+            console.error("Error stack:", error?.stack);
             selection.textContent = "❌ Failed to retrieve results. " + (error.message || "Please try again.");
             selection.style.color = "rgba(220, 38, 38, 0.9)";
             checkResultsButton.textContent = "Retry";
