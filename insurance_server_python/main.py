@@ -1839,7 +1839,18 @@ async def _retrieve_personal_auto_rate_results(
     if not rate_results:
         message += " No carrier results were returned."
 
-    return {
+    # Log the structure we're returning for debugging
+    logger.info("=== RETRIEVE TOOL RETURNING ===")
+    logger.info("Message: %s", message)
+    logger.info("Rate results type: %s", type(rate_results))
+    if rate_results:
+        logger.info("Rate results keys: %s", list(rate_results.keys()) if isinstance(rate_results, dict) else "not a dict")
+        if isinstance(rate_results, dict) and "carrierResults" in rate_results:
+            logger.info("carrierResults found at top level, length: %s", len(rate_results.get("carrierResults", [])))
+        if isinstance(rate_results, dict) and "CarrierResults" in rate_results:
+            logger.info("CarrierResults found at top level, length: %s", len(rate_results.get("CarrierResults", [])))
+
+    result = {
         "structured_content": {
             "identifier": identifier,
             "rate_results": rate_results,
@@ -1847,6 +1858,11 @@ async def _retrieve_personal_auto_rate_results(
         },
         "response_text": message,
     }
+
+    logger.info("Structured content keys: %s", list(result["structured_content"].keys()))
+    logger.info("=== END RETRIEVE TOOL RETURN ===")
+
+    return result
 
 
 mcp = FastMCP(
@@ -2133,6 +2149,23 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
         else:
             content = []
     meta = handler_payload.get("meta") or registration.default_meta
+
+    # Log what we're sending for retrieve-personal-auto-rate-results
+    if req.params.name == "retrieve-personal-auto-rate-results":
+        logger.info("=== TOOL HANDLER SENDING RESPONSE FOR retrieve-personal-auto-rate-results ===")
+        logger.info("Content array length: %s", len(content))
+        for idx, item in enumerate(content):
+            logger.info("Content[%s] type: %s", idx, item.type)
+            if hasattr(item, 'text'):
+                logger.info("Content[%s] text preview: %s", idx, item.text[:200] if item.text else "None")
+        logger.info("Structured content keys: %s", list(structured_content.keys()))
+        if "rate_results" in structured_content:
+            rate_results = structured_content["rate_results"]
+            logger.info("rate_results type: %s", type(rate_results))
+            if isinstance(rate_results, dict):
+                logger.info("rate_results keys: %s", list(rate_results.keys()))
+        logger.info("Meta keys: %s", list(meta.keys()) if meta else "None")
+        logger.info("=== END TOOL HANDLER RESPONSE ===")
 
     return types.ServerResult(
         types.CallToolResult(
