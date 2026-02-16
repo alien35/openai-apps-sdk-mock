@@ -191,14 +191,16 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
             content = []
     meta = handler_payload.get("meta") or registration.default_meta
 
-    # Log what we're sending for retrieve-personal-auto-rate-results
-    if req.params.name == "retrieve-personal-auto-rate-results":
-        logger.info("=== TOOL HANDLER SENDING RESPONSE FOR retrieve-personal-auto-rate-results ===")
+    # Log what we're sending for key tools
+    if req.params.name in ["request-personal-auto-rate", "retrieve-personal-auto-rate-results"]:
+        logger.info("=== TOOL HANDLER SENDING RESPONSE FOR %s ===", req.params.name)
         logger.info("Content array length: %s", len(content))
         for idx, item in enumerate(content):
             logger.info("Content[%s] type: %s", idx, item.type)
             if hasattr(item, 'text'):
                 logger.info("Content[%s] text preview: %s", idx, item.text[:200] if item.text else "None")
+            if hasattr(item, 'annotations') and item.annotations:
+                logger.info("Content[%s] annotations: %s", idx, item.annotations.model_dump(mode="json"))
         logger.info("Structured content keys: %s", list(structured_content.keys()))
         if "rate_results" in structured_content:
             rate_results = structured_content["rate_results"]

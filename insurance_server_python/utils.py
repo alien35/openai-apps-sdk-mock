@@ -399,7 +399,6 @@ def _sanitize_personal_auto_rate_request(request_body: Dict[str, Any]) -> None:
             coverage.setdefault("GapCoverage", False)
             coverage.setdefault("CustomEquipmentValue", 0)
             coverage.setdefault("SafetyGlassCoverage", False)
-        else:
             vehicle["CoverageInformation"] = {
                 "CollisionDeductible": "None",
                 "ComprehensiveDeductible": "None",
@@ -409,3 +408,79 @@ def _sanitize_personal_auto_rate_request(request_body: Dict[str, Any]) -> None:
                 "CustomEquipmentValue": 0,
                 "SafetyGlassCoverage": False,
             }
+
+
+
+def format_rate_results_summary(rate_results: Any) -> str:
+    """Format a textual summary of rate results for the model context."""
+    if not isinstance(rate_results, dict):
+        return ""
+
+    carrier_results = rate_results.get("CarrierResults") or rate_results.get("carrierResults")
+    if not isinstance(carrier_results, list) or not carrier_results:
+        return ""
+
+    summary_lines = ["Rate Results Summary:"]
+
+    for result in carrier_results:
+        if not isinstance(result, dict):
+            continue
+
+        carrier_name = result.get("CarrierName") or result.get("carrierName") or "Unknown Carrier"
+        program_name = (
+            result.get("ProgramName") or result.get("programName") or 
+            result.get("ProductName") or result.get("productName") or 
+            "Auto Program"
+        )
+        
+        # Extract premium and term
+        total_premium = result.get("TotalPremium")
+        if total_premium is None:
+            total_premium = result.get("totalPremium")
+            
+        term = (
+            result.get("Term") or result.get("term") or 
+            result.get("TermDescription") or result.get("termDescription") or 
+            "Term"
+        )
+        
+        premium_str = f"${total_premium:,.2f}" if isinstance(total_premium, (int, float)) else "N/A"
+        
+        summary_lines.append(f"- {carrier_name} ({program_name}): {premium_str} / {term}")
+        
+        # Coverages
+        coverages = []
+        bi = result.get("BodilyInjuryLimit") or result.get("bodilyInjuryLimit")
+        if bi: coverages.append(f"BI: {bi}")
+        
+        pd = result.get("PropertyDamageLimit") or result.get("propertyDamageLimit")
+        if pd: coverages.append(f"PD: {pd}")
+        
+        um = result.get("UninsuredMotoristLimit") or result.get("uninsuredMotoristLimit")
+        if um: coverages.append(f"UM: {um}")
+        
+        if coverages:
+            summary_lines.append(f"  Coverages: {', '.join(coverages)}")
+
+        # Payment options
+        installments = result.get("Installments") or result.get("installments")
+        if isinstance(installments, list) and installments:
+            payment_opts = []
+            for inst in installments:
+                if not isinstance(inst, dict): continue
+                amount = inst.get("InstallmentAmount") or inst.get("installmentAmount")
+                count = inst.get("InstallmentCount") or inst.get("installmentCount")
+                down = inst.get("DownPayment") or inst.get("downPayment")
+                
+                opt_str = ""
+                if down: opt_str += f"${down:,.2f} down"
+                if amount and count:
+                    if opt_str: opt_str += " + "
+                    opt_str += f"${amount:,.2f} x {count}"
+                
+                if opt_str: payment_opts.append(opt_str)
+            
+            if payment_opts:
+                summary_lines.append(f"  Payment Options: {'; '.join(payment_opts)}")
+
+    return "\\n".join(summary_lines)

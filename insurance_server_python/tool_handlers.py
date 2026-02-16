@@ -29,6 +29,7 @@ from .utils import (
     _log_network_request,
     _log_network_response,
     state_abbreviation,
+    format_rate_results_summary,
 )
 
 logger = logging.getLogger(__name__)
@@ -269,22 +270,43 @@ async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvoc
                 ) from exc
 
     message = (
-        f"Received personal auto rate response (transaction {transaction_id})."
+        f"Submitted personal auto rate request for {payload.identifier} (transaction {transaction_id})."
         if transaction_id
-        else "Received personal auto rate response."
+        else f"Submitted personal auto rate request for {payload.identifier}."
     )
     if transaction_id and rate_results is not None:
         message += " Retrieved carrier rate results."
+        summary = format_rate_results_summary(rate_results)
+        if summary:
+            message += f"\n\n{summary}"
+
+    # Build content array with model-visible transaction ID
+    import mcp.types as types
+    content = [types.TextContent(type="text", text=message)]
+
+    # Add transaction ID as model-only context so assistant can reference it later
+    if transaction_id:
+        content.append(
+            types.TextContent(
+                type="text",
+                text=json.dumps({
+                    "quoteId": payload.identifier,
+                    "transactionId": transaction_id
+                }),
+                annotations=types.Annotations(audience=["assistant"])
+            )
+        )
 
     return {
         "structured_content": {
+            "identifier": payload.identifier,
             "request": request_body,
             "response": parsed_response,
             "status": status_code,
             "rate_results": rate_results,
             "rate_results_status": rate_results_status,
         },
-        "response_text": message,
+        "content": content,
     }
 
 
@@ -345,6 +367,26 @@ async def _retrieve_personal_auto_rate_results(
     message = f"Retrieved personal auto rate results for {identifier}."
     if not rate_results:
         message += " No carrier results were returned."
+    elif rate_results:
+        summary = format_rate_results_summary(rate_results)
+        if summary:
+            message += f"\n\n{summary}"
+
+    # Build content array with model-visible identifier
+    import mcp.types as types
+    content = [types.TextContent(type="text", text=message)]
+
+    # Add identifier as model-only context so assistant can reference it later
+    content.append(
+        types.TextContent(
+            type="text",
+            text=json.dumps({
+                "quoteId": identifier,
+                "transactionId": identifier
+            }),
+            annotations=types.Annotations(audience=["assistant"])
+        )
+    )
 
     # Log the structure we're returning for debugging
     logger.info("=== RETRIEVE TOOL RETURNING ===")
@@ -363,7 +405,7 @@ async def _retrieve_personal_auto_rate_results(
             "rate_results": rate_results,
             "status": status_code,
         },
-        "response_text": message,
+        "content": content,
     }
 
     logger.info("Structured content keys: %s", list(result["structured_content"].keys()))

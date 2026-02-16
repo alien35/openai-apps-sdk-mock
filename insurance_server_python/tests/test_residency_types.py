@@ -1,6 +1,6 @@
 import unittest
 
-from insurance_server_python.main import (
+from insurance_server_python.utils import (
     _normalize_enum_value,
     RESIDENCY_TYPE_MAPPINGS,
 )

@@ -260,17 +260,24 @@ def _register_personal_auto_intake_tools() -> None:
     }
 
     rate_tool_description = (
-        "Submit a fully populated personal auto quote request and return the carrier response. "
-        f"Coverage limits must match AIS enumerations ({AIS_POLICY_COVERAGE_SUMMARY})"
+        "Submit a fully populated personal auto quote request to the rating API and return the carrier response. "
+        "Call this tool when the user provides complete rate request details (including customer, drivers, vehicles) "
+        "or when the insurance widget sends you a structured rate request payload. "
+        f"Coverage limits must match AIS enumerations ({AIS_POLICY_COVERAGE_SUMMARY}). "
+        "The response will include a quote identifier that should be used for retrieving or comparing results."
     )
 
     rate_tool_meta = {
         "openai/widgetAccessible": True,
+        "openai/resultCanProduceWidget": True,
+        "openai.com/widget": _embedded_widget_resource(rate_results_widget).model_dump(
+            mode="json"
+        ),
         "annotations": {
             "destructiveHint": False,
             "openWorldHint": False,
             "readOnlyHint": False,
-        }
+        },
     }
 
     register_tool(
@@ -293,8 +300,10 @@ def _register_personal_auto_intake_tools() -> None:
                 name="retrieve-personal-auto-rate-results",
                 title="Retrieve personal auto rate results",
                 description=(
-                    "Fetch carrier rate results for an existing personal auto quote "
-                    "using its identifier."
+                    "Fetch carrier rate results for an existing personal auto quote using its identifier. "
+                    "Use the quote identifier (Identifier field) from previous rate requests in this conversation. "
+                    "When the user asks to 'compare quotes', 'show results', or 'get the latest quote', "
+                    "use the most recent quote identifier from the conversation history."
                 ),
                 inputSchema=_model_schema(PersonalAutoRateResultsRequest),
                 _meta=rate_results_meta,
