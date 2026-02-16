@@ -61,16 +61,14 @@
     "Address": {
       "City": "Beverly Hills",
       "State": "California",
-      "Street1": "123 Boulevard Ave",
+      "Street1": "123 Boulevard Ave.",
       "ZipCode": "90210"
     },
-    "ContactInformation": {
-      "EmailAddress": "jsmith@go.com"
-    },
+    "ContactInformation": {},
     "DeclinedEmail": false,
     "DeclinedPhone": false,
     "FirstName": "John",
-    "Identifier": "CA-John-1762964297753",
+    "Identifier": "CA-John-1771256377951",
     "LastName": "Smith",
     "MiddleName": "",
     "MonthsAtResidence": 6,
@@ -80,9 +78,9 @@
     }
   },
   "CustomerDeclinedCredit": false,
-  "EffectiveDate": "2025-11-12T00:00:00Z",
-  "Identifier": "quote-1762964297753",
-  "PaymentMethod": "Electronic Funds Transfer",
+  "EffectiveDate": "2026-02-17T00:00:00Z",
+  "Identifier": "quote-1771256377951",
+  "PaymentMethod": "Standard",
   "PolicyCoverages": {
     "AccidentalDeathLimit": "None",
     "LiabilityBiLimit": "30000/60000",
@@ -102,7 +100,7 @@
         "ResidencyStatus": "Own",
         "ResidencyType": "Home"
       },
-      "DateOfBirth": "1995-06-06T00:00:00Z",
+      "DateOfBirth": "1999-02-16T00:00:00Z",
       "Discounts": {
         "DefensiveDriving": false,
         "DistantStudent": "None",
@@ -116,7 +114,7 @@
       "DriverId": 1,
       "FinancialResponsibilityInformation": {
         "Sr22": false,
-        "Sr22Date": "2025-11-12T16:18:17.753Z",
+        "Sr22Date": "2026-02-16T15:39:37.951Z",
         "Sr22Reason": "Other",
         "Sr22State": "California"
       },
@@ -136,14 +134,14 @@
         "MonthsSuspended": 0,
         "StateLicensed": "California"
       },
-      "MaritalStatus": "Married",
+      "MaritalStatus": "Single",
       "MiddleName": ""
     }
   ],
-  "Term": "Semi Annual",
+  "Term": "Annual",
   "Vehicles": [
     {
-      "AnnualMiles": 5000,
+      "AnnualMiles": 10000,
       "AssignedDriverId": 1,
       "CoverageInformation": {
         "CollisionDeductible": "None",
@@ -157,12 +155,12 @@
       "GaragingAddress": {
         "City": "Beverly Hills",
         "State": "California",
-        "Street1": "123 Boulevard Ave",
+        "Street1": "123 Boulevard Ave.",
         "ZipCode": "90210"
       },
       "LeasedVehicle": false,
       "Make": "Honda",
-      "MilesToWork": 50,
+      "MilesToWork": 10,
       "Model": "Civic",
       "Odometer": 0,
       "PercentToWork": 0,
@@ -172,7 +170,7 @@
       "Usage": "Pleasure",
       "VehicleId": 1,
       "Vin": "2FMPK4J99J",
-      "Year": 2010
+      "Year": 2020
     }
   ]
 }
