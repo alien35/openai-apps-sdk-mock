@@ -1,6 +1,6 @@
 import unittest
 
-from insurance_server_python.main import (
+from insurance_server_python.utils import (
     _sanitize_personal_auto_rate_request,
     _normalize_enum_value,
     PAYMENT_METHOD_MAPPINGS,

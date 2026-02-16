@@ -513,7 +513,7 @@ class ToolInvocationResult(TypedDict, total=False):
 
     structured_content: Dict[str, Any]
     response_text: str
-    content: Sequence[types.Content]
+    content: Sequence[types.TextContent]
     meta: Dict[str, Any]
 
 

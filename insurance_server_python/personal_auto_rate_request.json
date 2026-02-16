@@ -68,18 +68,18 @@
     "DeclinedEmail": false,
     "DeclinedPhone": false,
     "FirstName": "John",
-    "Identifier": "CA-John-1771256377951",
+    "Identifier": "CA-John-1771270206980",
     "LastName": "Smith",
     "MiddleName": "",
-    "MonthsAtResidence": 6,
+    "MonthsAtResidence": 24,
     "PriorInsuranceInformation": {
       "PriorInsurance": false,
       "ReasonForNoInsurance": "Other"
     }
   },
   "CustomerDeclinedCredit": false,
-  "EffectiveDate": "2026-02-17T00:00:00Z",
-  "Identifier": "quote-1771256377951",
+  "EffectiveDate": "2026-02-16T00:00:00Z",
+  "Identifier": "quote-1771270206980",
   "PaymentMethod": "Standard",
   "PolicyCoverages": {
     "AccidentalDeathLimit": "None",
@@ -100,7 +100,7 @@
         "ResidencyStatus": "Own",
         "ResidencyType": "Home"
       },
-      "DateOfBirth": "1999-02-16T00:00:00Z",
+      "DateOfBirth": "1997-01-28T00:00:00Z",
       "Discounts": {
         "DefensiveDriving": false,
         "DistantStudent": "None",
@@ -114,7 +114,7 @@
       "DriverId": 1,
       "FinancialResponsibilityInformation": {
         "Sr22": false,
-        "Sr22Date": "2026-02-16T15:39:37.951Z",
+        "Sr22Date": "2026-02-16T19:30:06.981Z",
         "Sr22Reason": "Other",
         "Sr22State": "California"
       },
@@ -138,7 +138,7 @@
       "MiddleName": ""
     }
   ],
-  "Term": "Annual",
+  "Term": "Semi Annual",
   "Vehicles": [
     {
       "AnnualMiles": 10000,
@@ -160,14 +160,13 @@
       },
       "LeasedVehicle": false,
       "Make": "Honda",
-      "MilesToWork": 10,
+      "MilesToWork": 0,
       "Model": "Civic",
       "Odometer": 0,
       "PercentToWork": 0,
-      "PurchaseType": "New",
       "RideShare": false,
       "Salvaged": false,
-      "Usage": "Pleasure",
+      "Usage": "Work School",
       "VehicleId": 1,
       "Vin": "2FMPK4J99J",
       "Year": 2020

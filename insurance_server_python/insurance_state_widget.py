@@ -755,7 +755,7 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     const title = document.createElement("h2");
     title.className = "insurance-widget__title";
-    title.textContent = "Help us tailor your insurance quote (5 steps)";
+    title.textContent = "Help us tailor your insurance quote";
 
     const description = document.createElement("p");
     description.className = "insurance-widget__description";
@@ -1906,10 +1906,13 @@ INSURANCE_STATE_WIDGET_HTML = """
       // Store the identifier we're sending
       const identifier = rateRequest.Identifier;
 
-      // Directly call the MCP tool with structured arguments
-      await window.openai.callTool("request-personal-auto-rate", rateRequest);
+      // Send the rate request data to the assistant so it can call the tool
+      // This ensures the tool call and response are in the conversation context
+      const prompt = `I've collected all the insurance information. Please submit this personal auto rate request using the exact data structure below:\n\n\`\`\`json\n${JSON.stringify(rateRequest, null, 2)}\n\`\`\`\n\nPlease call the request-personal-auto-rate tool with this data.`;
 
-      // Return our identifier (not the transactionId from the response)
+      await window.openai.sendFollowUpMessage({ prompt });
+
+      // Return our identifier
       return identifier;
     }
 
@@ -2092,33 +2095,26 @@ INSURANCE_STATE_WIDGET_HTML = """
         retryButton.style.width = "100%";
         retryButton.addEventListener("click", async () => {
           retryButton.disabled = true;
-          retryButton.textContent = "Checking...";
+          retryButton.textContent = "Requesting...";
           try {
             console.log("=== RETRY BUTTON CLICKED ===");
-            console.log("About to call retrieve-personal-auto-rate-results with identifier:", identifier);
+            console.log("Asking assistant to retrieve results for identifier:", identifier);
 
-            const response = await window.openai.callTool("retrieve-personal-auto-rate-results", {
-              Identifier: identifier
+            // Send message to assistant to retrieve results
+            await window.openai.sendFollowUpMessage({
+              prompt: `Please check the rate results again for quote ${identifier}.`
             });
 
-            console.log("=== RECEIVED RESPONSE FROM CALLTOOL ===");
-            console.log("Response:", response);
-            console.log("Response type:", typeof response);
-            console.log("Response constructor:", response?.constructor?.name);
-            console.log("Response keys:", response ? Object.keys(response) : "null");
+            console.log("=== MESSAGE SENT TO ASSISTANT ===");
 
-            // Log full response as JSON if possible
-            try {
-              console.log("Response as JSON:", JSON.stringify(response, null, 2));
-            } catch (jsonError) {
-              console.log("Could not stringify response:", jsonError);
-            }
-
-            // Remove old results and retry button
+            // Update UI to show the request was sent
             resultsContainer.remove();
             retryButton.remove();
-            // Display new results
-            displayResults(response, identifier);
+
+            const successMessage = document.createElement("p");
+            successMessage.style.cssText = "color: rgba(34, 197, 94, 0.9); text-align: center; padding: 20px;";
+            successMessage.textContent = "✓ Request sent to assistant";
+            container.insertBefore(successMessage, actions);
           } catch (error) {
             console.error("=== RETRY FAILED ===");
             console.error("Error:", error);
@@ -2229,60 +2225,26 @@ INSURANCE_STATE_WIDGET_HTML = """
           if (checkResultsButton.disabled) return;
 
           checkResultsButton.disabled = true;
-          checkResultsButton.textContent = "Checking results...";
-          selection.textContent = "Fetching quote results...";
+          checkResultsButton.textContent = "Requesting results...";
+          selection.textContent = "Asking assistant to fetch results...";
           selection.style.color = "";
 
           try {
             console.log("=== CHECK RESULTS BUTTON CLICKED ===");
-            console.log("Calling retrieve-personal-auto-rate-results with identifier:", identifier);
-            console.log("window.openai available:", !!window.openai);
-            console.log("window.openai.callTool available:", typeof window.openai?.callTool);
+            console.log("Asking assistant to retrieve results for identifier:", identifier);
 
-            const response = await window.openai.callTool("retrieve-personal-auto-rate-results", {
-              Identifier: identifier
+            // Send message to assistant to retrieve results
+            await window.openai.sendFollowUpMessage({
+              prompt: `Please retrieve the rate results for quote ${identifier}.`
             });
 
-            console.log("=== RECEIVED RESPONSE FROM RETRIEVE TOOL ===");
-            console.log("Raw response:", response);
-            console.log("Response type:", typeof response);
-            console.log("Response is null:", response === null);
-            console.log("Response is undefined:", response === undefined);
-            console.log("Response constructor:", response?.constructor?.name);
+            console.log("=== MESSAGE SENT TO ASSISTANT ===");
+            console.log("Asked assistant to retrieve results for:", identifier);
 
-            if (response) {
-              console.log("Response has keys:", Object.keys(response));
-              console.log("Response.content exists:", !!response.content);
-              console.log("Response.content type:", typeof response.content);
-              console.log("Response.content is array:", Array.isArray(response.content));
-
-              if (response.content) {
-                console.log("Response.content length:", response.content.length);
-                response.content.forEach((item, idx) => {
-                  console.log(`Content[${idx}]:`, item);
-                  console.log(`  - type: ${item?.type}`);
-                  console.log(`  - text exists: ${!!item?.text}`);
-                  if (item?.text) {
-                    console.log(`  - text length: ${item.text.length}`);
-                    console.log(`  - text preview (first 500 chars): ${item.text.substring(0, 500)}`);
-                  }
-                });
-              }
-
-              // Try to stringify the whole response
-              try {
-                const responseStr = JSON.stringify(response, null, 2);
-                console.log("Full response JSON (first 2000 chars):", responseStr.substring(0, 2000));
-              } catch (e) {
-                console.log("Could not stringify response:", e);
-              }
-            } else {
-              console.log("Response is falsy");
-            }
-
-            // Now display the results!
-            console.log("=== CALLING displayResults() ===");
-            displayResults(response, identifier);
+            // Update UI to show the request was sent
+            checkResultsButton.textContent = "✓ Request sent";
+            selection.textContent = "The assistant will retrieve and display your results.";
+            selection.style.color = "rgba(34, 197, 94, 0.9)";
           } catch (error) {
             console.error("=== FAILED TO RETRIEVE QUOTE RESULTS ===");
             console.error("Error:", error);
