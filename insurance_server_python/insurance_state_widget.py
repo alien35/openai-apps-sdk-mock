@@ -1906,11 +1906,15 @@ INSURANCE_STATE_WIDGET_HTML = """
       // Store the identifier we're sending
       const identifier = rateRequest.Identifier;
 
-      // Send the rate request data to the assistant so it can call the tool
-      // This ensures the tool call and response are in the conversation context
-      const prompt = `I've collected all the insurance information. Please submit this personal auto rate request using the exact data structure below:\n\n\`\`\`json\n${JSON.stringify(rateRequest, null, 2)}\n\`\`\`\n\nPlease call the request-personal-auto-rate tool with this data.`;
+      // Directly call the MCP tool to get results displayed in the widget
+      await window.openai.callTool("request-personal-auto-rate", rateRequest);
 
-      await window.openai.sendFollowUpMessage({ prompt });
+      // Also inject the quote ID into conversation context for follow-up questions
+      if (window.openai && typeof window.openai.sendFollowUpMessage === "function") {
+        await window.openai.sendFollowUpMessage({
+          prompt: `Submitted rate request for quote ${identifier}.`
+        });
+      }
 
       // Return our identifier
       return identifier;
@@ -2095,26 +2099,30 @@ INSURANCE_STATE_WIDGET_HTML = """
         retryButton.style.width = "100%";
         retryButton.addEventListener("click", async () => {
           retryButton.disabled = true;
-          retryButton.textContent = "Requesting...";
+          retryButton.textContent = "Checking...";
           try {
             console.log("=== RETRY BUTTON CLICKED ===");
-            console.log("Asking assistant to retrieve results for identifier:", identifier);
+            console.log("About to call retrieve-personal-auto-rate-results with identifier:", identifier);
 
-            // Send message to assistant to retrieve results
-            await window.openai.sendFollowUpMessage({
-              prompt: `Please check the rate results again for quote ${identifier}.`
+            const response = await window.openai.callTool("retrieve-personal-auto-rate-results", {
+              Identifier: identifier
             });
 
-            console.log("=== MESSAGE SENT TO ASSISTANT ===");
+            console.log("=== RECEIVED RESPONSE FROM CALLTOOL ===");
+            console.log("Response:", response);
 
-            // Update UI to show the request was sent
+            // Also inject quote ID into conversation context
+            if (window.openai && typeof window.openai.sendFollowUpMessage === "function") {
+              await window.openai.sendFollowUpMessage({
+                prompt: `Checked results for quote ${identifier}.`
+              });
+            }
+
+            // Remove old results and retry button
             resultsContainer.remove();
             retryButton.remove();
-
-            const successMessage = document.createElement("p");
-            successMessage.style.cssText = "color: rgba(34, 197, 94, 0.9); text-align: center; padding: 20px;";
-            successMessage.textContent = "✓ Request sent to assistant";
-            container.insertBefore(successMessage, actions);
+            // Display new results
+            displayResults(response, identifier);
           } catch (error) {
             console.error("=== RETRY FAILED ===");
             console.error("Error:", error);
@@ -2184,6 +2192,18 @@ INSURANCE_STATE_WIDGET_HTML = """
 
       // Update footnote
       footnote.textContent = `Found ${carrierResults.length} quote${carrierResults.length !== 1 ? 's' : ''} for your insurance needs.`;
+
+      // Inject results context into conversation for follow-up questions
+      if (window.openai && typeof window.openai.sendFollowUpMessage === "function") {
+        const carrierCount = carrierResults.length;
+        const contextMessage = carrierCount > 0
+          ? `Quote ${identifier} has ${carrierCount} carrier quote${carrierCount !== 1 ? 's' : ''} available.`
+          : `Quote ${identifier} has no carrier quotes available yet.`;
+
+        window.openai.sendFollowUpMessage({ prompt: contextMessage }).catch(error => {
+          console.warn("Failed to send context message:", error);
+        });
+      }
     }
 
     // Function to show success state with check results button
@@ -2225,26 +2245,31 @@ INSURANCE_STATE_WIDGET_HTML = """
           if (checkResultsButton.disabled) return;
 
           checkResultsButton.disabled = true;
-          checkResultsButton.textContent = "Requesting results...";
-          selection.textContent = "Asking assistant to fetch results...";
+          checkResultsButton.textContent = "Checking results...";
+          selection.textContent = "Fetching quote results...";
           selection.style.color = "";
 
           try {
             console.log("=== CHECK RESULTS BUTTON CLICKED ===");
-            console.log("Asking assistant to retrieve results for identifier:", identifier);
+            console.log("Calling retrieve-personal-auto-rate-results with identifier:", identifier);
 
-            // Send message to assistant to retrieve results
-            await window.openai.sendFollowUpMessage({
-              prompt: `Please retrieve the rate results for quote ${identifier}.`
+            const response = await window.openai.callTool("retrieve-personal-auto-rate-results", {
+              Identifier: identifier
             });
 
-            console.log("=== MESSAGE SENT TO ASSISTANT ===");
-            console.log("Asked assistant to retrieve results for:", identifier);
+            console.log("=== RECEIVED RESPONSE FROM RETRIEVE TOOL ===");
+            console.log("Raw response:", response);
 
-            // Update UI to show the request was sent
-            checkResultsButton.textContent = "✓ Request sent";
-            selection.textContent = "The assistant will retrieve and display your results.";
-            selection.style.color = "rgba(34, 197, 94, 0.9)";
+            // Also inject quote ID into conversation context
+            if (window.openai && typeof window.openai.sendFollowUpMessage === "function") {
+              await window.openai.sendFollowUpMessage({
+                prompt: `Retrieved results for quote ${identifier}.`
+              });
+            }
+
+            // Display the results inline in the widget
+            console.log("=== CALLING displayResults() ===");
+            displayResults(response, identifier);
           } catch (error) {
             console.error("=== FAILED TO RETRIEVE QUOTE RESULTS ===");
             console.error("Error:", error);
