@@ -7,6 +7,7 @@ import mcp.types as types
 
 from .insurance_state_widget import INSURANCE_STATE_WIDGET_HTML
 from .insurance_rate_results_widget import INSURANCE_RATE_RESULTS_WIDGET_HTML
+from .insurance_minimal_widget import INSURANCE_MINIMAL_WIDGET_HTML
 from .constants import MIME_TYPE
 from .models import ToolHandler
 
@@ -50,6 +51,8 @@ INSURANCE_STATE_WIDGET_IDENTIFIER = "insurance-state-selector"
 INSURANCE_STATE_WIDGET_TEMPLATE_URI = "ui://widget/insurance-state.html"
 INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER = "insurance-rate-results"
 INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI = "ui://widget/insurance-rate-results.html"
+INSURANCE_MINIMAL_WIDGET_IDENTIFIER = "insurance-minimal-form"
+INSURANCE_MINIMAL_WIDGET_TEMPLATE_URI = "ui://widget/insurance-minimal.html"
 
 # Input schema for insurance state selector
 INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
@@ -60,6 +63,13 @@ INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
             "description": "Optional state code (e.g., CA, NY)"
         }
     },
+    "additionalProperties": False,
+}
+
+# Input schema for insurance minimal form
+INSURANCE_MINIMAL_INPUT_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {},
     "additionalProperties": False,
 }
 
@@ -76,6 +86,21 @@ DEFAULT_WIDGETS: Tuple[WidgetDefinition, ...] = (
         input_schema=INSURANCE_STATE_INPUT_SCHEMA,
         tool_description=
             "Collects the customer's U.S. state so the assistant can continue gathering driver and vehicle information for their AIS auto quote.",
+    ),
+    WidgetDefinition(
+        identifier=INSURANCE_MINIMAL_WIDGET_IDENTIFIER,
+        title="Collect insurance quote (minimal fields)",
+        template_uri=INSURANCE_MINIMAL_WIDGET_TEMPLATE_URI,
+        invoking="Launching streamlined quote form",
+        invoked="Quote form ready",
+        html=INSURANCE_MINIMAL_WIDGET_HTML,
+        response_text="I've opened a streamlined form that only asks for the essential information needed for your quote.",
+        input_schema=INSURANCE_MINIMAL_INPUT_SCHEMA,
+        tool_description=(
+            "Displays a 5-step progressive disclosure form that collects only required fields for a personal auto insurance quote. "
+            "This streamlined experience reduces form complexity from 80-100 fields to just 30-40 required fields. "
+            "Use this tool when starting a new insurance quote to provide a better user experience."
+        ),
     ),
 )
 
@@ -132,6 +157,20 @@ if INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
     msg = (
         "Personal auto rate results widget must expose the correct template URI; "
         f"expected '{INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI}' in widgets"
+    )
+    raise RuntimeError(msg)
+
+if INSURANCE_MINIMAL_WIDGET_IDENTIFIER not in WIDGETS_BY_ID:
+    msg = (
+        "Insurance minimal form widget must be registered; "
+        f"expected identifier '{INSURANCE_MINIMAL_WIDGET_IDENTIFIER}' in widgets"
+    )
+    raise RuntimeError(msg)
+
+if INSURANCE_MINIMAL_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
+    msg = (
+        "Insurance minimal form widget must expose the correct template URI; "
+        f"expected '{INSURANCE_MINIMAL_WIDGET_TEMPLATE_URI}' in widgets"
     )
     raise RuntimeError(msg)
 
