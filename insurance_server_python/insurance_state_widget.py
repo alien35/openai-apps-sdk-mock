@@ -762,33 +762,25 @@ INSURANCE_STATE_WIDGET_HTML = """
     description.textContent =
       "Complete all steps to get your personalized insurance quote: policy setup, customer info, vehicle details, driver info, and review.";
 
-    // Optional fields toggle
+    // Required fields notice
     const toggleContainer = document.createElement("div");
-    toggleContainer.style.cssText = "margin: 16px 0; padding: 12px; background: rgba(240, 249, 255, 0.6); border: 1px solid rgba(186, 230, 253, 0.5); border-radius: 8px;";
-
-    const toggleLabel = document.createElement("label");
-    toggleLabel.style.cssText = "display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px;";
-
-    const toggleCheckbox = document.createElement("input");
-    toggleCheckbox.type = "checkbox";
-    toggleCheckbox.id = "showOptionalFields";
-    toggleCheckbox.checked = false;
-    toggleCheckbox.style.cssText = "width: 18px; height: 18px; cursor: pointer;";
+    toggleContainer.style.cssText = "margin: 16px 0; padding: 12px; background: rgba(240, 249, 255, 0.6); border: 1px solid rgba(186, 230, 253, 0.5); border-radius: 8px; text-align: center;";
 
     const toggleText = document.createElement("span");
-    toggleText.style.cssText = "font-weight: 500;";
-    toggleText.textContent = "Show optional fields (helps us find better rates)";
+    toggleText.style.cssText = "font-weight: 500; font-size: 14px; color: #334155;";
+    toggleText.id = "requiredFieldsNote";
 
-    toggleLabel.appendChild(toggleCheckbox);
-    toggleLabel.appendChild(toggleText);
+    const textBefore = document.createTextNode("Required fields are marked with a red asterisk (");
+    const asterisk = document.createElement("span");
+    asterisk.style.cssText = "color: #ef4444; font-weight: bold;";
+    asterisk.textContent = "*";
+    const textAfter = document.createTextNode(")");
 
-    const fieldCount = document.createElement("span");
-    fieldCount.id = "fieldCount";
-    fieldCount.style.cssText = "color: #64748b; font-size: 13px; margin-left: 26px;";
-    fieldCount.textContent = "Loading fields...";
+    toggleText.appendChild(textBefore);
+    toggleText.appendChild(asterisk);
+    toggleText.appendChild(textAfter);
 
-    toggleContainer.appendChild(toggleLabel);
-    toggleContainer.appendChild(fieldCount);
+    toggleContainer.appendChild(toggleText);
 
     // Stepper UI
     const stepper = document.createElement("div");
@@ -1619,105 +1611,142 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     let isSending = false;
     let currentStep = 1;
-    let minimalFieldsConfig = null;
+
+    // ============================================================
+    // MINIMAL FIELDS CONFIGURATION
+    // Update this object to change which fields are required (marked with *)
+    // ============================================================
+    const minimalFieldsConfig = {
+      customer: {
+        required: [
+          "FirstName",
+          "LastName",
+          "Address.Street1",
+          "Address.City",
+          "Address.State",
+          "Address.ZipCode",
+          "MonthsAtResidence",
+          "PriorInsuranceInformation.PriorInsurance"
+        ]
+      },
+      driver: {
+        required: [
+          "FirstName",
+          "LastName",
+          "DateOfBirth",
+          "Gender",
+          "MaritalStatus",
+          "LicenseInformation.LicenseStatus",
+          "Attributes.PropertyInsurance",
+          "Attributes.Relation",
+          "Attributes.ResidencyStatus",
+          "Attributes.ResidencyType"
+        ]
+      },
+      vehicle: {
+        required: [
+          "Vin",
+          "Year",
+          "Make",
+          "Model",
+          "BodyType",
+          "UseType",
+          "AssignedDriverId",
+          "CoverageInformation.CollisionDeductible",
+          "CoverageInformation.ComprehensiveDeductible",
+          "CoverageInformation.RentalLimit",
+          "CoverageInformation.TowingLimit",
+          "CoverageInformation.SafetyGlassCoverage",
+          "PercentToWork",
+          "MilesToWork",
+          "AnnualMiles"
+        ]
+      }
+    };
 
     // Helper function to check if a field is required
     function isFieldRequired(section, fieldPath) {
       if (!minimalFieldsConfig) {
-        console.log(`${LOG_PREFIX} Config not loaded, treating all fields as required`);
-        return true; // Show all fields if config not loaded
+        console.log(`${LOG_PREFIX} [isFieldRequired] Config not loaded yet`);
+        return false;
       }
 
       const sectionConfig = minimalFieldsConfig[section];
       if (!sectionConfig) {
-        console.log(`${LOG_PREFIX} No config for section: ${section}`);
-        return true;
+        console.log(`${LOG_PREFIX} [isFieldRequired] No config for section: ${section}`);
+        return false;
       }
 
       const isRequired = sectionConfig.required && sectionConfig.required.includes(fieldPath);
+      console.log(`${LOG_PREFIX} [isFieldRequired] section=${section}, fieldPath=${fieldPath}, isRequired=${isRequired}`);
       return isRequired;
     }
 
-    // Function to update field visibility based on toggle state
-    function updateFieldVisibility() {
-      const checkbox = document.getElementById('showOptionalFields');
-      if (!checkbox) {
-        console.warn(`${LOG_PREFIX} Toggle checkbox not found, skipping visibility update`);
-        return;
-      }
+    // Function to mark required fields with red asterisks
+    function markRequiredFields() {
+      console.log(`${LOG_PREFIX} ========== START markRequiredFields ==========`);
+      console.log(`${LOG_PREFIX} Config loaded:`, minimalFieldsConfig ? 'YES' : 'NO');
 
-      const showOptional = checkbox.checked;
-      console.log(`${LOG_PREFIX} Updating field visibility, showOptional: ${showOptional}`);
-
-      let hiddenCount = 0;
-      let visibleCount = 0;
+      let requiredCount = 0;
+      let optionalCount = 0;
+      let noLabelCount = 0;
 
       // Find all fields with data-section and data-field attributes
       const fields = container.querySelectorAll('[data-section][data-field]');
-      const totalFields = fields.length;
+      console.log(`${LOG_PREFIX} Found ${fields.length} fields with data attributes`);
 
-      fields.forEach(field => {
+      fields.forEach((field, index) => {
         const section = field.getAttribute('data-section');
         const fieldPath = field.getAttribute('data-field');
+        console.log(`${LOG_PREFIX} [Field ${index + 1}/${fields.length}] section="${section}", fieldPath="${fieldPath}"`);
+
         const isRequired = isFieldRequired(section, fieldPath);
 
-        if (!isRequired && !showOptional) {
-          field.style.display = 'none';
-          hiddenCount++;
+        // Find the label element within this field
+        const label = field.querySelector('label');
+        console.log(`${LOG_PREFIX} [Field ${index + 1}] Label found:`, label ? 'YES' : 'NO');
+
+        if (label) {
+          console.log(`${LOG_PREFIX} [Field ${index + 1}] Label text: "${label.textContent}"`);
+
+          // Remove any existing asterisk
+          const existingAsterisk = label.querySelector('.required-asterisk');
+          if (existingAsterisk) {
+            existingAsterisk.remove();
+            console.log(`${LOG_PREFIX} [Field ${index + 1}] Removed existing asterisk`);
+          }
+
+          if (isRequired) {
+            // Add red asterisk to required fields
+            const asterisk = document.createElement('span');
+            asterisk.className = 'required-asterisk';
+            asterisk.style.cssText = 'color: #ef4444; margin-left: 4px; font-weight: bold;';
+            asterisk.textContent = '*';
+            label.appendChild(asterisk);
+            console.log(`${LOG_PREFIX} [Field ${index + 1}] ✅ Added asterisk to "${label.textContent}"`);
+            requiredCount++;
+          } else {
+            console.log(`${LOG_PREFIX} [Field ${index + 1}] ⏭️  Skipped (optional)`);
+            optionalCount++;
+          }
         } else {
-          field.style.display = '';
-          visibleCount++;
+          console.log(`${LOG_PREFIX} [Field ${index + 1}] ❌ No label element found`);
+          noLabelCount++;
         }
       });
 
-      console.log(`${LOG_PREFIX} Field visibility updated: ${visibleCount} visible, ${hiddenCount} hidden`);
-
-      // Update field count indicator
-      const fieldCountElement = document.getElementById('fieldCount');
-      if (fieldCountElement) {
-        fieldCountElement.textContent = `Showing ${visibleCount} of ${totalFields} fields`;
-      }
+      console.log(`${LOG_PREFIX} ========== END markRequiredFields ==========`);
+      console.log(`${LOG_PREFIX} Summary: ${requiredCount} required, ${optionalCount} optional, ${noLabelCount} without labels`);
     }
 
-    // Load minimal fields configuration
-    console.log(`${LOG_PREFIX} Loading minimal fields configuration...`);
-    fetch('/api/minimal-fields-config')
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        }
-        return res.json();
-      })
-      .then(config => {
-        minimalFieldsConfig = config;
-        console.log(`${LOG_PREFIX} Loaded minimal fields config:`, config);
-        console.log(`${LOG_PREFIX} Required customer fields:`, config.customer?.required?.length || 0);
-        console.log(`${LOG_PREFIX} Required driver fields:`, config.driver?.required?.length || 0);
-        console.log(`${LOG_PREFIX} Required vehicle fields:`, config.vehicle?.required?.length || 0);
-
-        // Initial update when config loads
-        updateFieldVisibility();
-      })
-      .catch(err => {
-        console.error(`${LOG_PREFIX} Failed to load minimal fields config:`, err);
-        notifyIssue("warn", "Failed to load minimal fields config, showing all fields", err);
-        // If config fails to load, just show all fields (default behavior)
-      });
-
-    // Attach change event to toggle checkbox
-    const optionalFieldsCheckbox = document.getElementById('showOptionalFields');
-    if (optionalFieldsCheckbox) {
-      optionalFieldsCheckbox.addEventListener('change', updateFieldVisibility);
-      console.log(`${LOG_PREFIX} Attached change listener to optional fields toggle`);
-
-      // Force an immediate visibility update in case config hasn't loaded yet
-      setTimeout(() => {
-        console.log(`${LOG_PREFIX} Running fallback visibility update`);
-        updateFieldVisibility();
-      }, 100);
-    } else {
-      console.warn(`${LOG_PREFIX} Could not find showOptionalFields checkbox`);
-    }
+    // Mark required fields with asterisks
+    console.log(`${LOG_PREFIX} ========================================`);
+    console.log(`${LOG_PREFIX} Minimal fields config loaded (hardcoded)`);
+    console.log(`${LOG_PREFIX} Required customer fields (${minimalFieldsConfig.customer?.required?.length || 0}):`, minimalFieldsConfig.customer?.required);
+    console.log(`${LOG_PREFIX} Required driver fields (${minimalFieldsConfig.driver?.required?.length || 0}):`, minimalFieldsConfig.driver?.required);
+    console.log(`${LOG_PREFIX} Required vehicle fields (${minimalFieldsConfig.vehicle?.required?.length || 0}):`, minimalFieldsConfig.vehicle?.required);
+    console.log(`${LOG_PREFIX} Calling markRequiredFields()...`);
+    markRequiredFields();
 
     function goToStep(stepNumber) {
       currentStep = stepNumber;
