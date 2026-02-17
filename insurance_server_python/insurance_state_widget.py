@@ -1301,14 +1301,40 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     // Driver basic info
     const driverFirstNameField = createInputField("driver-first-name", "First Name", "text", "Enter first name");
+    driverFirstNameField.setAttribute("data-section", "driver");
+    driverFirstNameField.setAttribute("data-field", "FirstName");
+
     const driverMiddleNameField = createInputField("driver-middle-name", "Middle Name", "text", "Enter middle name");
+    driverMiddleNameField.setAttribute("data-section", "driver");
+    driverMiddleNameField.setAttribute("data-field", "MiddleName");
+
     const driverLastNameField = createInputField("driver-last-name", "Last Name", "text", "Enter last name");
+    driverLastNameField.setAttribute("data-section", "driver");
+    driverLastNameField.setAttribute("data-field", "LastName");
+
     const dobField = createInputField("driver-dob", "Date of Birth", "date", "");
+    dobField.setAttribute("data-section", "driver");
+    dobField.setAttribute("data-field", "DateOfBirth");
+
     const genderField = createSelectField("driver-gender", "Gender", ["Male", "Female", "Non-Binary"]);
+    genderField.setAttribute("data-section", "driver");
+    genderField.setAttribute("data-field", "Gender");
+
     const maritalStatusField = createSelectField("driver-marital-status", "Marital Status", ["Single", "Married", "Divorced", "Widowed", "Separated", "Domestic Partner"]);
+    maritalStatusField.setAttribute("data-section", "driver");
+    maritalStatusField.setAttribute("data-field", "MaritalStatus");
+
     const occupationField = createInputField("driver-occupation", "Occupation", "text", "Enter occupation");
+    occupationField.setAttribute("data-section", "driver");
+    occupationField.setAttribute("data-field", "Occupation");
+
     const industryField = createInputField("driver-industry", "Industry", "text", "Enter industry");
+    industryField.setAttribute("data-section", "driver");
+    industryField.setAttribute("data-field", "Industry");
+
     const monthsEmployedField = createInputField("driver-months-employed", "Months Employed", "number", "Enter months");
+    monthsEmployedField.setAttribute("data-section", "driver");
+    monthsEmployedField.setAttribute("data-field", "MonthsEmployed");
 
     // License Info section
     const licenseTitle = document.createElement("h4");
@@ -1316,12 +1342,32 @@ INSURANCE_STATE_WIDGET_HTML = """
     licenseTitle.textContent = "License Information";
 
     const licenseStatusField = createSelectField("license-status", "License Status", ["Valid", "Suspended", "Expired", "Learner's Permit"]);
+    licenseStatusField.setAttribute("data-section", "driver");
+    licenseStatusField.setAttribute("data-field", "LicenseInformation.LicenseStatus");
+
     const monthsLicensedField = createInputField("months-licensed", "Months Licensed", "number", "Enter months");
+    monthsLicensedField.setAttribute("data-section", "driver");
+    monthsLicensedField.setAttribute("data-field", "LicenseInformation.MonthsLicensed");
+
     const stateLicensedField = createSelectField("state-licensed", "State Licensed", STATES.map(s => ({ value: s.code, label: s.name })));
+    stateLicensedField.setAttribute("data-section", "driver");
+    stateLicensedField.setAttribute("data-field", "LicenseInformation.StateLicensed");
+
     const mvrExperienceField = createInputField("mvr-experience", "MVR Experience", "text", "Enter MVR experience");
+    mvrExperienceField.setAttribute("data-section", "driver");
+    mvrExperienceField.setAttribute("data-field", "LicenseInformation.MvrExperience");
+
     const suspendedMonthsField = createInputField("suspended-months", "Suspended Months", "number", "Enter suspended months (if any)");
+    suspendedMonthsField.setAttribute("data-section", "driver");
+    suspendedMonthsField.setAttribute("data-field", "LicenseInformation.SuspendedMonths");
+
     const foreignNationalField = createToggleField("foreign-national", "Foreign National?");
+    foreignNationalField.setAttribute("data-section", "driver");
+    foreignNationalField.setAttribute("data-field", "LicenseInformation.ForeignNational");
+
     const internationalLicenseField = createToggleField("international-license", "International License?");
+    internationalLicenseField.setAttribute("data-section", "driver");
+    internationalLicenseField.setAttribute("data-field", "LicenseInformation.InternationalLicense");
 
     // Attributes section
     const attributesTitle = document.createElement("h4");
@@ -1329,11 +1375,28 @@ INSURANCE_STATE_WIDGET_HTML = """
     attributesTitle.textContent = "Attributes";
 
     const educationLevelField = createSelectField("education-level", "Education Level", ["High School", "Some College", "Associate's", "Bachelor's", "Master's", "Doctorate"]);
+    educationLevelField.setAttribute("data-section", "driver");
+    educationLevelField.setAttribute("data-field", "Attributes.EducationLevel");
+
     const relationField = createSelectField("relation", "Relation to Insured", ["Self", "Spouse", "Child", "Parent", "Other"]);
+    relationField.setAttribute("data-section", "driver");
+    relationField.setAttribute("data-field", "Attributes.Relation");
+
     const residencyStatusField = createSelectField("residency-status", "Residency Status", ["Own", "Rent", "Lease"]);
+    residencyStatusField.setAttribute("data-section", "driver");
+    residencyStatusField.setAttribute("data-field", "Attributes.ResidencyStatus");
+
     const residencyTypeField = createSelectField("residency-type", "Residency Type", ["Home", "Apartment", "Condo", "Mobile Home", "Fixed Mobile Home"]);
+    residencyTypeField.setAttribute("data-section", "driver");
+    residencyTypeField.setAttribute("data-field", "Attributes.ResidencyType");
+
     const driverMilesToWorkField = createInputField("driver-miles-to-work", "Miles To Work", "number", "Enter miles to work");
+    driverMilesToWorkField.setAttribute("data-section", "driver");
+    driverMilesToWorkField.setAttribute("data-field", "Attributes.MilesToWork");
+
     const propertyInsuranceField = createToggleField("property-insurance", "Property Insurance?");
+    propertyInsuranceField.setAttribute("data-section", "driver");
+    propertyInsuranceField.setAttribute("data-field", "Attributes.PropertyInsurance");
 
     // Discounts section
     const discountsTitle = document.createElement("h4");
@@ -1341,9 +1404,20 @@ INSURANCE_STATE_WIDGET_HTML = """
     discountsTitle.textContent = "Discounts";
 
     const defensiveDrivingField = createToggleField("discount-defensive-driving", "Defensive Driving");
+    defensiveDrivingField.setAttribute("data-section", "driver");
+    defensiveDrivingField.setAttribute("data-field", "Discounts.DefensiveDriving");
+
     const goodStudentField = createToggleField("discount-good-student", "Good Student");
+    goodStudentField.setAttribute("data-section", "driver");
+    goodStudentField.setAttribute("data-field", "Discounts.GoodStudent");
+
     const seniorField = createToggleField("discount-senior", "Senior");
+    seniorField.setAttribute("data-section", "driver");
+    seniorField.setAttribute("data-field", "Discounts.Senior");
+
     const multiplePoliciesField = createToggleField("discount-multiple-policies", "Multiple Policies");
+    multiplePoliciesField.setAttribute("data-section", "driver");
+    multiplePoliciesField.setAttribute("data-field", "Discounts.MultiplePolicies");
 
     // SR-22 Info section
     const sr22Title = document.createElement("h4");
@@ -1351,9 +1425,20 @@ INSURANCE_STATE_WIDGET_HTML = """
     sr22Title.textContent = "SR-22 Information";
 
     const sr22RequiredField = createToggleField("sr22-required", "SR-22 Required?");
+    sr22RequiredField.setAttribute("data-section", "driver");
+    sr22RequiredField.setAttribute("data-field", "SR22Information.SR22Required");
+
     const sr22ReasonField = createInputField("sr22-reason", "SR-22 Reason", "text", "Enter reason (if applicable)");
+    sr22ReasonField.setAttribute("data-section", "driver");
+    sr22ReasonField.setAttribute("data-field", "SR22Information.SR22Reason");
+
     const sr22StateField = createSelectField("sr22-state", "SR-22 State", STATES.map(s => ({ value: s.code, label: s.name })));
+    sr22StateField.setAttribute("data-section", "driver");
+    sr22StateField.setAttribute("data-field", "SR22Information.SR22State");
+
     const sr22DateField = createInputField("sr22-date", "SR-22 Date", "date", "");
+    sr22DateField.setAttribute("data-section", "driver");
+    sr22DateField.setAttribute("data-field", "SR22Information.SR22Date");
 
     // Append all fields to step 4 content
     step4Content.appendChild(step4Title);
