@@ -1709,6 +1709,12 @@ INSURANCE_STATE_WIDGET_HTML = """
     if (optionalFieldsCheckbox) {
       optionalFieldsCheckbox.addEventListener('change', updateFieldVisibility);
       console.log(`${LOG_PREFIX} Attached change listener to optional fields toggle`);
+
+      // Force an immediate visibility update in case config hasn't loaded yet
+      setTimeout(() => {
+        console.log(`${LOG_PREFIX} Running fallback visibility update`);
+        updateFieldVisibility();
+      }, 100);
     } else {
       console.warn(`${LOG_PREFIX} Could not find showOptionalFields checkbox`);
     }
