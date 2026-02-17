@@ -325,7 +325,7 @@ from pathlib import Path
 @app.route("/api/minimal-fields-config", methods=["GET"])
 async def get_minimal_fields_config(request: Request):
     """Serve the minimal fields configuration."""
-    config_path = Path(__file__).parent.parent / "minimal_fields_config.json"
+    config_path = Path(__file__).parent / "minimal_fields_config.json"
     if config_path.exists():
         with open(config_path) as f:
             config_data = json.load(f)
