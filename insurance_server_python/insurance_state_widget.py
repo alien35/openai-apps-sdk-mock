@@ -772,16 +772,23 @@ INSURANCE_STATE_WIDGET_HTML = """
     const toggleCheckbox = document.createElement("input");
     toggleCheckbox.type = "checkbox";
     toggleCheckbox.id = "showOptionalFields";
-    toggleCheckbox.checked = true;
+    toggleCheckbox.checked = false;
     toggleCheckbox.style.cssText = "width: 18px; height: 18px; cursor: pointer;";
 
     const toggleText = document.createElement("span");
     toggleText.style.cssText = "font-weight: 500;";
-    toggleText.textContent = "Show optional fields (recommended for best rates)";
+    toggleText.textContent = "Show optional fields (helps us find better rates)";
 
     toggleLabel.appendChild(toggleCheckbox);
     toggleLabel.appendChild(toggleText);
+
+    const fieldCount = document.createElement("span");
+    fieldCount.id = "fieldCount";
+    fieldCount.style.cssText = "color: #64748b; font-size: 13px; margin-left: 26px;";
+    fieldCount.textContent = "Loading fields...";
+
     toggleContainer.appendChild(toggleLabel);
+    toggleContainer.appendChild(fieldCount);
 
     // Stepper UI
     const stepper = document.createElement("div");
@@ -1647,6 +1654,8 @@ INSURANCE_STATE_WIDGET_HTML = """
 
       // Find all fields with data-section and data-field attributes
       const fields = container.querySelectorAll('[data-section][data-field]');
+      const totalFields = fields.length;
+
       fields.forEach(field => {
         const section = field.getAttribute('data-section');
         const fieldPath = field.getAttribute('data-field');
@@ -1662,6 +1671,12 @@ INSURANCE_STATE_WIDGET_HTML = """
       });
 
       console.log(`${LOG_PREFIX} Field visibility updated: ${visibleCount} visible, ${hiddenCount} hidden`);
+
+      // Update field count indicator
+      const fieldCountElement = document.getElementById('fieldCount');
+      if (fieldCountElement) {
+        fieldCountElement.textContent = `Showing ${visibleCount} of ${totalFields} fields`;
+      }
     }
 
     // Load minimal fields configuration
