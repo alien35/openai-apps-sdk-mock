@@ -1048,15 +1048,30 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     // Name fields
     const firstNameField = createInputField("customer-first-name", "First Name", "text", "Enter first name");
+    firstNameField.setAttribute("data-section", "customer");
+    firstNameField.setAttribute("data-field", "FirstName");
+
     const middleNameField = createInputField("customer-middle-name", "Middle Name", "text", "Enter middle name (optional)");
+    middleNameField.setAttribute("data-section", "customer");
+    middleNameField.setAttribute("data-field", "MiddleName");
+
     const lastNameField = createInputField("customer-last-name", "Last Name", "text", "Enter last name");
+    lastNameField.setAttribute("data-section", "customer");
+    lastNameField.setAttribute("data-field", "LastName");
 
     // Toggles
     const declinedEmailField = createToggleField("declined-email", "Declined Email?");
+    declinedEmailField.setAttribute("data-section", "customer");
+    declinedEmailField.setAttribute("data-field", "DeclinedEmail");
+
     const declinedPhoneField = createToggleField("declined-phone", "Declined Phone?");
+    declinedPhoneField.setAttribute("data-section", "customer");
+    declinedPhoneField.setAttribute("data-field", "DeclinedPhone");
 
     // Months at Residence
     const monthsAtResidenceField = createInputField("months-at-residence", "Months at Residence", "number", "Enter months");
+    monthsAtResidenceField.setAttribute("data-section", "customer");
+    monthsAtResidenceField.setAttribute("data-field", "MonthsAtResidence");
 
     // Address section
     const addressTitle = document.createElement("h4");
@@ -1064,11 +1079,18 @@ INSURANCE_STATE_WIDGET_HTML = """
     addressTitle.textContent = "Address";
 
     const streetField = createInputField("address-street", "Street", "text", "Enter street address");
+    streetField.setAttribute("data-section", "customer");
+    streetField.setAttribute("data-field", "Address.Street1");
+
     const cityField = createInputField("address-city", "City", "text", "Enter city");
+    cityField.setAttribute("data-section", "customer");
+    cityField.setAttribute("data-field", "Address.City");
 
     // State dropdown
     const stateField = document.createElement("div");
     stateField.className = "insurance-widget__field";
+    stateField.setAttribute("data-section", "customer");
+    stateField.setAttribute("data-field", "Address.State");
     const stateLabel = document.createElement("label");
     stateLabel.className = "insurance-widget__label";
     stateLabel.setAttribute("for", "address-state");
@@ -1092,7 +1114,12 @@ INSURANCE_STATE_WIDGET_HTML = """
     stateField.appendChild(stateWrapper);
 
     const countyField = createInputField("address-county", "County", "text", "Enter county");
+    countyField.setAttribute("data-section", "customer");
+    countyField.setAttribute("data-field", "Address.County");
+
     const zipCodeField = createInputField("address-zip", "ZIP Code", "text", "Enter ZIP code");
+    zipCodeField.setAttribute("data-section", "customer");
+    zipCodeField.setAttribute("data-field", "Address.ZipCode");
 
     // Contact Info section
     const contactTitle = document.createElement("h4");
@@ -1100,9 +1127,20 @@ INSURANCE_STATE_WIDGET_HTML = """
     contactTitle.textContent = "Contact Information";
 
     const mobilePhoneField = createInputField("mobile-phone", "Mobile Phone", "tel", "Enter mobile phone");
+    mobilePhoneField.setAttribute("data-section", "customer");
+    mobilePhoneField.setAttribute("data-field", "MobilePhone");
+
     const homePhoneField = createInputField("home-phone", "Home Phone", "tel", "Enter home phone");
+    homePhoneField.setAttribute("data-section", "customer");
+    homePhoneField.setAttribute("data-field", "HomePhone");
+
     const workPhoneField = createInputField("work-phone", "Work Phone", "tel", "Enter work phone");
+    workPhoneField.setAttribute("data-section", "customer");
+    workPhoneField.setAttribute("data-field", "WorkPhone");
+
     const emailField = createInputField("email", "Email Address", "email", "Enter email address");
+    emailField.setAttribute("data-section", "customer");
+    emailField.setAttribute("data-field", "Email");
 
     // Prior Insurance section
     const priorInsuranceTitle = document.createElement("h4");
@@ -1110,7 +1148,12 @@ INSURANCE_STATE_WIDGET_HTML = """
     priorInsuranceTitle.textContent = "Prior Insurance";
 
     const priorInsuranceField = createToggleField("prior-insurance", "Prior Insurance?");
+    priorInsuranceField.setAttribute("data-section", "customer");
+    priorInsuranceField.setAttribute("data-field", "PriorInsuranceInformation.PriorInsurance");
+
     const noInsuranceReasonField = createInputField("no-insurance-reason", "Reason for No Insurance", "text", "Enter reason (if applicable)");
+    noInsuranceReasonField.setAttribute("data-section", "customer");
+    noInsuranceReasonField.setAttribute("data-field", "PriorInsuranceInformation.ReasonForNoInsurance");
 
     // Append all fields to step 2 content
     step2Content.appendChild(step2Title);
@@ -1422,6 +1465,56 @@ INSURANCE_STATE_WIDGET_HTML = """
     let currentStep = 1;
     let minimalFieldsConfig = null;
 
+    // Helper function to check if a field is required
+    function isFieldRequired(section, fieldPath) {
+      if (!minimalFieldsConfig) {
+        console.log(`${LOG_PREFIX} Config not loaded, treating all fields as required`);
+        return true; // Show all fields if config not loaded
+      }
+
+      const sectionConfig = minimalFieldsConfig[section];
+      if (!sectionConfig) {
+        console.log(`${LOG_PREFIX} No config for section: ${section}`);
+        return true;
+      }
+
+      const isRequired = sectionConfig.required && sectionConfig.required.includes(fieldPath);
+      return isRequired;
+    }
+
+    // Function to update field visibility based on toggle state
+    function updateFieldVisibility() {
+      const checkbox = document.getElementById('showOptionalFields');
+      if (!checkbox) {
+        console.warn(`${LOG_PREFIX} Toggle checkbox not found, skipping visibility update`);
+        return;
+      }
+
+      const showOptional = checkbox.checked;
+      console.log(`${LOG_PREFIX} Updating field visibility, showOptional: ${showOptional}`);
+
+      let hiddenCount = 0;
+      let visibleCount = 0;
+
+      // Find all fields with data-section and data-field attributes
+      const fields = container.querySelectorAll('[data-section][data-field]');
+      fields.forEach(field => {
+        const section = field.getAttribute('data-section');
+        const fieldPath = field.getAttribute('data-field');
+        const isRequired = isFieldRequired(section, fieldPath);
+
+        if (!isRequired && !showOptional) {
+          field.style.display = 'none';
+          hiddenCount++;
+        } else {
+          field.style.display = '';
+          visibleCount++;
+        }
+      });
+
+      console.log(`${LOG_PREFIX} Field visibility updated: ${visibleCount} visible, ${hiddenCount} hidden`);
+    }
+
     // Load minimal fields configuration
     console.log(`${LOG_PREFIX} Loading minimal fields configuration...`);
     fetch('/api/minimal-fields-config')
@@ -1437,12 +1530,24 @@ INSURANCE_STATE_WIDGET_HTML = """
         console.log(`${LOG_PREFIX} Required customer fields:`, config.customer?.required?.length || 0);
         console.log(`${LOG_PREFIX} Required driver fields:`, config.driver?.required?.length || 0);
         console.log(`${LOG_PREFIX} Required vehicle fields:`, config.vehicle?.required?.length || 0);
+
+        // Initial update when config loads
+        updateFieldVisibility();
       })
       .catch(err => {
         console.error(`${LOG_PREFIX} Failed to load minimal fields config:`, err);
         notifyIssue("warn", "Failed to load minimal fields config, showing all fields", err);
         // If config fails to load, just show all fields (default behavior)
       });
+
+    // Attach change event to toggle checkbox
+    const optionalFieldsCheckbox = document.getElementById('showOptionalFields');
+    if (optionalFieldsCheckbox) {
+      optionalFieldsCheckbox.addEventListener('change', updateFieldVisibility);
+      console.log(`${LOG_PREFIX} Attached change listener to optional fields toggle`);
+    } else {
+      console.warn(`${LOG_PREFIX} Could not find showOptionalFields checkbox`);
+    }
 
     function goToStep(stepNumber) {
       currentStep = stepNumber;
