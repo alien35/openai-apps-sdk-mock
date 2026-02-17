@@ -318,6 +318,25 @@ async def _legacy_call_tool_route(request: Request) -> JSONResponse:
 # Add legacy route
 app.add_route("/mcp/messages", _legacy_call_tool_route, methods=["POST"])
 
+
+# Serve minimal fields config
+from starlette.responses import FileResponse
+from pathlib import Path
+
+@app.route("/minimal-fields-config.json", methods=["GET"])
+async def serve_minimal_fields_config(request: Request):
+    """Serve the minimal fields configuration file."""
+    # Config is in assets directory
+    config_path = Path(__file__).parent.parent / "assets" / "minimal-fields-config.json"
+    if config_path.exists():
+        return FileResponse(
+            config_path,
+            media_type="application/json",
+            headers={"Access-Control-Allow-Origin": "*"}
+        )
+    logger.error(f"Config file not found at: {config_path}")
+    return JSONResponse({"error": "Config file not found"}, status_code=404)
+
 # Add CORS middleware
 try:
     from starlette.middleware.cors import CORSMiddleware
