@@ -61,17 +61,17 @@
     "Address": {
       "City": "Beverly Hills",
       "State": "California",
-      "Street1": "123 Boulevard Ave.",
+      "Street1": "123 Boulevard Ave",
       "ZipCode": "90210"
     },
     "ContactInformation": {},
     "DeclinedEmail": false,
     "DeclinedPhone": false,
     "FirstName": "John",
-    "Identifier": "CA-John-1771270764543",
+    "Identifier": "CA-John-1771274433910",
     "LastName": "Smith",
     "MiddleName": "",
-    "MonthsAtResidence": 6,
+    "MonthsAtResidence": 24,
     "PriorInsuranceInformation": {
       "PriorInsurance": false,
       "ReasonForNoInsurance": "Other"
@@ -79,7 +79,7 @@
   },
   "CustomerDeclinedCredit": false,
   "EffectiveDate": "2026-02-16T00:00:00Z",
-  "Identifier": "quote-1771270764543",
+  "Identifier": "quote-1771274433910",
   "PaymentMethod": "Standard",
   "PolicyCoverages": {
     "AccidentalDeathLimit": "None",
@@ -100,7 +100,7 @@
         "ResidencyStatus": "Own",
         "ResidencyType": "Home"
       },
-      "DateOfBirth": "1994-02-01T00:00:00Z",
+      "DateOfBirth": "1996-10-15T00:00:00Z",
       "Discounts": {
         "DefensiveDriving": false,
         "DistantStudent": "None",
@@ -114,7 +114,7 @@
       "DriverId": 1,
       "FinancialResponsibilityInformation": {
         "Sr22": false,
-        "Sr22Date": "2026-02-16T19:39:24.543Z",
+        "Sr22Date": "2026-02-16T20:40:33.910Z",
         "Sr22Reason": "Other",
         "Sr22State": "California"
       },
@@ -164,13 +164,12 @@
       "Model": "Civic",
       "Odometer": 0,
       "PercentToWork": 0,
-      "PurchaseType": "New",
       "RideShare": false,
       "Salvaged": false,
       "Usage": "Work School",
       "VehicleId": 1,
       "Vin": "2FMPK4J99J",
-      "Year": 2010
+      "Year": 2020
     }
   ]
 }
