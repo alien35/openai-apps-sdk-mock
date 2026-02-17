@@ -507,6 +507,32 @@ class PersonalAutoRateResultsRequest(BaseModel):
     _strip_identifier = field_validator("identifier", mode="before")(_strip_string)
 
 
+# Cumulative intake models for conversational batch collection
+# These use flexible JSON schemas that allow partial/incomplete data
+class CumulativeCustomerIntake(BaseModel):
+    """Cumulative intake for customer information batch."""
+    customer: Optional[Dict[str, Any]] = Field(default=None, alias="Customer")
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+
+class CumulativeDriverIntake(BaseModel):
+    """Cumulative intake for driver information batch (can append customer fields)."""
+    customer: Optional[Dict[str, Any]] = Field(default=None, alias="Customer")
+    rated_drivers: Optional[List[Dict[str, Any]]] = Field(default=None, alias="RatedDrivers")
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+
+class CumulativeVehicleIntake(BaseModel):
+    """Cumulative intake for vehicle information batch (can append customer/driver fields)."""
+    customer: Optional[Dict[str, Any]] = Field(default=None, alias="Customer")
+    rated_drivers: Optional[List[Dict[str, Any]]] = Field(default=None, alias="RatedDrivers")
+    vehicles: Optional[List[Dict[str, Any]]] = Field(default=None, alias="Vehicles")
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+
 # TypedDicts for tool handling
 class ToolInvocationResult(TypedDict, total=False):
     """Result structure returned by tool handlers."""

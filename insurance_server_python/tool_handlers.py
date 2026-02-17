@@ -68,16 +68,48 @@ def _insurance_state_tool_handler(
 
 def _collect_personal_auto_customer(arguments: Mapping[str, Any]) -> ToolInvocationResult:
     """Collect and validate customer profile information."""
-    payload = PersonalAutoCustomerIntake.model_validate(arguments)
-    customer = payload.customer
-    full_name = " ".join(
-        part
-        for part in [customer.first_name, customer.middle_name, customer.last_name]
-        if part
-    )
-    message = f"Captured customer profile for {full_name.strip()}.".strip()
+    from .models import CumulativeCustomerIntake
+    from .utils import validate_required_fields, get_nested_value
+
+    payload = CumulativeCustomerIntake.model_validate(arguments)
+
+    # Required fields for customer batch
+    required_fields = [
+        "FirstName",
+        "LastName",
+        "Address.Street1",
+        "Address.City",
+        "Address.State",
+        "Address.ZipCode",
+        "MonthsAtResidence",
+        "PriorInsuranceInformation.PriorInsurance",
+    ]
+
+    # Validate completeness
+    customer_data = payload.customer or {}
+    missing = validate_required_fields(customer_data, required_fields)
+
+    # Build response message
+    if customer_data:
+        first_name = get_nested_value(customer_data, "FirstName") or ""
+        middle_name = get_nested_value(customer_data, "MiddleName") or ""
+        last_name = get_nested_value(customer_data, "LastName") or ""
+        full_name = " ".join(part for part in [first_name, middle_name, last_name] if part)
+        message = f"Captured customer profile for {full_name.strip()}." if full_name.strip() else "Captured customer information."
+    else:
+        message = "Ready to collect customer information."
+
+    if missing:
+        message += f" Still need: {', '.join(missing)}."
+
     return {
-        "structured_content": payload.model_dump(by_alias=True),
+        "structured_content": {
+            "customer": customer_data,
+            "validation": {
+                "customer_complete": len(missing) == 0,
+                "missing_fields": missing,
+            }
+        },
         "response_text": message,
     }
 
@@ -114,43 +146,195 @@ def _collect_personal_auto_driver_roster(
 
 
 def _collect_personal_auto_drivers(arguments: Mapping[str, Any]) -> ToolInvocationResult:
-    """Collect and validate rated driver information."""
-    payload = PersonalAutoDriverIntake.model_validate(arguments)
-    driver_count = len(payload.rated_drivers)
-    names = [
-        " ".join(
-            part
-            for part in [driver.first_name, driver.middle_name, driver.last_name]
-            if part
-        )
-        for driver in payload.rated_drivers
+    """Collect and validate rated driver information (can append customer fields)."""
+    from .models import CumulativeDriverIntake
+    from .utils import validate_required_fields, get_nested_value
+
+    payload = CumulativeDriverIntake.model_validate(arguments)
+
+    # Required fields for driver batch
+    driver_required_fields = [
+        "FirstName",
+        "LastName",
+        "DateOfBirth",
+        "Gender",
+        "MaritalStatus",
+        "LicenseInformation.LicenseStatus",
+        "Attributes.PropertyInsurance",
+        "Attributes.Relation",
+        "Attributes.ResidencyStatus",
+        "Attributes.ResidencyType",
     ]
-    if driver_count == 1:
-        message = f"Captured driver profile for {names[0]}."
+
+    # Customer required fields (for forward-appending)
+    customer_required_fields = [
+        "FirstName",
+        "LastName",
+        "Address.Street1",
+        "Address.City",
+        "Address.State",
+        "Address.ZipCode",
+        "MonthsAtResidence",
+        "PriorInsuranceInformation.PriorInsurance",
+    ]
+
+    # Validate drivers
+    drivers_data = payload.rated_drivers or []
+    driver_missing = []
+    if drivers_data:
+        for idx, driver_data in enumerate(drivers_data):
+            missing = validate_required_fields(driver_data, driver_required_fields)
+            if missing:
+                driver_missing.extend([f"Driver[{idx}].{field}" for field in missing])
+
+    # Validate customer (if provided for forward-appending)
+    customer_data = payload.customer or {}
+    customer_missing = validate_required_fields(customer_data, customer_required_fields) if customer_data else []
+
+    # Build message
+    if drivers_data:
+        driver_count = len(drivers_data)
+        names = []
+        for driver in drivers_data:
+            first_name = get_nested_value(driver, "FirstName") or ""
+            middle_name = get_nested_value(driver, "MiddleName") or ""
+            last_name = get_nested_value(driver, "LastName") or ""
+            full_name = " ".join(part for part in [first_name, middle_name, last_name] if part)
+            names.append(full_name if full_name.strip() else "Driver")
+        if driver_count == 1:
+            message = f"Captured driver profile for {names[0]}."
+        else:
+            listed = ", ".join(names)
+            message = f"Captured driver profiles for {driver_count} drivers: {listed}."
     else:
-        listed = ", ".join(names)
-        message = f"Captured driver profiles for {driver_count} drivers: {listed}."
+        message = "Ready to collect driver information."
+
+    all_missing = customer_missing + driver_missing
+    if all_missing:
+        message += f" Still need: {', '.join(all_missing)}."
+
     return {
-        "structured_content": payload.model_dump(by_alias=True),
+        "structured_content": {
+            "customer": customer_data if customer_data else None,
+            "rated_drivers": drivers_data,
+            "validation": {
+                "customer_complete": len(customer_missing) == 0 if customer_data else None,
+                "drivers_complete": len(driver_missing) == 0,
+                "missing_fields": all_missing,
+            }
+        },
         "response_text": message,
     }
 
 
 def _collect_personal_auto_vehicles(arguments: Mapping[str, Any]) -> ToolInvocationResult:
-    """Collect and validate vehicle information."""
-    payload = PersonalAutoVehicleIntake.model_validate(arguments)
-    vehicle_count = len(payload.vehicles)
-    summaries = []
-    for vehicle in payload.vehicles:
-        descriptor = f"{vehicle.year or ''} {vehicle.make or ''} {vehicle.model or ''}".strip()
-        summaries.append(descriptor or f"Vehicle {vehicle.vehicle_id}")
-    if vehicle_count == 1:
-        message = f"Captured vehicle information for {summaries[0]}."
+    """Collect and validate vehicle information (can append customer/driver fields)."""
+    from .models import CumulativeVehicleIntake
+    from .utils import validate_required_fields, get_nested_value
+
+    payload = CumulativeVehicleIntake.model_validate(arguments)
+
+    # Required fields for vehicle batch
+    vehicle_required_fields = [
+        "Vin",
+        "Year",
+        "Make",
+        "Model",
+        "BodyType",
+        "UseType",
+        "AssignedDriverId",
+        "CoverageInformation.CollisionDeductible",
+        "CoverageInformation.ComprehensiveDeductible",
+        "CoverageInformation.RentalLimit",
+        "CoverageInformation.TowingLimit",
+        "CoverageInformation.SafetyGlassCoverage",
+        "PercentToWork",
+        "MilesToWork",
+        "AnnualMiles",
+    ]
+
+    # Customer required fields
+    customer_required_fields = [
+        "FirstName",
+        "LastName",
+        "Address.Street1",
+        "Address.City",
+        "Address.State",
+        "Address.ZipCode",
+        "MonthsAtResidence",
+        "PriorInsuranceInformation.PriorInsurance",
+    ]
+
+    # Driver required fields
+    driver_required_fields = [
+        "FirstName",
+        "LastName",
+        "DateOfBirth",
+        "Gender",
+        "MaritalStatus",
+        "LicenseInformation.LicenseStatus",
+        "Attributes.PropertyInsurance",
+        "Attributes.Relation",
+        "Attributes.ResidencyStatus",
+        "Attributes.ResidencyType",
+    ]
+
+    # Validate vehicles
+    vehicles_data = payload.vehicles or []
+    vehicle_missing = []
+    if vehicles_data:
+        for idx, vehicle_data in enumerate(vehicles_data):
+            missing = validate_required_fields(vehicle_data, vehicle_required_fields)
+            if missing:
+                vehicle_missing.extend([f"Vehicle[{idx}].{field}" for field in missing])
+
+    # Validate customer (if provided for forward-appending)
+    customer_data = payload.customer or {}
+    customer_missing = validate_required_fields(customer_data, customer_required_fields) if customer_data else []
+
+    # Validate drivers (if provided for forward-appending)
+    drivers_data = payload.rated_drivers or []
+    driver_missing = []
+    if drivers_data:
+        for idx, driver_data in enumerate(drivers_data):
+            missing = validate_required_fields(driver_data, driver_required_fields)
+            if missing:
+                driver_missing.extend([f"Driver[{idx}].{field}" for field in missing])
+
+    # Build message
+    if vehicles_data:
+        vehicle_count = len(vehicles_data)
+        summaries = []
+        for vehicle_data in vehicles_data:
+            year = get_nested_value(vehicle_data, "Year") or ""
+            make = get_nested_value(vehicle_data, "Make") or ""
+            model = get_nested_value(vehicle_data, "Model") or ""
+            descriptor = f"{year} {make} {model}".strip()
+            summaries.append(descriptor if descriptor else "Vehicle")
+        if vehicle_count == 1:
+            message = f"Captured vehicle information for {summaries[0]}."
+        else:
+            listed = ", ".join(summaries)
+            message = f"Captured vehicle information for {vehicle_count} vehicles: {listed}."
     else:
-        listed = ", ".join(summaries)
-        message = f"Captured vehicle information for {vehicle_count} vehicles: {listed}."
+        message = "Ready to collect vehicle information."
+
+    all_missing = customer_missing + driver_missing + vehicle_missing
+    if all_missing:
+        message += f" Still need: {', '.join(all_missing)}."
+
     return {
-        "structured_content": payload.model_dump(by_alias=True),
+        "structured_content": {
+            "customer": customer_data if customer_data else None,
+            "rated_drivers": drivers_data if drivers_data else None,
+            "vehicles": vehicles_data,
+            "validation": {
+                "customer_complete": len(customer_missing) == 0 if customer_data else None,
+                "drivers_complete": len(driver_missing) == 0 if drivers_data else None,
+                "vehicles_complete": len(vehicle_missing) == 0,
+                "missing_fields": all_missing,
+            }
+        },
         "response_text": message,
     }
 
