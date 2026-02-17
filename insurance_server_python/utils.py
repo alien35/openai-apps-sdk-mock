@@ -484,3 +484,27 @@ def format_rate_results_summary(rate_results: Any) -> str:
                 summary_lines.append(f"  Payment Options: {'; '.join(payment_opts)}")
 
     return "\\n".join(summary_lines)
+
+
+def get_nested_value(obj: Any, path: str) -> Any:
+    """Get a nested value from an object using dot notation path."""
+    parts = path.split(".")
+    current = obj
+    for part in parts:
+        if current is None:
+            return None
+        if isinstance(current, dict):
+            current = current.get(part)
+        else:
+            current = getattr(current, part, None)
+    return current
+
+
+def validate_required_fields(data: Dict[str, Any], required_fields: list[str]) -> list[str]:
+    """Check if required fields are present and return list of missing fields."""
+    missing = []
+    for field_path in required_fields:
+        value = get_nested_value(data, field_path)
+        if value is None or (isinstance(value, str) and not value.strip()):
+            missing.append(field_path)
+    return missing

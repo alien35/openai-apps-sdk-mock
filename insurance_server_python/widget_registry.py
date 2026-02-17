@@ -219,33 +219,77 @@ def _register_personal_auto_intake_tools() -> None:
     """Register personal auto insurance intake tools."""
     from .tool_handlers import (
         _collect_personal_auto_customer,
+        _collect_personal_auto_drivers,
+        _collect_personal_auto_vehicles,
         _request_personal_auto_rate,
         _retrieve_personal_auto_rate_results,
     )
     from .models import (
-        PersonalAutoCustomerIntake,
+        CumulativeCustomerIntake,
+        CumulativeDriverIntake,
+        CumulativeVehicleIntake,
         PersonalAutoRateRequest,
         PersonalAutoRateResultsRequest,
     )
     from .utils import _model_schema
     from .constants import AIS_POLICY_COVERAGE_SUMMARY
 
+    # Register customer collection tool (Batch 1)
     register_tool(
         ToolRegistration(
             tool=types.Tool(
                 name="collect-personal-auto-customer",
-                title="Collect personal auto customer profile",
+                title="Collect personal auto customer information",
                 description=(
-                    "Validate and capture the customer's personal information, "
-                    "including prior insurance status and any reason for a lapse, "
-                    "for a personal auto quote."
+                    "Collect and validate customer information for a personal auto quote. "
+                    "This is Batch 1 of the conversational flow. Captures: name, address, "
+                    "months at residence, and prior insurance status. "
+                    "Returns validation status showing which required fields are still missing."
                 ),
-                inputSchema=_model_schema(PersonalAutoCustomerIntake),
+                inputSchema=_model_schema(CumulativeCustomerIntake),
             ),
             handler=_collect_personal_auto_customer,
-            default_response_text=(
-                "Captured customer profile information, including prior insurance details."
+            default_response_text="Captured customer information.",
+        )
+    )
+
+    # Register driver collection tool (Batch 2)
+    register_tool(
+        ToolRegistration(
+            tool=types.Tool(
+                name="collect-personal-auto-drivers",
+                title="Collect personal auto driver information",
+                description=(
+                    "Collect and validate driver information for a personal auto quote. "
+                    "This is Batch 2 of the conversational flow. Captures: driver name, DOB, "
+                    "gender, marital status, license info, and residency details. "
+                    "Can also append missing customer fields from Batch 1 (forward-appending). "
+                    "Returns validation status showing which required fields are still missing."
+                ),
+                inputSchema=_model_schema(CumulativeDriverIntake),
             ),
+            handler=_collect_personal_auto_drivers,
+            default_response_text="Captured driver information.",
+        )
+    )
+
+    # Register vehicle collection tool (Batch 3)
+    register_tool(
+        ToolRegistration(
+            tool=types.Tool(
+                name="collect-personal-auto-vehicles",
+                title="Collect personal auto vehicle information",
+                description=(
+                    "Collect and validate vehicle information for a personal auto quote. "
+                    "This is Batch 3 of the conversational flow. Captures: VIN, year, make, model, "
+                    "usage details, and coverage preferences. "
+                    "Can also append missing customer or driver fields from earlier batches (forward-appending). "
+                    "Returns validation status showing which required fields are still missing."
+                ),
+                inputSchema=_model_schema(CumulativeVehicleIntake),
+            ),
+            handler=_collect_personal_auto_vehicles,
+            default_response_text="Captured vehicle information.",
         )
     )
 
