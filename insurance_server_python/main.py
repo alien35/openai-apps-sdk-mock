@@ -227,6 +227,24 @@ mcp._mcp_server.request_handlers[types.ReadResourceRequest] = _handle_read_resou
 app = mcp.streamable_http_app()
 
 
+# Initialize schema parser on startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize schema parser and fetch contracts on server startup."""
+    from .schema_parser import initialize_schema_parser
+
+    api_key = os.getenv("PERSONAL_AUTO_RATE_API_KEY")
+    if api_key:
+        try:
+            await initialize_schema_parser(api_key, states=["CA"])
+            logger.info("Schema parser initialized successfully")
+        except Exception as e:
+            logger.warning(f"Failed to initialize schema parser: {e}")
+            logger.warning("Server will continue without schema-based minimal fields")
+    else:
+        logger.warning("PERSONAL_AUTO_RATE_API_KEY not set, schema parser not initialized")
+
+
 async def _legacy_call_tool_route(request: Request) -> JSONResponse:
     """Handle legacy ``callTool`` HTTP requests.
 
