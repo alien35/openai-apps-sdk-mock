@@ -1420,6 +1420,29 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     let isSending = false;
     let currentStep = 1;
+    let minimalFieldsConfig = null;
+
+    // Load minimal fields configuration
+    console.log(`${LOG_PREFIX} Loading minimal fields configuration...`);
+    fetch('/api/minimal-fields-config')
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        return res.json();
+      })
+      .then(config => {
+        minimalFieldsConfig = config;
+        console.log(`${LOG_PREFIX} Loaded minimal fields config:`, config);
+        console.log(`${LOG_PREFIX} Required customer fields:`, config.customer?.required?.length || 0);
+        console.log(`${LOG_PREFIX} Required driver fields:`, config.driver?.required?.length || 0);
+        console.log(`${LOG_PREFIX} Required vehicle fields:`, config.vehicle?.required?.length || 0);
+      })
+      .catch(err => {
+        console.error(`${LOG_PREFIX} Failed to load minimal fields config:`, err);
+        notifyIssue("warn", "Failed to load minimal fields config, showing all fields", err);
+        // If config fails to load, just show all fields (default behavior)
+      });
 
     function goToStep(stepNumber) {
       currentStep = stepNumber;
