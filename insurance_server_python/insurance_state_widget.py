@@ -1217,19 +1217,47 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     // Vehicle basic info
     const makeField = createInputField("vehicle-make", "Make", "text", "Enter make");
+    makeField.setAttribute("data-section", "vehicle");
+    makeField.setAttribute("data-field", "Make");
+
     const modelField = createInputField("vehicle-model", "Model", "text", "Enter model");
+    modelField.setAttribute("data-section", "vehicle");
+    modelField.setAttribute("data-field", "Model");
+
     const yearField = createInputField("vehicle-year", "Year", "number", "Enter year");
+    yearField.setAttribute("data-section", "vehicle");
+    yearField.setAttribute("data-field", "Year");
+
     const annualMilesField = createInputField("vehicle-annual-miles", "Annual Miles", "number", "Enter annual miles");
+    annualMilesField.setAttribute("data-section", "vehicle");
+    annualMilesField.setAttribute("data-field", "AnnualMiles");
+
     const milesToWorkField = createInputField("vehicle-miles-to-work", "Miles to Work", "number", "Enter miles to work");
+    milesToWorkField.setAttribute("data-section", "vehicle");
+    milesToWorkField.setAttribute("data-field", "MilesToWork");
 
     // Toggles
     const leasedVehicleField = createToggleField("vehicle-leased", "Leased Vehicle?");
+    leasedVehicleField.setAttribute("data-section", "vehicle");
+    leasedVehicleField.setAttribute("data-field", "LeasedVehicle");
 
     // Additional fields
     const percentToWorkField = createInputField("vehicle-percent-to-work", "Percent To Work", "number", "Enter percentage");
+    percentToWorkField.setAttribute("data-section", "vehicle");
+    percentToWorkField.setAttribute("data-field", "PercentToWork");
+
     const purchaseTypeField = createSelectField("vehicle-purchase-type", "Purchase Type", ["New", "Used", "Lease"]);
+    purchaseTypeField.setAttribute("data-section", "vehicle");
+    purchaseTypeField.setAttribute("data-field", "PurchaseType");
+
     const rideShareField = createToggleField("vehicle-rideshare", "RideShare?");
+    rideShareField.setAttribute("data-section", "vehicle");
+    rideShareField.setAttribute("data-field", "RideShare");
+
     const salvagedField = createToggleField("vehicle-salvaged", "Salvaged?");
+    salvagedField.setAttribute("data-section", "vehicle");
+    salvagedField.setAttribute("data-field", "Salvaged");
+
     const usageField = createSelectField("vehicle-usage", "Usage", [
       { value: "Artisan Use", label: "Artisan Use" },
       { value: "Business Use", label: "Business Use" },
@@ -1237,7 +1265,12 @@ INSURANCE_STATE_WIDGET_HTML = """
       { value: "Pleasure", label: "Pleasure" },
       { value: "Work School", label: "Work School" }
     ]);
+    usageField.setAttribute("data-section", "vehicle");
+    usageField.setAttribute("data-field", "UseType");
+
     const odometerField = createInputField("vehicle-odometer", "Odometer", "number", "Enter odometer reading");
+    odometerField.setAttribute("data-section", "vehicle");
+    odometerField.setAttribute("data-field", "Odometer");
 
     // Garaging Address section
     const garagingTitle = document.createElement("h4");
@@ -1245,9 +1278,20 @@ INSURANCE_STATE_WIDGET_HTML = """
     garagingTitle.textContent = "Garaging Address";
 
     const garagingStreetField = createInputField("garaging-street", "Street", "text", "Same as customer address or enter new");
+    garagingStreetField.setAttribute("data-section", "vehicle");
+    garagingStreetField.setAttribute("data-field", "GaragingAddress.Street");
+
     const garagingCityField = createInputField("garaging-city", "City", "text", "Enter city");
+    garagingCityField.setAttribute("data-section", "vehicle");
+    garagingCityField.setAttribute("data-field", "GaragingAddress.City");
+
     const garagingStateField = createSelectField("garaging-state", "State", STATES.map(s => ({ value: s.code, label: s.name })));
+    garagingStateField.setAttribute("data-section", "vehicle");
+    garagingStateField.setAttribute("data-field", "GaragingAddress.State");
+
     const garagingZipField = createInputField("garaging-zip", "ZIP Code", "text", "Enter ZIP code");
+    garagingZipField.setAttribute("data-section", "vehicle");
+    garagingZipField.setAttribute("data-field", "GaragingAddress.ZipCode");
 
     // Coverage Info section
     const coverageInfoTitle = document.createElement("h4");
@@ -1255,12 +1299,32 @@ INSURANCE_STATE_WIDGET_HTML = """
     coverageInfoTitle.textContent = "Coverage Information";
 
     const collisionDeductibleField = createSelectField("collision-deductible", "Collision Deductible", ["$250", "$500", "$1,000", "$2,500"]);
+    collisionDeductibleField.setAttribute("data-section", "vehicle");
+    collisionDeductibleField.setAttribute("data-field", "CoverageInformation.CollisionDeductible");
+
     const comprehensiveDeductibleField = createSelectField("comprehensive-deductible", "Comprehensive Deductible", ["$250", "$500", "$1,000", "$2,500"]);
+    comprehensiveDeductibleField.setAttribute("data-section", "vehicle");
+    comprehensiveDeductibleField.setAttribute("data-field", "CoverageInformation.ComprehensiveDeductible");
+
     const rentalLimitField = createSelectField("rental-limit", "Rental Limit", ["$30/day", "$50/day", "$75/day", "$100/day"]);
+    rentalLimitField.setAttribute("data-section", "vehicle");
+    rentalLimitField.setAttribute("data-field", "CoverageInformation.RentalLimit");
+
     const gapCoverageField = createToggleField("gap-coverage", "Gap Coverage?");
+    gapCoverageField.setAttribute("data-section", "vehicle");
+    gapCoverageField.setAttribute("data-field", "CoverageInformation.GapCoverage");
+
     const customEquipmentField = createInputField("custom-equipment-value", "Custom Equipment Value", "number", "Enter value");
+    customEquipmentField.setAttribute("data-section", "vehicle");
+    customEquipmentField.setAttribute("data-field", "CoverageInformation.CustomEquipmentValue");
+
     const safetyGlassField = createToggleField("safety-glass-coverage", "Safety Glass Coverage?");
+    safetyGlassField.setAttribute("data-section", "vehicle");
+    safetyGlassField.setAttribute("data-field", "CoverageInformation.SafetyGlassCoverage");
+
     const towingLimitField = createSelectField("towing-limit", "Towing Limit", ["$50", "$100", "$150", "$200"]);
+    towingLimitField.setAttribute("data-section", "vehicle");
+    towingLimitField.setAttribute("data-field", "CoverageInformation.TowingLimit");
 
     // Append all fields to step 3 content
     step3Content.appendChild(step3Title);
