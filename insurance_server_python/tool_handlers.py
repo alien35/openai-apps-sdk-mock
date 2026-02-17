@@ -171,8 +171,38 @@ def _personal_auto_rate_headers() -> dict[str, str]:
 
 async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvocationResult:
     """Request personal auto insurance rate."""
+    from .field_defaults import build_minimal_payload_with_defaults
+
     payload = PersonalAutoRateRequest.model_validate(arguments)
     request_body = payload.model_dump(by_alias=True, exclude_none=True)
+
+    # Check if this is a minimal submission (missing optional fields)
+    # If customer is missing optional fields like MiddleName, DeclinedEmail, etc., apply defaults
+    customer_data = request_body.get("Customer", {})
+    is_minimal = (
+        customer_data.get("MiddleName") is None and
+        customer_data.get("DeclinedEmail") is None and
+        len(customer_data.keys()) < 15  # Minimal customer has ~8 required fields, full has 15+
+    )
+
+    if is_minimal:
+        logger.info("Detected minimal submission, applying defaults")
+        # Build payload with defaults
+        enriched_payload = build_minimal_payload_with_defaults(
+            customer=customer_data,
+            drivers=request_body.get("RatedDrivers", []),
+            vehicles=request_body.get("Vehicles", []),
+            policy_coverages=request_body.get("PolicyCoverages", {}),
+            identifier=request_body.get("Identifier", ""),
+            effective_date=request_body.get("EffectiveDate", ""),
+            state=customer_data.get("Address", {}).get("State", "CA"),
+            term=request_body.get("Term"),
+            payment_method=request_body.get("PaymentMethod"),
+            policy_type=request_body.get("PolicyType"),
+        )
+        request_body = enriched_payload
+        logger.info("Applied defaults to minimal submission")
+
     _sanitize_personal_auto_rate_request(request_body)
     request_body["CarrierInformation"] = DEFAULT_CARRIER_INFORMATION
 
