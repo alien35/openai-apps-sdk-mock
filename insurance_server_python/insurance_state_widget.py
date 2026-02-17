@@ -762,6 +762,27 @@ INSURANCE_STATE_WIDGET_HTML = """
     description.textContent =
       "Complete all steps to get your personalized insurance quote: policy setup, customer info, vehicle details, driver info, and review.";
 
+    // Optional fields toggle
+    const toggleContainer = document.createElement("div");
+    toggleContainer.style.cssText = "margin: 16px 0; padding: 12px; background: rgba(240, 249, 255, 0.6); border: 1px solid rgba(186, 230, 253, 0.5); border-radius: 8px;";
+
+    const toggleLabel = document.createElement("label");
+    toggleLabel.style.cssText = "display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px;";
+
+    const toggleCheckbox = document.createElement("input");
+    toggleCheckbox.type = "checkbox";
+    toggleCheckbox.id = "showOptionalFields";
+    toggleCheckbox.checked = true;
+    toggleCheckbox.style.cssText = "width: 18px; height: 18px; cursor: pointer;";
+
+    const toggleText = document.createElement("span");
+    toggleText.style.cssText = "font-weight: 500;";
+    toggleText.textContent = "Show optional fields (recommended for best rates)";
+
+    toggleLabel.appendChild(toggleCheckbox);
+    toggleLabel.appendChild(toggleText);
+    toggleContainer.appendChild(toggleLabel);
+
     // Stepper UI
     const stepper = document.createElement("div");
     stepper.className = "insurance-widget__stepper";
@@ -1384,6 +1405,7 @@ INSURANCE_STATE_WIDGET_HTML = """
     container.appendChild(eyebrow);
     container.appendChild(title);
     container.appendChild(description);
+    container.appendChild(toggleContainer);
     container.appendChild(stepper);
     container.appendChild(step1Content);
     container.appendChild(step2Content);
