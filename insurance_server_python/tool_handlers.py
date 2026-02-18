@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Mapping, Optional
 import httpx
 from pydantic import ValidationError
+from datetime import datetime, timedelta
 
 from .models import (
     InsuranceStateInput,
@@ -16,6 +17,7 @@ from .models import (
     PersonalAutoVehicleIntake,
     PersonalAutoRateRequest,
     PersonalAutoRateResultsRequest,
+    QuickQuoteIntake,
     ToolInvocationResult,
 )
 from .constants import (
@@ -30,6 +32,7 @@ from .utils import (
     _log_network_response,
     state_abbreviation,
     format_rate_results_summary,
+    _lookup_city_state_from_zip,
 )
 
 logger = logging.getLogger(__name__)
@@ -63,6 +66,257 @@ def _insurance_state_tool_handler(
             **widget_meta,
             "openai.com/widget": widget_resource,
         },
+    }
+
+
+async def _get_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocationResult:
+    """Get a quick quote range with just zip code and number of drivers.
+
+    Generates best case and worst case scenarios to give user a quote range
+    before collecting detailed information.
+    """
+    from .field_defaults import build_minimal_payload_with_defaults
+    from .utils import _lookup_city_state_from_zip
+
+    payload = QuickQuoteIntake.model_validate(arguments)
+    zip_code = payload.zip_code
+    num_drivers = payload.number_of_drivers
+
+    # Look up city and state from zip code
+    city_state = _lookup_city_state_from_zip(zip_code)
+    if not city_state:
+        return {
+            "response_text": f"Unable to find location information for zip code {zip_code}. Please provide a valid US zip code.",
+        }
+
+    city, state = city_state
+    effective_date = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    # Generate best case scenario
+    # Best case: 35-year-old driver(s), clean record, reliable sedan
+    best_case_customer = {
+        "FirstName": "Best",
+        "LastName": "Case",
+        "Address": {
+            "Street1": "123 Main St",
+            "City": city,
+            "State": state,
+            "ZipCode": zip_code,
+        },
+        "MonthsAtResidence": 60,
+        "PriorInsuranceInformation": {"PriorInsurance": True},
+    }
+
+    best_case_drivers = []
+    for i in range(num_drivers):
+        driver = {
+            "DriverId": i + 1,
+            "FirstName": f"Driver{i+1}",
+            "LastName": "BestCase",
+            "DateOfBirth": "1989-01-01",  # 35 years old
+            "Gender": "Male" if i % 2 == 0 else "Female",
+            "MaritalStatus": "Married",
+            "LicenseInformation": {"LicenseStatus": "Valid"},
+            "Attributes": {
+                "PropertyInsurance": True,
+                "Relation": "Insured" if i == 0 else "Spouse",
+                "ResidencyStatus": "Own",
+                "ResidencyType": "Home",
+            }
+        }
+        best_case_drivers.append(driver)
+
+    # Best case vehicle: reliable, affordable sedan
+    best_case_vehicle = {
+        "VehicleId": 1,
+        "Vin": "1HGCM82633A123456",  # Sample Honda Accord VIN
+        "Year": 2018,
+        "Make": "Honda",
+        "Model": "Accord",
+        "BodyType": "Sedan",
+        "UseType": "Commute",
+        "AssignedDriverId": 1,
+        "MilesToWork": 10,
+        "PercentToWork": 50,
+        "AnnualMiles": 12000,
+        "CoverageInformation": {
+            "CollisionDeductible": "$500",
+            "ComprehensiveDeductible": "$500",
+            "RentalLimit": "None",
+            "TowingLimit": "None",
+            "SafetyGlassCoverage": False,
+        }
+    }
+
+    best_case_payload = build_minimal_payload_with_defaults(
+        customer=best_case_customer,
+        drivers=best_case_drivers,
+        vehicles=[best_case_vehicle],
+        policy_coverages={},
+        identifier=f"QUICK_BEST_{zip_code}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        effective_date=effective_date,
+        state=state,
+    )
+
+    # Generate worst case scenario
+    # Worst case: younger driver(s), possible violations, luxury vehicle
+    worst_case_customer = {
+        "FirstName": "Worst",
+        "LastName": "Case",
+        "Address": {
+            "Street1": "123 Main St",
+            "City": city,
+            "State": state,
+            "ZipCode": zip_code,
+        },
+        "MonthsAtResidence": 12,
+        "PriorInsuranceInformation": {"PriorInsurance": False, "ReasonForNoInsurance": "New Driver"},
+    }
+
+    worst_case_drivers = []
+    for i in range(num_drivers):
+        driver = {
+            "DriverId": i + 1,
+            "FirstName": f"Driver{i+1}",
+            "LastName": "WorstCase",
+            "DateOfBirth": "2006-01-01",  # 18 years old
+            "Gender": "Male" if i % 2 == 0 else "Female",
+            "MaritalStatus": "Single",
+            "LicenseInformation": {
+                "LicenseStatus": "Valid",
+                "MonthsLicensed": 24,  # Recently licensed
+            },
+            "Attributes": {
+                "PropertyInsurance": False,
+                "Relation": "Insured" if i == 0 else "Child",
+                "ResidencyStatus": "Rent",
+                "ResidencyType": "Apartment",
+            }
+        }
+        worst_case_drivers.append(driver)
+
+    # Worst case vehicle: newer, more expensive vehicle
+    worst_case_vehicle = {
+        "VehicleId": 1,
+        "Vin": "5YJ3E1EA5KF123456",  # Sample Tesla Model 3 VIN
+        "Year": 2023,
+        "Make": "Tesla",
+        "Model": "Model 3",
+        "BodyType": "Sedan",
+        "UseType": "Commute",
+        "AssignedDriverId": 1,
+        "MilesToWork": 30,
+        "PercentToWork": 80,
+        "AnnualMiles": 18000,
+        "CoverageInformation": {
+            "CollisionDeductible": "$500",
+            "ComprehensiveDeductible": "$500",
+            "RentalLimit": "None",
+            "TowingLimit": "None",
+            "SafetyGlassCoverage": False,
+        }
+    }
+
+    worst_case_payload = build_minimal_payload_with_defaults(
+        customer=worst_case_customer,
+        drivers=worst_case_drivers,
+        vehicles=[worst_case_vehicle],
+        policy_coverages={},
+        identifier=f"QUICK_WORST_{zip_code}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        effective_date=effective_date,
+        state=state,
+    )
+
+    # Submit both quotes
+    _sanitize_personal_auto_rate_request(best_case_payload)
+    best_case_payload["CarrierInformation"] = DEFAULT_CARRIER_INFORMATION
+    _sanitize_personal_auto_rate_request(worst_case_payload)
+    worst_case_payload["CarrierInformation"] = DEFAULT_CARRIER_INFORMATION
+
+    state_code = state_abbreviation(state) or state
+    url = f"{PERSONAL_AUTO_RATE_ENDPOINT}/{state_code}/rates/latest?multiAgency=false"
+    headers = _personal_auto_rate_headers()
+
+    best_case_result = None
+    worst_case_result = None
+
+    try:
+        # Submit best case
+        logger.info("Submitting best case scenario for quick quote")
+        async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
+            best_response = await client.post(url, headers=headers, json=best_case_payload)
+
+        if best_response.is_error:
+            logger.error(f"Best case quote failed: {best_response.status_code} {best_response.text}")
+        else:
+            best_parsed = best_response.json()
+            best_transaction_id = best_parsed.get("transactionId")
+
+            if best_transaction_id:
+                # Get results
+                async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
+                    results_response = await client.get(
+                        PERSONAL_AUTO_RATE_RESULTS_ENDPOINT,
+                        headers=headers,
+                        params={"Id": best_transaction_id}
+                    )
+                if not results_response.is_error:
+                    best_case_result = results_response.json()
+
+        # Submit worst case
+        logger.info("Submitting worst case scenario for quick quote")
+        async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
+            worst_response = await client.post(url, headers=headers, json=worst_case_payload)
+
+        if worst_response.is_error:
+            logger.error(f"Worst case quote failed: {worst_response.status_code} {worst_response.text}")
+        else:
+            worst_parsed = worst_response.json()
+            worst_transaction_id = worst_parsed.get("transactionId")
+
+            if worst_transaction_id:
+                # Get results
+                async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
+                    results_response = await client.get(
+                        PERSONAL_AUTO_RATE_RESULTS_ENDPOINT,
+                        headers=headers,
+                        params={"Id": worst_transaction_id}
+                    )
+                if not results_response.is_error:
+                    worst_case_result = results_response.json()
+
+    except httpx.HTTPError as exc:
+        logger.exception("Quick quote request failed due to network error")
+        return {
+            "response_text": f"Failed to get quick quotes due to network error: {exc}",
+        }
+
+    # Format the results
+    message = f"Quick Quote Range for {city}, {state} (Zip: {zip_code})\n\n"
+
+    if best_case_result:
+        best_summary = format_rate_results_summary(best_case_result)
+        if best_summary:
+            message += f"**Best Case Scenario** (35-year-old driver, clean record, reliable vehicle):\n{best_summary}\n\n"
+
+    if worst_case_result:
+        worst_summary = format_rate_results_summary(worst_case_result)
+        if worst_summary:
+            message += f"**Worst Case Scenario** (18-year-old driver, new driver, newer vehicle):\n{worst_summary}\n\n"
+
+    message += "\nWould you like to provide more details to get a more accurate quote?"
+
+    import mcp.types as types
+    return {
+        "structured_content": {
+            "zip_code": zip_code,
+            "number_of_drivers": num_drivers,
+            "city": city,
+            "state": state,
+            "best_case_results": best_case_result,
+            "worst_case_results": worst_case_result,
+        },
+        "content": [types.TextContent(type="text", text=message)],
     }
 
 

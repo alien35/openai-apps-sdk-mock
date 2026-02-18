@@ -218,6 +218,7 @@ def _register_default_tools() -> None:
 def _register_personal_auto_intake_tools() -> None:
     """Register personal auto insurance intake tools."""
     from .tool_handlers import (
+        _get_quick_quote,
         _collect_personal_auto_customer,
         _collect_personal_auto_drivers,
         _collect_personal_auto_vehicles,
@@ -225,6 +226,7 @@ def _register_personal_auto_intake_tools() -> None:
         _retrieve_personal_auto_rate_results,
     )
     from .models import (
+        QuickQuoteIntake,
         CumulativeCustomerIntake,
         CumulativeDriverIntake,
         CumulativeVehicleIntake,
@@ -233,6 +235,27 @@ def _register_personal_auto_intake_tools() -> None:
     )
     from .utils import _model_schema
     from .constants import AIS_POLICY_COVERAGE_SUMMARY
+
+    # Register quick quote tool (Initial step)
+    register_tool(
+        ToolRegistration(
+            tool=types.Tool(
+                name="get-quick-quote",
+                title="Get quick auto insurance quote range",
+                description=(
+                    "Get an instant quote range for auto insurance with just a zip code and number of drivers. "
+                    "This tool provides best case and worst case premium estimates based on typical scenarios. "
+                    "Use this as the first step before collecting detailed information. "
+                    "Best case assumes mature drivers with clean records and reliable vehicles. "
+                    "Worst case assumes younger drivers, newer vehicles, and less experience. "
+                    "After getting the range, you can collect detailed information for an accurate quote."
+                ),
+                inputSchema=_model_schema(QuickQuoteIntake),
+            ),
+            handler=_get_quick_quote,
+            default_response_text="Generated quick quote range.",
+        )
+    )
 
     # Register customer collection tool (Batch 1)
     register_tool(
