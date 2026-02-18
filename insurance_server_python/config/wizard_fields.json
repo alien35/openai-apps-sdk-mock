@@ -1,0 +1,730 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Extended field registry for wizard flow - all 80+ fields",
+  "fields": {
+    "effectiveDate": {
+      "name": "effectiveDate",
+      "field_type": "date",
+      "required": true,
+      "prompt_text": "Effective Date",
+      "contexts": ["wizard_policy"],
+      "group": "policy",
+      "default": "today"
+    },
+    "term": {
+      "name": "term",
+      "field_type": "string",
+      "required": true,
+      "prompt_text": "Term",
+      "contexts": ["wizard_policy"],
+      "group": "policy",
+      "enum_values": ["Semi Annual", "Annual"],
+      "default": "Semi Annual"
+    },
+    "paymentMethod": {
+      "name": "paymentMethod",
+      "field_type": "string",
+      "required": true,
+      "prompt_text": "Payment Method",
+      "contexts": ["wizard_policy"],
+      "group": "policy",
+      "enum_values": ["Standard", "Electronic Funds Transfer", "Paid In Full", "Default"],
+      "default": "Electronic Funds Transfer"
+    },
+    "policyType": {
+      "name": "policyType",
+      "field_type": "string",
+      "required": true,
+      "prompt_text": "Policy Type",
+      "contexts": ["wizard_policy"],
+      "group": "policy",
+      "enum_values": ["Standard", "Preferred", "Non-Standard"],
+      "default": "Standard"
+    },
+    "bumpLimits": {
+      "name": "bumpLimits",
+      "field_type": "string",
+      "required": true,
+      "prompt_text": "Bump Limits",
+      "contexts": ["wizard_policy"],
+      "group": "policy",
+      "enum_values": ["Bump Up", "Bump Down", "No Bumping"],
+      "default": "Bump Up"
+    },
+    "customerDeclinedCredit": {
+      "name": "customerDeclinedCredit",
+      "field_type": "boolean",
+      "required": false,
+      "prompt_text": "Customer Declined Credit",
+      "contexts": ["wizard_policy"],
+      "group": "policy",
+      "default": false
+    },
+    "firstName": {
+      "name": "firstName",
+      "field_type": "string",
+      "required": true,
+      "validation": {
+        "min_length": 1,
+        "max_length": 50
+      },
+      "prompt_text": "First Name",
+      "example": "John",
+      "contexts": ["wizard_customer"],
+      "group": "personal"
+    },
+    "middleName": {
+      "name": "middleName",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Middle Name",
+      "contexts": ["wizard_customer"],
+      "group": "personal"
+    },
+    "lastName": {
+      "name": "lastName",
+      "field_type": "string",
+      "required": true,
+      "validation": {
+        "min_length": 1,
+        "max_length": 50
+      },
+      "prompt_text": "Last Name",
+      "example": "Smith",
+      "contexts": ["wizard_customer"],
+      "group": "personal"
+    },
+    "monthsAtResidence": {
+      "name": "monthsAtResidence",
+      "field_type": "integer",
+      "required": false,
+      "prompt_text": "Months at Residence",
+      "example": 60,
+      "contexts": ["wizard_customer"],
+      "group": "personal",
+      "default": 60
+    },
+    "street": {
+      "name": "street",
+      "field_type": "string",
+      "required": true,
+      "prompt_text": "Street",
+      "example": "123 Main St",
+      "contexts": ["wizard_customer"],
+      "group": "address"
+    },
+    "city": {
+      "name": "city",
+      "field_type": "string",
+      "required": true,
+      "prompt_text": "City",
+      "example": "Long Beach",
+      "contexts": ["wizard_customer"],
+      "group": "address"
+    },
+    "state": {
+      "name": "state",
+      "field_type": "string",
+      "required": true,
+      "prompt_text": "State",
+      "contexts": ["wizard_customer"],
+      "group": "address",
+      "enum_values": ["US_STATES"]
+    },
+    "county": {
+      "name": "county",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "County",
+      "example": "Los Angeles",
+      "contexts": ["wizard_customer"],
+      "group": "address"
+    },
+    "zipCode": {
+      "name": "zipCode",
+      "field_type": "string",
+      "required": true,
+      "validation": {
+        "pattern": "^[0-9]{5}$"
+      },
+      "prompt_text": "ZIP Code",
+      "example": "90807",
+      "contexts": ["wizard_customer"],
+      "group": "address"
+    },
+    "mobilePhone": {
+      "name": "mobilePhone",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Mobile Phone",
+      "example": "562-787-8209",
+      "contexts": ["wizard_customer"],
+      "group": "contact"
+    },
+    "homePhone": {
+      "name": "homePhone",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Home Phone",
+      "contexts": ["wizard_customer"],
+      "group": "contact"
+    },
+    "workPhone": {
+      "name": "workPhone",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Work Phone",
+      "contexts": ["wizard_customer"],
+      "group": "contact"
+    },
+    "emailAddress": {
+      "name": "emailAddress",
+      "field_type": "string",
+      "required": false,
+      "validation": {
+        "pattern": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+      },
+      "prompt_text": "Email Address",
+      "example": "email@example.com",
+      "contexts": ["wizard_customer"],
+      "group": "contact"
+    },
+    "declinedEmail": {
+      "name": "declinedEmail",
+      "field_type": "boolean",
+      "required": false,
+      "prompt_text": "Declined Email",
+      "contexts": ["wizard_customer"],
+      "group": "contact",
+      "default": false
+    },
+    "declinedPhone": {
+      "name": "declinedPhone",
+      "field_type": "boolean",
+      "required": false,
+      "prompt_text": "Declined Phone",
+      "contexts": ["wizard_customer"],
+      "group": "contact",
+      "default": false
+    },
+    "priorInsurance": {
+      "name": "priorInsurance",
+      "field_type": "boolean",
+      "required": false,
+      "prompt_text": "Had Prior Insurance",
+      "contexts": ["wizard_customer"],
+      "group": "insurance",
+      "default": false
+    },
+    "reasonForNoInsurance": {
+      "name": "reasonForNoInsurance",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Reason for No Insurance",
+      "example": "Other",
+      "contexts": ["wizard_customer"],
+      "group": "insurance",
+      "default": "Other"
+    },
+    "make": {
+      "name": "make",
+      "field_type": "string",
+      "required": true,
+      "prompt_text": "Make",
+      "example": "FORD",
+      "contexts": ["wizard_vehicle"],
+      "group": "vehicle_info"
+    },
+    "model": {
+      "name": "model",
+      "field_type": "string",
+      "required": true,
+      "prompt_text": "Model",
+      "example": "EDGE SEL",
+      "contexts": ["wizard_vehicle"],
+      "group": "vehicle_info"
+    },
+    "year": {
+      "name": "year",
+      "field_type": "integer",
+      "required": true,
+      "prompt_text": "Year",
+      "example": 2018,
+      "contexts": ["wizard_vehicle"],
+      "group": "vehicle_info"
+    },
+    "annualMiles": {
+      "name": "annualMiles",
+      "field_type": "integer",
+      "required": false,
+      "prompt_text": "Annual Miles",
+      "example": 13400,
+      "contexts": ["wizard_vehicle"],
+      "group": "vehicle_info"
+    },
+    "milesToWork": {
+      "name": "milesToWork",
+      "field_type": "integer",
+      "required": false,
+      "prompt_text": "Miles to Work",
+      "example": 6,
+      "contexts": ["wizard_vehicle"],
+      "group": "vehicle_info",
+      "default": 0
+    },
+    "percentToWork": {
+      "name": "percentToWork",
+      "field_type": "integer",
+      "required": false,
+      "prompt_text": "Percent to Work",
+      "example": 100,
+      "contexts": ["wizard_vehicle"],
+      "group": "vehicle_info",
+      "default": 100
+    },
+    "purchaseType": {
+      "name": "purchaseType",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Purchase Type",
+      "contexts": ["wizard_vehicle"],
+      "group": "vehicle_info",
+      "enum_values": ["New", "Owned", "Financed", "Leased"],
+      "default": "New"
+    },
+    "usage": {
+      "name": "usage",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Usage",
+      "contexts": ["wizard_vehicle"],
+      "group": "vehicle_info",
+      "enum_values": ["Artisan Use", "Business Use", "Farm", "Pleasure", "Work School"],
+      "default": "Work School"
+    },
+    "odometer": {
+      "name": "odometer",
+      "field_type": "integer",
+      "required": false,
+      "prompt_text": "Odometer",
+      "contexts": ["wizard_vehicle"],
+      "group": "vehicle_info",
+      "default": 0
+    },
+    "leasedVehicle": {
+      "name": "leasedVehicle",
+      "field_type": "boolean",
+      "required": false,
+      "prompt_text": "Leased Vehicle",
+      "contexts": ["wizard_vehicle"],
+      "group": "vehicle_info",
+      "default": false
+    },
+    "rideShare": {
+      "name": "rideShare",
+      "field_type": "boolean",
+      "required": false,
+      "prompt_text": "RideShare",
+      "contexts": ["wizard_vehicle"],
+      "group": "vehicle_info",
+      "default": false
+    },
+    "salvaged": {
+      "name": "salvaged",
+      "field_type": "boolean",
+      "required": false,
+      "prompt_text": "Salvaged",
+      "contexts": ["wizard_vehicle"],
+      "group": "vehicle_info",
+      "default": false
+    },
+    "garagingStreet": {
+      "name": "garagingStreet",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Garaging Street",
+      "contexts": ["wizard_vehicle"],
+      "group": "garaging"
+    },
+    "garagingCity": {
+      "name": "garagingCity",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Garaging City",
+      "contexts": ["wizard_vehicle"],
+      "group": "garaging"
+    },
+    "garagingState": {
+      "name": "garagingState",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Garaging State",
+      "contexts": ["wizard_vehicle"],
+      "group": "garaging",
+      "enum_values": ["US_STATES"]
+    },
+    "garagingZip": {
+      "name": "garagingZip",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Garaging ZIP",
+      "contexts": ["wizard_vehicle"],
+      "group": "garaging"
+    },
+    "collisionDeductible": {
+      "name": "collisionDeductible",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Collision Deductible",
+      "contexts": ["wizard_vehicle"],
+      "group": "coverage",
+      "enum_values": ["None", "250", "500", "1000"],
+      "default": "None"
+    },
+    "comprehensiveDeductible": {
+      "name": "comprehensiveDeductible",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Comprehensive Deductible",
+      "contexts": ["wizard_vehicle"],
+      "group": "coverage",
+      "enum_values": ["None", "250", "500", "1000"],
+      "default": "None"
+    },
+    "rentalLimit": {
+      "name": "rentalLimit",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Rental Limit",
+      "contexts": ["wizard_vehicle"],
+      "group": "coverage",
+      "enum_values": ["None", "500", "1000"],
+      "default": "None"
+    },
+    "towingLimit": {
+      "name": "towingLimit",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Towing Limit",
+      "contexts": ["wizard_vehicle"],
+      "group": "coverage",
+      "enum_values": ["None", "500", "1000"],
+      "default": "None"
+    },
+    "customEquipmentValue": {
+      "name": "customEquipmentValue",
+      "field_type": "integer",
+      "required": false,
+      "prompt_text": "Custom Equipment Value",
+      "contexts": ["wizard_vehicle"],
+      "group": "coverage",
+      "default": 0
+    },
+    "gapCoverage": {
+      "name": "gapCoverage",
+      "field_type": "boolean",
+      "required": false,
+      "prompt_text": "Gap Coverage",
+      "contexts": ["wizard_vehicle"],
+      "group": "coverage",
+      "default": false
+    },
+    "safetyGlassCoverage": {
+      "name": "safetyGlassCoverage",
+      "field_type": "boolean",
+      "required": false,
+      "prompt_text": "Safety Glass Coverage",
+      "contexts": ["wizard_vehicle"],
+      "group": "coverage",
+      "default": false
+    },
+    "driverFirstName": {
+      "name": "driverFirstName",
+      "field_type": "string",
+      "required": true,
+      "prompt_text": "Driver First Name",
+      "example": "John",
+      "contexts": ["wizard_driver"],
+      "group": "driver_details"
+    },
+    "driverMiddleName": {
+      "name": "driverMiddleName",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Driver Middle Name",
+      "contexts": ["wizard_driver"],
+      "group": "driver_details"
+    },
+    "driverLastName": {
+      "name": "driverLastName",
+      "field_type": "string",
+      "required": true,
+      "prompt_text": "Driver Last Name",
+      "example": "Smith",
+      "contexts": ["wizard_driver"],
+      "group": "driver_details"
+    },
+    "dateOfBirth": {
+      "name": "dateOfBirth",
+      "field_type": "date",
+      "required": true,
+      "prompt_text": "Date of Birth",
+      "contexts": ["wizard_driver"],
+      "group": "driver_details"
+    },
+    "gender": {
+      "name": "gender",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Gender",
+      "contexts": ["wizard_driver"],
+      "group": "driver_details",
+      "enum_values": ["Male", "Female"],
+      "default": "Male"
+    },
+    "maritalStatus": {
+      "name": "maritalStatus",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Marital Status",
+      "contexts": ["wizard_driver"],
+      "group": "driver_details",
+      "enum_values": ["Single", "Married", "Divorced", "Widowed"],
+      "default": "Single"
+    },
+    "occupation": {
+      "name": "occupation",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Occupation",
+      "example": "Engineer",
+      "contexts": ["wizard_driver"],
+      "group": "driver_details"
+    },
+    "industry": {
+      "name": "industry",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Industry",
+      "example": "Engineer/Architect/Science/Math",
+      "contexts": ["wizard_driver"],
+      "group": "driver_details"
+    },
+    "monthsEmployed": {
+      "name": "monthsEmployed",
+      "field_type": "integer",
+      "required": false,
+      "prompt_text": "Months Employed",
+      "contexts": ["wizard_driver"],
+      "group": "driver_details",
+      "default": 0
+    },
+    "licenseStatus": {
+      "name": "licenseStatus",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "License Status",
+      "contexts": ["wizard_driver"],
+      "group": "license",
+      "enum_values": ["Valid", "Expired", "Suspended", "Revoked"],
+      "default": "Valid"
+    },
+    "stateLicensed": {
+      "name": "stateLicensed",
+      "field_type": "string",
+      "required": true,
+      "prompt_text": "State Licensed",
+      "contexts": ["wizard_driver"],
+      "group": "license",
+      "enum_values": ["US_STATES"]
+    },
+    "monthsLicensed": {
+      "name": "monthsLicensed",
+      "field_type": "integer",
+      "required": false,
+      "prompt_text": "Months Licensed",
+      "example": 335,
+      "contexts": ["wizard_driver"],
+      "group": "license",
+      "default": 335
+    },
+    "monthsStateLicensed": {
+      "name": "monthsStateLicensed",
+      "field_type": "integer",
+      "required": false,
+      "prompt_text": "Months State Licensed",
+      "example": 335,
+      "contexts": ["wizard_driver"],
+      "group": "license",
+      "default": 335
+    },
+    "monthsMvrExperience": {
+      "name": "monthsMvrExperience",
+      "field_type": "integer",
+      "required": false,
+      "prompt_text": "Months MVR Experience",
+      "example": 60,
+      "contexts": ["wizard_driver"],
+      "group": "license",
+      "default": 60
+    },
+    "monthsSuspended": {
+      "name": "monthsSuspended",
+      "field_type": "integer",
+      "required": false,
+      "prompt_text": "Months Suspended",
+      "contexts": ["wizard_driver"],
+      "group": "license",
+      "default": 0
+    },
+    "foreignNational": {
+      "name": "foreignNational",
+      "field_type": "boolean",
+      "required": false,
+      "prompt_text": "Foreign National",
+      "contexts": ["wizard_driver"],
+      "group": "license",
+      "default": false
+    },
+    "internationalLicense": {
+      "name": "internationalLicense",
+      "field_type": "boolean",
+      "required": false,
+      "prompt_text": "International License",
+      "contexts": ["wizard_driver"],
+      "group": "license",
+      "default": false
+    },
+    "educationLevel": {
+      "name": "educationLevel",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Education Level",
+      "contexts": ["wizard_driver"],
+      "group": "attributes",
+      "enum_values": ["Some College", "High School", "Bachelor", "Graduate"],
+      "default": "Some College"
+    },
+    "relation": {
+      "name": "relation",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Relation",
+      "contexts": ["wizard_driver"],
+      "group": "attributes",
+      "enum_values": ["Insured", "Spouse", "Child", "Parent"],
+      "default": "Insured"
+    },
+    "residencyStatus": {
+      "name": "residencyStatus",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Residency Status",
+      "contexts": ["wizard_driver"],
+      "group": "attributes",
+      "enum_values": ["Own", "Rent", "Lease"],
+      "default": "Own"
+    },
+    "residencyType": {
+      "name": "residencyType",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "Residency Type",
+      "contexts": ["wizard_driver"],
+      "group": "attributes",
+      "enum_values": ["Home", "Apartment", "Condo", "Mobile Home"],
+      "default": "Home"
+    },
+    "driverMilesToWork": {
+      "name": "driverMilesToWork",
+      "field_type": "integer",
+      "required": false,
+      "prompt_text": "Miles to Work",
+      "contexts": ["wizard_driver"],
+      "group": "attributes",
+      "default": 0
+    },
+    "propertyInsurance": {
+      "name": "propertyInsurance",
+      "field_type": "boolean",
+      "required": false,
+      "prompt_text": "Property Insurance",
+      "contexts": ["wizard_driver"],
+      "group": "attributes",
+      "default": false
+    },
+    "defensiveDriving": {
+      "name": "defensiveDriving",
+      "field_type": "boolean",
+      "required": false,
+      "prompt_text": "Defensive Driving",
+      "contexts": ["wizard_driver"],
+      "group": "discounts",
+      "default": false
+    },
+    "goodStudent": {
+      "name": "goodStudent",
+      "field_type": "boolean",
+      "required": false,
+      "prompt_text": "Good Student",
+      "contexts": ["wizard_driver"],
+      "group": "discounts",
+      "default": false
+    },
+    "seniorDriver": {
+      "name": "seniorDriver",
+      "field_type": "boolean",
+      "required": false,
+      "prompt_text": "Senior Driver",
+      "contexts": ["wizard_driver"],
+      "group": "discounts",
+      "default": false
+    },
+    "multiplePolicies": {
+      "name": "multiplePolicies",
+      "field_type": "boolean",
+      "required": false,
+      "prompt_text": "Multiple Policies",
+      "contexts": ["wizard_driver"],
+      "group": "discounts",
+      "default": false
+    },
+    "sr22": {
+      "name": "sr22",
+      "field_type": "boolean",
+      "required": false,
+      "prompt_text": "SR-22 Required",
+      "contexts": ["wizard_driver"],
+      "group": "sr22",
+      "default": false
+    },
+    "sr22Reason": {
+      "name": "sr22Reason",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "SR-22 Reason",
+      "example": "Other",
+      "contexts": ["wizard_driver"],
+      "group": "sr22",
+      "default": "Other"
+    },
+    "sr22State": {
+      "name": "sr22State",
+      "field_type": "string",
+      "required": false,
+      "prompt_text": "SR-22 State",
+      "contexts": ["wizard_driver"],
+      "group": "sr22",
+      "enum_values": ["US_STATES"],
+      "default": "California"
+    },
+    "sr22Date": {
+      "name": "sr22Date",
+      "field_type": "date",
+      "required": false,
+      "prompt_text": "SR-22 Date",
+      "contexts": ["wizard_driver"],
+      "group": "sr22"
+    }
+  }
+}
