@@ -533,6 +533,26 @@ class CumulativeVehicleIntake(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
 
+class QuickQuoteIntake(BaseModel):
+    """Quick quote intake for initial quote range (just zip code and number of drivers)."""
+    zip_code: str = Field(
+        ...,
+        alias="ZipCode",
+        description="5-digit zip code for the insurance quote"
+    )
+    number_of_drivers: int = Field(
+        ...,
+        alias="NumberOfDrivers",
+        ge=1,
+        le=10,
+        description="Number of drivers (1-10)"
+    )
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    _strip_zip = field_validator("zip_code", mode="before")(_strip_string)
+
+
 # TypedDicts for tool handling
 class ToolInvocationResult(TypedDict, total=False):
     """Result structure returned by tool handlers."""
