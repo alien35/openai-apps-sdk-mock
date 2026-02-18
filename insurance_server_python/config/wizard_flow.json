@@ -1,0 +1,398 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Wizard Flow Configuration - 5-step personal auto quote wizard",
+  "wizard": {
+    "name": "personal_auto_wizard",
+    "title": "Complete Your Insurance Application",
+    "description": "We'll guide you through 5 quick steps to get your personalized quote",
+    "trigger_after": "quick_quote",
+    "steps": [
+      {
+        "id": 1,
+        "name": "policy_setup",
+        "title": "Policy Setup",
+        "label": "Policy Setup",
+        "sections": [
+          {
+            "title": "Policy Details",
+            "fields": [
+              {
+                "name": "effectiveDate",
+                "required": true,
+                "fullWidth": false
+              },
+              {
+                "name": "term",
+                "required": true,
+                "fullWidth": false
+              },
+              {
+                "name": "paymentMethod",
+                "required": true,
+                "fullWidth": false
+              },
+              {
+                "name": "policyType",
+                "required": true,
+                "fullWidth": false
+              },
+              {
+                "name": "bumpLimits",
+                "required": true,
+                "fullWidth": false
+              },
+              {
+                "name": "customerDeclinedCredit",
+                "required": false,
+                "fullWidth": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "customer_info",
+        "title": "Customer Information",
+        "label": "Customer Info",
+        "sections": [
+          {
+            "title": "Personal Information",
+            "fields": [
+              {"name": "firstName", "required": true},
+              {"name": "middleName", "required": false},
+              {"name": "lastName", "required": true},
+              {"name": "monthsAtResidence", "required": false}
+            ]
+          },
+          {
+            "title": "Address",
+            "fields": [
+              {"name": "street", "required": true, "fullWidth": true},
+              {"name": "city", "required": true},
+              {"name": "state", "required": true},
+              {"name": "county", "required": false},
+              {"name": "zipCode", "required": true}
+            ]
+          },
+          {
+            "title": "Contact Information",
+            "fields": [
+              {"name": "mobilePhone", "required": false},
+              {"name": "homePhone", "required": false},
+              {"name": "workPhone", "required": false},
+              {"name": "emailAddress", "required": false},
+              {"name": "declinedEmail", "required": false},
+              {"name": "declinedPhone", "required": false}
+            ]
+          },
+          {
+            "title": "Prior Insurance",
+            "fields": [
+              {"name": "priorInsurance", "required": false},
+              {"name": "reasonForNoInsurance", "required": false}
+            ]
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "vehicle_details",
+        "title": "Vehicle Details",
+        "label": "Vehicle",
+        "sections": [
+          {
+            "title": "Vehicle Information",
+            "fields": [
+              {"name": "make", "required": true},
+              {"name": "model", "required": true},
+              {"name": "year", "required": true},
+              {"name": "annualMiles", "required": false},
+              {"name": "milesToWork", "required": false},
+              {"name": "percentToWork", "required": false},
+              {"name": "purchaseType", "required": false},
+              {"name": "usage", "required": false},
+              {"name": "odometer", "required": false},
+              {"name": "leasedVehicle", "required": false},
+              {"name": "rideShare", "required": false},
+              {"name": "salvaged", "required": false}
+            ]
+          },
+          {
+            "title": "Garaging Address",
+            "fields": [
+              {"name": "garagingStreet", "required": false, "fullWidth": true},
+              {"name": "garagingCity", "required": false},
+              {"name": "garagingState", "required": false},
+              {"name": "garagingZip", "required": false}
+            ]
+          },
+          {
+            "title": "Coverage Information",
+            "fields": [
+              {"name": "collisionDeductible", "required": false},
+              {"name": "comprehensiveDeductible", "required": false},
+              {"name": "rentalLimit", "required": false},
+              {"name": "towingLimit", "required": false},
+              {"name": "customEquipmentValue", "required": false},
+              {"name": "gapCoverage", "required": false},
+              {"name": "safetyGlassCoverage", "required": false}
+            ]
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "driver_info",
+        "title": "Driver Information",
+        "label": "Driver",
+        "sections": [
+          {
+            "title": "Driver Details",
+            "fields": [
+              {"name": "driverFirstName", "required": true},
+              {"name": "driverMiddleName", "required": false},
+              {"name": "driverLastName", "required": true},
+              {"name": "dateOfBirth", "required": true},
+              {"name": "gender", "required": false},
+              {"name": "maritalStatus", "required": false},
+              {"name": "occupation", "required": false},
+              {"name": "industry", "required": false},
+              {"name": "monthsEmployed", "required": false}
+            ]
+          },
+          {
+            "title": "License Information",
+            "fields": [
+              {"name": "licenseStatus", "required": false},
+              {"name": "stateLicensed", "required": true},
+              {"name": "monthsLicensed", "required": false},
+              {"name": "monthsStateLicensed", "required": false},
+              {"name": "monthsMvrExperience", "required": false},
+              {"name": "monthsSuspended", "required": false},
+              {"name": "foreignNational", "required": false},
+              {"name": "internationalLicense", "required": false}
+            ]
+          },
+          {
+            "title": "Attributes",
+            "fields": [
+              {"name": "educationLevel", "required": false},
+              {"name": "relation", "required": false},
+              {"name": "residencyStatus", "required": false},
+              {"name": "residencyType", "required": false},
+              {"name": "driverMilesToWork", "required": false},
+              {"name": "propertyInsurance", "required": false}
+            ]
+          },
+          {
+            "title": "Discounts",
+            "fields": [
+              {"name": "defensiveDriving", "required": false},
+              {"name": "goodStudent", "required": false},
+              {"name": "seniorDriver", "required": false},
+              {"name": "multiplePolicies", "required": false}
+            ]
+          },
+          {
+            "title": "SR-22 Information",
+            "fields": [
+              {"name": "sr22", "required": false},
+              {"name": "sr22Reason", "required": false},
+              {"name": "sr22State", "required": false},
+              {"name": "sr22Date", "required": false}
+            ]
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "review",
+        "title": "Review & Submit",
+        "label": "Review",
+        "is_review": true,
+        "review_sections": [
+          {
+            "title": "Policy Setup",
+            "fields": ["effectiveDate", "term", "paymentMethod", "policyType", "bumpLimits"],
+            "edit_step": 1
+          },
+          {
+            "title": "Customer Information",
+            "fields": ["firstName", "middleName", "lastName", "street", "city", "state", "zipCode", "emailAddress", "mobilePhone"],
+            "edit_step": 2
+          },
+          {
+            "title": "Vehicle",
+            "fields": ["year", "make", "model", "usage"],
+            "edit_step": 3
+          },
+          {
+            "title": "Driver",
+            "fields": ["driverFirstName", "driverMiddleName", "driverLastName", "dateOfBirth", "gender", "maritalStatus"],
+            "edit_step": 4
+          }
+        ]
+      }
+    ],
+    "validation": {
+      "required_fields": [
+        "effectiveDate",
+        "firstName",
+        "lastName",
+        "street",
+        "city",
+        "state",
+        "zipCode",
+        "make",
+        "model",
+        "year",
+        "driverFirstName",
+        "driverLastName",
+        "dateOfBirth",
+        "stateLicensed"
+      ]
+    },
+    "submission": {
+      "tool_name": "request-personal-auto-rate",
+      "button_text": "Confirm & Submit",
+      "submitting_text": "Submitting...",
+      "success_text": "Submitted!",
+      "payload_structure": {
+        "Identifier": "generated",
+        "EffectiveDate": "effectiveDate",
+        "CustomerDeclinedCredit": "customerDeclinedCredit",
+        "BumpLimits": "bumpLimits",
+        "Term": "term",
+        "PaymentMethod": "paymentMethod",
+        "PolicyType": "policyType",
+        "Customer": {
+          "FirstName": "firstName",
+          "MiddleName": "middleName",
+          "LastName": "lastName",
+          "MonthsAtResidence": "monthsAtResidence",
+          "Address": {
+            "Street1": "street",
+            "City": "city",
+            "State": "state",
+            "County": "county",
+            "ZipCode": "zipCode"
+          },
+          "ContactInformation": {
+            "MobilePhone": "mobilePhone",
+            "HomePhone": "homePhone",
+            "WorkPhone": "workPhone",
+            "EmailAddress": "emailAddress"
+          },
+          "PriorInsuranceInformation": {
+            "PriorInsurance": "priorInsurance",
+            "ReasonForNoInsurance": "reasonForNoInsurance"
+          },
+          "DeclinedEmail": "declinedEmail",
+          "DeclinedPhone": "declinedPhone"
+        },
+        "Vehicles": [{
+          "VehicleId": 1,
+          "Make": "make",
+          "Model": "model",
+          "Year": "year",
+          "AnnualMiles": "annualMiles",
+          "MilesToWork": "milesToWork",
+          "Odometer": "odometer",
+          "LeasedVehicle": "leasedVehicle",
+          "PercentToWork": "percentToWork",
+          "PurchaseType": "purchaseType",
+          "RideShare": "rideShare",
+          "Salvaged": "salvaged",
+          "Usage": "usage",
+          "AssignedDriverId": 1,
+          "GaragingAddress": {
+            "Street1": "garagingStreet",
+            "City": "garagingCity",
+            "State": "garagingState",
+            "ZipCode": "garagingZip"
+          },
+          "CoverageInformation": {
+            "CollisionDeductible": "collisionDeductible",
+            "ComprehensiveDeductible": "comprehensiveDeductible",
+            "RentalLimit": "rentalLimit",
+            "GapCoverage": "gapCoverage",
+            "CustomEquipmentValue": "customEquipmentValue",
+            "SafetyGlassCoverage": "safetyGlassCoverage",
+            "TowingLimit": "towingLimit"
+          }
+        }],
+        "RatedDrivers": [{
+          "DriverId": 1,
+          "FirstName": "driverFirstName",
+          "MiddleName": "driverMiddleName",
+          "LastName": "driverLastName",
+          "DateOfBirth": "dateOfBirth",
+          "Gender": "gender",
+          "MaritalStatus": "maritalStatus",
+          "MonthsEmployed": "monthsEmployed",
+          "Industry": "industry",
+          "Occupation": "occupation",
+          "LicenseInformation": {
+            "LicenseStatus": "licenseStatus",
+            "MonthsLicensed": "monthsLicensed",
+            "MonthsStateLicensed": "monthsStateLicensed",
+            "MonthsMvrExperience": "monthsMvrExperience",
+            "MonthsSuspended": "monthsSuspended",
+            "StateLicensed": "stateLicensed",
+            "ForeignNational": "foreignNational",
+            "InternationalDriversLicense": "internationalLicense"
+          },
+          "Attributes": {
+            "EducationLevel": "educationLevel",
+            "Relation": "relation",
+            "ResidencyStatus": "residencyStatus",
+            "ResidencyType": "residencyType",
+            "MilesToWork": "driverMilesToWork",
+            "PropertyInsurance": "propertyInsurance"
+          },
+          "Discounts": {
+            "DefensiveDriving": "defensiveDriving",
+            "GoodStudent": "goodStudent",
+            "SeniorDriverDiscount": "seniorDriver",
+            "MultiplePolicies": "multiplePolicies"
+          },
+          "FinancialResponsibilityInformation": {
+            "Sr22": "sr22",
+            "Sr22Reason": "sr22Reason",
+            "Sr22State": "sr22State",
+            "Sr22Date": "sr22Date"
+          }
+        }]
+      }
+    },
+    "test_data": {
+      "enabled": true,
+      "data": {
+        "firstName": "John",
+        "lastName": "Smith",
+        "street": "123 Beverly Dr",
+        "city": "Beverly Hills",
+        "state": "California",
+        "zipCode": "90210",
+        "mobilePhone": "555-123-4567",
+        "emailAddress": "john.smith@example.com",
+        "monthsAtResidence": 24,
+        "make": "Honda",
+        "model": "Civic",
+        "year": 2018,
+        "annualMiles": 12000,
+        "milesToWork": 10,
+        "usage": "Work School",
+        "driverFirstName": "John",
+        "driverLastName": "Smith",
+        "dateOfBirth": "1990-01-15",
+        "gender": "Male",
+        "maritalStatus": "Single",
+        "stateLicensed": "California",
+        "monthsLicensed": 120,
+        "monthsStateLicensed": 120
+      }
+    }
+  }
+}

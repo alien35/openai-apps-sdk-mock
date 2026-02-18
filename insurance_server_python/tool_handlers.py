@@ -1023,3 +1023,172 @@ async def _retrieve_personal_auto_rate_results(
     logger.info("=== END RETRIEVE TOOL RETURN ===")
 
     return result
+
+
+async def _start_wizard_flow(arguments: Mapping[str, Any]) -> ToolInvocationResult:
+    """Start the insurance application wizard.
+
+    This tool launches the wizard widget and can pre-fill data from quick quote.
+    """
+    from .wizard_config_loader import get_wizard_flow, get_wizard_fields
+
+    zip_code = arguments.get("zip_code")
+    num_drivers = arguments.get("number_of_drivers")
+
+    logger.info(f"Starting wizard flow with zip={zip_code}, drivers={num_drivers}")
+
+    message = "Great! Let's collect your complete information to get an accurate quote. "
+    message += "I'll guide you through a quick 5-step process."
+
+    if zip_code:
+        message += f"\n\nI've pre-filled your zip code ({zip_code})"
+        if num_drivers:
+            message += f" and number of drivers ({num_drivers})"
+        message += " from your quick quote."
+
+    # Load wizard configuration
+    wizard_config = get_wizard_flow()
+    fields_config = get_wizard_fields()
+
+    import mcp.types as types
+    return {
+        "structured_content": {
+            "wizard_started": True,
+            "wizard_config": wizard_config,
+            "fields_config": fields_config,
+            "pre_fill_data": {
+                "zipCode": zip_code,
+                "numberOfDrivers": num_drivers,
+            },
+            "stage": "wizard_active",
+        },
+        "content": [types.TextContent(type="text", text=message)],
+    }
+
+
+async def _submit_wizard_form(arguments: Mapping[str, Any]) -> ToolInvocationResult:
+    """Submit completed wizard form data.
+
+    This handler receives form data from the wizard, transforms it to API payload,
+    and submits to the rating API.
+    """
+    from .wizard_config_loader import build_payload_from_form_data
+
+    form_data = arguments.get("form_data", {})
+
+    if not form_data:
+        return {
+            "response_text": "No form data provided. Please complete the wizard first.",
+        }
+
+    logger.info("Processing wizard form submission")
+    logger.debug(f"Form data fields: {list(form_data.keys())}")
+
+    try:
+        # Build API payload from form data using config
+        payload = build_payload_from_form_data(form_data)
+
+        # Validate required fields are present
+        required_fields = ["Identifier", "EffectiveDate", "Customer", "Vehicles", "RatedDrivers"]
+        missing = [f for f in required_fields if f not in payload or not payload[f]]
+
+        if missing:
+            return {
+                "response_text": f"Wizard form is incomplete. Missing required data: {', '.join(missing)}",
+            }
+
+        logger.info(f"Built API payload for identifier: {payload.get('Identifier')}")
+
+        # Submit to rating API (reuse existing handler logic)
+        _sanitize_personal_auto_rate_request(payload)
+        payload["CarrierInformation"] = DEFAULT_CARRIER_INFORMATION
+
+        state = payload.get("Customer", {}).get("Address", {}).get("State", "CA")
+        state_code = state_abbreviation(state) or state
+        url = f"{PERSONAL_AUTO_RATE_ENDPOINT}/{state_code}/rates/latest?multiAgency=false"
+
+        headers = _personal_auto_rate_headers()
+
+        _log_network_request(method="POST", url=url, headers=headers, payload=payload)
+
+        async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
+            response = await client.post(url, headers=headers, json=payload)
+
+        status_code = response.status_code
+        response_text = response.text
+        _log_network_response(method="POST", url=url, status=status_code, response_text=response_text)
+
+        parsed_response: Any = {}
+        if response_text.strip():
+            parsed_response = response.json()
+
+        if response.is_error:
+            raise RuntimeError(
+                f"Rating request failed with status {status_code}: {response_text}"
+            )
+
+        transaction_id = parsed_response.get("transactionId")
+
+        # Fetch rate results
+        rate_results: Any = None
+        if transaction_id:
+            results_url = PERSONAL_AUTO_RATE_RESULTS_ENDPOINT
+            async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
+                rate_results_response = await client.get(
+                    results_url,
+                    headers=headers,
+                    params={"Id": transaction_id},
+                )
+
+            if not rate_results_response.is_error and rate_results_response.text.strip():
+                rate_results = rate_results_response.json()
+
+        # Build response message
+        identifier = payload.get("Identifier", "your quote")
+        message = f"✅ **Application Submitted Successfully!**\n\n"
+        message += f"Quote ID: {identifier}\n"
+
+        if transaction_id:
+            message += f"Transaction ID: {transaction_id}\n\n"
+
+        if rate_results:
+            summary = format_rate_results_summary(rate_results)
+            if summary:
+                message += f"{summary}\n\n"
+
+        message += "Your detailed quote has been generated. "
+        message += "Would you like to compare carriers or modify any details?"
+
+        import mcp.types as types
+        content = [types.TextContent(type="text", text=message)]
+
+        # Add transaction ID for assistant context
+        if transaction_id:
+            content.append(
+                types.TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "quoteId": identifier,
+                        "transactionId": transaction_id
+                    }),
+                    annotations=types.Annotations(audience=["assistant"])
+                )
+            )
+
+        return {
+            "structured_content": {
+                "identifier": identifier,
+                "transaction_id": transaction_id,
+                "request": payload,
+                "response": parsed_response,
+                "rate_results": rate_results,
+                "stage": "quote_complete",
+            },
+            "content": content,
+        }
+
+    except Exception as e:
+        logger.exception("Wizard form submission failed")
+        return {
+            "response_text": f"Failed to process wizard submission: {str(e)}",
+        }

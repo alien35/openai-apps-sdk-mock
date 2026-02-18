@@ -8,6 +8,7 @@ import mcp.types as types
 from .insurance_state_widget import INSURANCE_STATE_WIDGET_HTML
 from .insurance_rate_results_widget import INSURANCE_RATE_RESULTS_WIDGET_HTML
 from .quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
+from .insurance_wizard_widget_html import INSURANCE_WIZARD_WIDGET_HTML
 from .constants import MIME_TYPE
 from .models import ToolHandler
 
@@ -53,6 +54,8 @@ INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER = "insurance-rate-results"
 INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI = "ui://widget/insurance-rate-results.html"
 QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER = "quick-quote-results"
 QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI = "ui://widget/quick-quote-results.html"
+INSURANCE_WIZARD_WIDGET_IDENTIFIER = "insurance-wizard"
+INSURANCE_WIZARD_WIDGET_TEMPLATE_URI = "ui://widget/insurance-wizard.html"
 
 # Input schema for insurance state selector
 INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
@@ -109,6 +112,20 @@ ADDITIONAL_WIDGETS: Tuple[WidgetDefinition, ...] = (
             "Displays instant premium range estimates for auto insurance with visual cards showing best and worst case scenarios."
         ),
     ),
+    WidgetDefinition(
+        identifier=INSURANCE_WIZARD_WIDGET_IDENTIFIER,
+        title="Complete insurance application wizard",
+        template_uri=INSURANCE_WIZARD_WIDGET_TEMPLATE_URI,
+        invoking="Loading insurance application wizard",
+        invoked="Displayed insurance application wizard",
+        html=INSURANCE_WIZARD_WIDGET_HTML,
+        response_text="Please complete the insurance application wizard to get your detailed quote.",
+        input_schema=None,
+        tool_description=(
+            "Displays a multi-step wizard interface for collecting complete insurance application details. "
+            "Guides users through 5 steps: Policy Setup, Customer Info, Vehicle Details, Driver Info, and Review & Submit."
+        ),
+    ),
 )
 
 # All widgets
@@ -162,6 +179,20 @@ if QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
     msg = (
         "Quick quote results widget must expose the correct template URI; "
         f"expected '{QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI}' in widgets"
+    )
+    raise RuntimeError(msg)
+
+if INSURANCE_WIZARD_WIDGET_IDENTIFIER not in WIDGETS_BY_ID:
+    msg = (
+        "Insurance wizard widget must be registered; "
+        f"expected identifier '{INSURANCE_WIZARD_WIDGET_IDENTIFIER}' in widgets"
+    )
+    raise RuntimeError(msg)
+
+if INSURANCE_WIZARD_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
+    msg = (
+        "Insurance wizard widget must expose the correct template URI; "
+        f"expected '{INSURANCE_WIZARD_WIDGET_TEMPLATE_URI}' in widgets"
     )
     raise RuntimeError(msg)
 
@@ -255,6 +286,8 @@ def _register_personal_auto_intake_tools() -> None:
         _collect_personal_auto_vehicles,
         _request_personal_auto_rate,
         _retrieve_personal_auto_rate_results,
+        _start_wizard_flow,
+        _submit_wizard_form,
     )
     from .models import (
         QuickQuoteIntake,
@@ -458,6 +491,77 @@ def _register_personal_auto_intake_tools() -> None:
             handler=_retrieve_personal_auto_rate_results,
             default_response_text="Retrieved personal auto rate results.",
             default_meta=rate_results_default_meta,
+        )
+    )
+
+    # Register wizard flow tools
+    wizard_widget = WIDGETS_BY_ID[INSURANCE_WIZARD_WIDGET_IDENTIFIER]
+    wizard_meta = {
+        **_tool_meta(wizard_widget),
+        "openai/widgetAccessible": True,
+    }
+    wizard_default_meta = {
+        **wizard_meta,
+        "openai.com/widget": _embedded_widget_resource(wizard_widget).model_dump(mode="json"),
+    }
+
+    register_tool(
+        ToolRegistration(
+            tool=types.Tool(
+                name="start-insurance-wizard",
+                title="Start insurance application wizard",
+                description=(
+                    "Launch the multi-step insurance application wizard after presenting a quick quote. "
+                    "This wizard guides users through 5 steps to collect complete policy, customer, vehicle, and driver information. "
+                    "The wizard is fully config-driven and provides a structured form experience. "
+                    "Use this tool when the user wants to proceed with a detailed quote after seeing quick quote results."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "zip_code": {
+                            "type": "string",
+                            "description": "Pre-fill zip code from quick quote"
+                        },
+                        "number_of_drivers": {
+                            "type": "integer",
+                            "description": "Pre-fill number of drivers from quick quote"
+                        }
+                    },
+                    "additionalProperties": False,
+                },
+                _meta=wizard_meta,
+            ),
+            handler=_start_wizard_flow,
+            default_response_text="Started insurance application wizard.",
+            default_meta=wizard_default_meta,
+        )
+    )
+
+    register_tool(
+        ToolRegistration(
+            tool=types.Tool(
+                name="submit-wizard-form",
+                title="Submit completed wizard form",
+                description=(
+                    "Process a completed wizard form submission and request personal auto rate. "
+                    "This tool receives all collected data from the wizard and submits it to the rating API. "
+                    "The wizard frontend will call this tool automatically when the user completes all steps and clicks submit."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "form_data": {
+                            "type": "object",
+                            "description": "Complete form data collected from wizard steps"
+                        }
+                    },
+                    "required": ["form_data"],
+                    "additionalProperties": False,
+                },
+            ),
+            handler=_submit_wizard_form,
+            default_response_text="Submitted wizard form for rating.",
         )
     )
 

@@ -336,6 +336,29 @@ async def get_minimal_fields_config(request: Request):
     logger.error(f"Config file not found at: {config_path}")
     return JSONResponse({"error": "Config file not found"}, status_code=404)
 
+
+@app.route("/api/wizard-config", methods=["GET"])
+async def get_wizard_config(request: Request):
+    """Serve wizard configuration to frontend."""
+    from .wizard_config_loader import get_wizard_flow, get_wizard_fields
+
+    try:
+        wizard = get_wizard_flow()
+        fields = get_wizard_fields()
+        return JSONResponse(
+            {
+                "wizard": wizard,
+                "fields": fields
+            },
+            headers={"Access-Control-Allow-Origin": "*"}
+        )
+    except Exception as e:
+        logger.exception("Failed to load wizard configuration")
+        return JSONResponse(
+            {"error": f"Failed to load wizard configuration: {str(e)}"},
+            status_code=500
+        )
+
 # Add CORS middleware
 try:
     from starlette.middleware.cors import CORSMiddleware
