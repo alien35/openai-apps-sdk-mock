@@ -29,6 +29,10 @@ DRIVER_LICENSE_DEFAULTS = {
     "CountryOfOrigin": "None",
     "ForeignNational": False,
     "InternationalDriversLicense": False,
+    "LicenseNumber": "UNKNOWN0000",
+    "MonthsLicensed": 24,
+    "MonthsMvrExperience": 24,
+    "MonthsStateLicensed": 24,
 }
 
 # Driver attributes defaults
@@ -60,15 +64,11 @@ FINANCIAL_RESPONSIBILITY_DEFAULTS = {
 # Driver violations default (empty list)
 DRIVER_VIOLATIONS_DEFAULT = []
 
-# Vehicle defaults
+# Vehicle defaults (minimal set - only essential fields)
 VEHICLE_DEFAULTS = {
-    "CustomEquipmentValue": 0,
-    "GrayMarket": False,
-    "HomingDevice": False,
-    "HoodLock": False,
     "LeasedVehicle": False,
-    "LienholderInformation": [],
-    "PercentToWork": 50,  # Assume 50% driving is for work by default
+    "RideShare": False,
+    "Salvaged": False,
 }
 
 # Vehicle coverage defaults (no coverage by default)
@@ -79,22 +79,23 @@ VEHICLE_COVERAGE_DEFAULTS = {
     "RentalLimit": "None",
     "TowingLimit": "None",
     "SafetyGlassCoverage": False,
+    "GapCoverage": False,
 }
 
 # Policy defaults
 POLICY_DEFAULTS = {
     "BumpLimits": "No Bumping",
     "Term": "Semi Annual",  # 6-month term
-    "PaymentMethod": "Standard",
-    "PolicyType": "New Business",
+    "PaymentMethod": "Default",
+    "PolicyType": "Standard",
 }
 
-# CA state minimum coverages (recommended: slightly above minimum)
+# CA coverages (exact format from working logged request)
 CA_MINIMUM_COVERAGES = {
-    "LiabilityBiLimit": "25000/50000",  # CA min is 15/30
-    "LiabilityPdLimit": "25000",  # CA min is 5
+    "LiabilityBiLimit": "30000/60000",  # Exact format from working request
+    "LiabilityPdLimit": "15000",  # Exact format from working request
     "MedPayLimit": "None",
-    "UninsuredMotoristBiLimit": "25000/50000",
+    "UninsuredMotoristBiLimit": "30000/60000",  # Must match LiabilityBiLimit
     "UninsuredMotoristPd/CollisionDamageWaiver": False,
     "AccidentalDeathLimit": "None",
 }
@@ -122,18 +123,26 @@ def apply_customer_defaults(customer: Dict[str, Any]) -> Dict[str, Any]:
         if "Street2" not in result["Address"]:
             result["Address"]["Street2"] = ""
 
-    # Apply prior address defaults (not required, so make it empty if missing)
-    if "PriorAddress" not in result:
-        result["PriorAddress"] = None
+    # Don't include PriorAddress if not provided - API doesn't accept null
+    # If it exists and is None, remove it
+    if result.get("PriorAddress") is None:
+        result.pop("PriorAddress", None)
+
+    # Ensure PriorInsuranceInformation has ReasonForNoInsurance if PriorInsurance is False
+    if "PriorInsuranceInformation" in result and isinstance(result["PriorInsuranceInformation"], dict):
+        if not result["PriorInsuranceInformation"].get("PriorInsurance", True):
+            if "ReasonForNoInsurance" not in result["PriorInsuranceInformation"]:
+                result["PriorInsuranceInformation"]["ReasonForNoInsurance"] = "Other"
 
     return result
 
 
-def apply_driver_defaults(driver: Dict[str, Any]) -> Dict[str, Any]:
+def apply_driver_defaults(driver: Dict[str, Any], state: str = "California") -> Dict[str, Any]:
     """Apply default values to driver data.
 
     Args:
         driver: Driver data dictionary
+        state: State name for StateLicensed field
 
     Returns:
         Driver data with defaults applied
@@ -146,6 +155,9 @@ def apply_driver_defaults(driver: Dict[str, Any]) -> Dict[str, Any]:
             **DRIVER_LICENSE_DEFAULTS,
             **result["LicenseInformation"]
         }
+        # Add StateLicensed if not present
+        if "StateLicensed" not in result["LicenseInformation"]:
+            result["LicenseInformation"]["StateLicensed"] = state
 
     # Apply attributes defaults
     if "Attributes" in result and isinstance(result["Attributes"], dict):
@@ -252,7 +264,7 @@ def build_minimal_payload_with_defaults(
         policy_coverages: Policy coverages (required fields only)
         identifier: Quote identifier
         effective_date: Policy effective date
-        state: State code
+        state: State code or full state name
         **policy_options: Additional policy-level options
 
     Returns:
@@ -260,7 +272,7 @@ def build_minimal_payload_with_defaults(
     """
     # Apply defaults to each section
     enriched_customer = apply_customer_defaults(customer)
-    enriched_drivers = [apply_driver_defaults(driver) for driver in drivers]
+    enriched_drivers = [apply_driver_defaults(driver, state) for driver in drivers]
     enriched_vehicles = [apply_vehicle_defaults(vehicle) for vehicle in vehicles]
     enriched_coverages = apply_policy_coverages_defaults(policy_coverages, state)
     enriched_policy = apply_policy_defaults(policy_options)

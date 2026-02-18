@@ -69,38 +69,109 @@ def _insurance_state_tool_handler(
     }
 
 
-async def _get_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocationResult:
-    """Get a quick quote range with just zip code and number of drivers.
+# ═══════════════════════════════════════════════════════════════
+# Session storage for collection engines (in-memory for POC)
+# In production, use Redis or database
+# ═══════════════════════════════════════════════════════════════
+_session_engines = {}
 
-    Generates best case and worst case scenarios to give user a quote range
-    before collecting detailed information.
+
+async def _get_quick_quote_adaptive(arguments: Mapping[str, Any]) -> ToolInvocationResult:
+    """Adaptive quick quote using collection engine.
+
+    This handler uses the adaptive architecture to collect fields in any order
+    based on the active flow configuration.
     """
+    from .collection_engine import create_collection_engine, CollectionStatus
+    from .flow_configs import FlowType
     from .field_defaults import build_minimal_payload_with_defaults
-    from .utils import _lookup_city_state_from_zip
 
-    payload = QuickQuoteIntake.model_validate(arguments)
-    zip_code = payload.zip_code
-    num_drivers = payload.number_of_drivers
+    # Extract session ID (from metadata or generate)
+    session_id = arguments.get("session_id", "default_session")
 
-    # Look up city and state from zip code
+    # Get or create collection engine
+    if session_id not in _session_engines:
+        engine = create_collection_engine(FlowType.QUICK_QUOTE)
+        if not engine:
+            return {
+                "response_text": "Unable to start quick quote. No active flow configured.",
+            }
+        _session_engines[session_id] = engine
+    else:
+        engine = _session_engines[session_id]
+
+    # Collect fields from arguments
+    # Filter out non-field arguments
+    field_arguments = {
+        k: v for k, v in arguments.items()
+        if k in ["ZipCode", "NumberOfDrivers", "EmailAddress", "FirstName", "LastName", "DateOfBirth"]
+    }
+
+    state = engine.collect_fields(field_arguments)
+
+    # Check if we have validation errors
+    if state.validation_errors:
+        error_messages = "\n".join([
+            f"• {field}: {error}"
+            for field, error in state.validation_errors.items()
+        ])
+        return {
+            "structured_content": {
+                "collected_fields": state.collected_fields,
+                "validation_errors": state.validation_errors,
+            },
+            "response_text": f"There were some issues with the information provided:\n\n{error_messages}",
+        }
+
+    # Check if we need more information
+    if state.status == CollectionStatus.INCOMPLETE:
+        next_questions = engine.get_next_questions(limit=3)
+        progress = engine.get_progress()
+
+        questions_text = "\n".join([
+            f"• {q.prompt_text}" + (f" (Example: {q.example})" if q.example else "")
+            for q in next_questions
+        ])
+
+        return {
+            "structured_content": {
+                "collected_fields": state.collected_fields,
+                "missing_fields": state.missing_fields,
+                "progress": progress,
+            },
+            "response_text": (
+                f"To get your quick quote, I need a bit more information:\n\n"
+                f"{questions_text}\n\n"
+                f"Progress: {progress['percent_complete']}% complete"
+            ),
+        }
+
+    # We have all required fields - generate quote
+    logger.info(f"Quick quote collection complete for session {session_id}")
+
+    # Extract collected values
+    zip_code = state.collected_fields.get("ZipCode")
+    num_drivers = state.collected_fields.get("NumberOfDrivers")
+    email = state.collected_fields.get("EmailAddress")
+
+    # Look up city and state
     city_state = _lookup_city_state_from_zip(zip_code)
     if not city_state:
         return {
             "response_text": f"Unable to find location information for zip code {zip_code}. Please provide a valid US zip code.",
         }
 
-    city, state = city_state
+    city, state_name = city_state
     effective_date = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
 
     # Generate best case scenario
-    # Best case: 35-year-old driver(s), clean record, reliable sedan
     best_case_customer = {
         "FirstName": "Best",
         "LastName": "Case",
         "Address": {
             "Street1": "123 Main St",
             "City": city,
-            "State": state,
+            "State": state_name,
             "ZipCode": zip_code,
         },
         "MonthsAtResidence": 60,
@@ -113,7 +184,7 @@ async def _get_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocationResult
             "DriverId": i + 1,
             "FirstName": f"Driver{i+1}",
             "LastName": "BestCase",
-            "DateOfBirth": "1989-01-01",  # 35 years old
+            "DateOfBirth": "1989-01-01",
             "Gender": "Male" if i % 2 == 0 else "Female",
             "MaritalStatus": "Married",
             "LicenseInformation": {"LicenseStatus": "Valid"},
@@ -126,10 +197,9 @@ async def _get_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocationResult
         }
         best_case_drivers.append(driver)
 
-    # Best case vehicle: reliable, affordable sedan
     best_case_vehicle = {
         "VehicleId": 1,
-        "Vin": "1HGCM82633A123456",  # Sample Honda Accord VIN
+        "Vin": "1HGCM82633A123456",
         "Year": 2018,
         "Make": "Honda",
         "Model": "Accord",
@@ -155,22 +225,24 @@ async def _get_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocationResult
         policy_coverages={},
         identifier=f"QUICK_BEST_{zip_code}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
         effective_date=effective_date,
-        state=state,
+        state=state_name,
     )
 
     # Generate worst case scenario
-    # Worst case: younger driver(s), possible violations, luxury vehicle
     worst_case_customer = {
         "FirstName": "Worst",
         "LastName": "Case",
         "Address": {
             "Street1": "123 Main St",
             "City": city,
-            "State": state,
+            "State": state_name,
             "ZipCode": zip_code,
         },
         "MonthsAtResidence": 12,
-        "PriorInsuranceInformation": {"PriorInsurance": False, "ReasonForNoInsurance": "New Driver"},
+        "PriorInsuranceInformation": {
+            "PriorInsurance": False,
+            "ReasonForNoInsurance": "Other"
+        },
     }
 
     worst_case_drivers = []
@@ -178,13 +250,13 @@ async def _get_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocationResult
         driver = {
             "DriverId": i + 1,
             "FirstName": f"Driver{i+1}",
-            "LastName": "WorstCase",
-            "DateOfBirth": "2006-01-01",  # 18 years old
-            "Gender": "Male" if i % 2 == 0 else "Female",
+            "LastName": "Worst",
+            "DateOfBirth": "2006-01-01",
+            "Gender": "Male",
             "MaritalStatus": "Single",
             "LicenseInformation": {
                 "LicenseStatus": "Valid",
-                "MonthsLicensed": 24,  # Recently licensed
+                "MonthsLicensed": 24,
             },
             "Attributes": {
                 "PropertyInsurance": False,
@@ -195,10 +267,9 @@ async def _get_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocationResult
         }
         worst_case_drivers.append(driver)
 
-    # Worst case vehicle: newer, more expensive vehicle
     worst_case_vehicle = {
         "VehicleId": 1,
-        "Vin": "5YJ3E1EA5KF123456",  # Sample Tesla Model 3 VIN
+        "Vin": "5YJ3E1EA5KF123456",
         "Year": 2023,
         "Make": "Tesla",
         "Model": "Model 3",
@@ -224,21 +295,21 @@ async def _get_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocationResult
         policy_coverages={},
         identifier=f"QUICK_WORST_{zip_code}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
         effective_date=effective_date,
-        state=state,
+        state=state_name,
     )
 
-    # Submit both quotes
+    # Submit both quotes (same logic as original handler)
     _sanitize_personal_auto_rate_request(best_case_payload)
     best_case_payload["CarrierInformation"] = DEFAULT_CARRIER_INFORMATION
     _sanitize_personal_auto_rate_request(worst_case_payload)
     worst_case_payload["CarrierInformation"] = DEFAULT_CARRIER_INFORMATION
 
-    state_code = state_abbreviation(state) or state
+    state_code = state_abbreviation(state_name) or state_name
     url = f"{PERSONAL_AUTO_RATE_ENDPOINT}/{state_code}/rates/latest?multiAgency=false"
     headers = _personal_auto_rate_headers()
 
-    best_case_result = None
-    worst_case_result = None
+    best_results = None
+    worst_results = None
 
     try:
         # Submit best case
@@ -246,65 +317,124 @@ async def _get_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocationResult
         async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
             best_response = await client.post(url, headers=headers, json=best_case_payload)
 
-        if best_response.is_error:
-            logger.error(f"Best case quote failed: {best_response.status_code} {best_response.text}")
-        else:
+        if not best_response.is_error:
             best_parsed = best_response.json()
-            best_transaction_id = best_parsed.get("transactionId")
+            best_tx_id = best_parsed.get("transactionId")
 
-            if best_transaction_id:
-                # Get results
+            if best_tx_id:
                 async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
                     results_response = await client.get(
                         PERSONAL_AUTO_RATE_RESULTS_ENDPOINT,
                         headers=headers,
-                        params={"Id": best_transaction_id}
+                        params={"Id": best_tx_id}
                     )
                 if not results_response.is_error:
-                    best_case_result = results_response.json()
+                    best_results = results_response.json()
 
         # Submit worst case
         logger.info("Submitting worst case scenario for quick quote")
         async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
             worst_response = await client.post(url, headers=headers, json=worst_case_payload)
 
-        if worst_response.is_error:
-            logger.error(f"Worst case quote failed: {worst_response.status_code} {worst_response.text}")
-        else:
+        if not worst_response.is_error:
             worst_parsed = worst_response.json()
-            worst_transaction_id = worst_parsed.get("transactionId")
+            worst_tx_id = worst_parsed.get("transactionId")
 
-            if worst_transaction_id:
-                # Get results
+            if worst_tx_id:
                 async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
                     results_response = await client.get(
                         PERSONAL_AUTO_RATE_RESULTS_ENDPOINT,
                         headers=headers,
-                        params={"Id": worst_transaction_id}
+                        params={"Id": worst_tx_id}
                     )
                 if not results_response.is_error:
-                    worst_case_result = results_response.json()
+                    worst_results = results_response.json()
 
     except httpx.HTTPError as exc:
-        logger.exception("Quick quote request failed due to network error")
+        logger.exception("Quick quote request failed")
         return {
-            "response_text": f"Failed to get quick quotes due to network error: {exc}",
+            "response_text": f"Failed to get quotes due to network error: {exc}",
         }
 
-    # Format the results
-    message = f"Quick Quote Range for {city}, {state} (Zip: {zip_code})\n\n"
+    # Format response
+    message = f"**Quick Quote Range for {city}, {state_name}** (Zip: {zip_code})\n\n"
 
-    if best_case_result:
-        best_summary = format_rate_results_summary(best_case_result)
+    if best_results:
+        best_summary = format_rate_results_summary(best_results)
         if best_summary:
-            message += f"**Best Case Scenario** (35-year-old driver, clean record, reliable vehicle):\n{best_summary}\n\n"
+            message += (
+                f"**BEST CASE** (experienced driver, reliable vehicle):\n"
+                f"{best_summary}\n\n"
+            )
 
-    if worst_case_result:
-        worst_summary = format_rate_results_summary(worst_case_result)
+    if worst_results:
+        worst_summary = format_rate_results_summary(worst_results)
         if worst_summary:
-            message += f"**Worst Case Scenario** (18-year-old driver, new driver, newer vehicle):\n{worst_summary}\n\n"
+            message += (
+                f"**WORST CASE** (new driver, newer vehicle):\n"
+                f"{worst_summary}\n\n"
+            )
 
-    message += "\nWould you like to provide more details to get a more accurate quote?"
+    if email:
+        message += f"\nWe'll send these results to {email}.\n\n"
+
+    message += (
+        "\nYour actual rate will fall within this range based on your specific details.\n\n"
+        "**Ready for a more accurate quote?** I can collect your actual driver and "
+        "vehicle information to give you a precise premium."
+    )
+
+    # Clean up session
+    _session_engines.pop(session_id, None)
+
+    import mcp.types as types
+    return {
+        "structured_content": {
+            "zip_code": zip_code,
+            "number_of_drivers": num_drivers,
+            "email": email,
+            "city": city,
+            "state": state_name,
+            "best_case_results": best_results,
+            "worst_case_results": worst_results,
+            "stage": "quick_quote_complete",
+        },
+        "content": [types.TextContent(type="text", text=message)],
+    }
+
+
+async def _get_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocationResult:
+    """Get a quick quote range with just zip code and number of drivers.
+
+    Returns placeholder ranges based on typical premiums in the area.
+    This provides instant feedback without making API calls with synthetic data.
+    """
+    from .utils import _lookup_city_state_from_zip
+    from .quick_quote_ranges import format_quote_range_message, calculate_quote_range
+
+    payload = QuickQuoteIntake.model_validate(arguments)
+    zip_code = payload.zip_code
+    num_drivers = payload.number_of_drivers
+
+    logger.info(f"Quick quote request: zip={zip_code}, drivers={num_drivers}")
+
+    # Look up city and state from zip code
+    city_state = _lookup_city_state_from_zip(zip_code)
+    if not city_state:
+        return {
+            "response_text": f"Unable to find location information for zip code {zip_code}. Please provide a valid US zip code.",
+        }
+
+    city, state = city_state
+    logger.info(f"Resolved location: {city}, {state}")
+
+    # Calculate placeholder ranges
+    best_min, best_max, worst_min, worst_max = calculate_quote_range(
+        zip_code, num_drivers, city, state
+    )
+
+    # Format message
+    message = format_quote_range_message(zip_code, city, state, num_drivers)
 
     import mcp.types as types
     return {
@@ -313,11 +443,24 @@ async def _get_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocationResult
             "number_of_drivers": num_drivers,
             "city": city,
             "state": state,
-            "best_case_results": best_case_result,
-            "worst_case_results": worst_case_result,
+            "best_case_range": {
+                "min": best_min,
+                "max": best_max,
+                "per_month_min": int(best_min / 6),
+                "per_month_max": int(best_max / 6),
+            },
+            "worst_case_range": {
+                "min": worst_min,
+                "max": worst_max,
+                "per_month_min": int(worst_min / 6),
+                "per_month_max": int(worst_max / 6),
+            },
+            "stage": "quick_quote_complete",
+            "is_placeholder": True,  # Indicate these are estimates
         },
         "content": [types.TextContent(type="text", text=message)],
     }
+
 
 
 def _collect_personal_auto_customer(arguments: Mapping[str, Any]) -> ToolInvocationResult:

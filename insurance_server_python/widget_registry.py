@@ -219,6 +219,7 @@ def _register_personal_auto_intake_tools() -> None:
     """Register personal auto insurance intake tools."""
     from .tool_handlers import (
         _get_quick_quote,
+        _get_quick_quote_adaptive,
         _collect_personal_auto_customer,
         _collect_personal_auto_drivers,
         _collect_personal_auto_vehicles,
@@ -243,17 +244,54 @@ def _register_personal_auto_intake_tools() -> None:
                 name="get-quick-quote",
                 title="Get quick auto insurance quote range",
                 description=(
-                    "Get an instant quote range for auto insurance with just a zip code and number of drivers. "
-                    "This tool provides best case and worst case premium estimates based on typical scenarios. "
-                    "Use this as the first step before collecting detailed information. "
-                    "Best case assumes mature drivers with clean records and reliable vehicles. "
-                    "Worst case assumes younger drivers, newer vehicles, and less experience. "
-                    "After getting the range, you can collect detailed information for an accurate quote."
+                    "Get an instant quote range estimate for auto insurance with just a zip code and number of drivers. "
+                    "Returns placeholder premium ranges based on typical rates in the area. "
+                    "Use this as the first step to give users an immediate sense of cost before collecting detailed information. "
+                    "\n\n"
+                    "Best case range assumes: experienced drivers (35+ years old), clean driving records, reliable vehicles, "
+                    "homeowners with property insurance, and continuous insurance history. "
+                    "\n\n"
+                    "Worst case range assumes: young drivers (18-25 years old), limited experience, newer/higher-value vehicles, "
+                    "renters without property insurance, and minimal insurance history. "
+                    "\n\n"
+                    "These are ESTIMATES only. After showing the range, collect detailed information to get actual carrier quotes."
                 ),
                 inputSchema=_model_schema(QuickQuoteIntake),
             ),
             handler=_get_quick_quote,
-            default_response_text="Generated quick quote range.",
+            default_response_text="Generated quick quote range estimate.",
+        )
+    )
+
+    # Register ADAPTIVE quick quote tool (POC)
+    register_tool(
+        ToolRegistration(
+            tool=types.Tool(
+                name="get-quick-quote-adaptive",
+                title="Get quick quote with adaptive field collection",
+                description=(
+                    "PROOF OF CONCEPT: Adaptive quick quote that uses configuration-driven field collection. "
+                    "This tool can collect fields in any order based on the active flow configuration. "
+                    "Supports multiple flow versions (v1: minimal, v2: with email, v3: with credit check). "
+                    "Fields are validated against a centralized registry and collected progressively. "
+                    "The tool will prompt for missing required fields dynamically."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "ZipCode": {"type": "string", "description": "5-digit zip code"},
+                        "NumberOfDrivers": {"type": "integer", "description": "Number of drivers (1-10)"},
+                        "EmailAddress": {"type": "string", "description": "Email address (optional)"},
+                        "FirstName": {"type": "string", "description": "First name (for credit check flows)"},
+                        "LastName": {"type": "string", "description": "Last name (for credit check flows)"},
+                        "DateOfBirth": {"type": "string", "description": "Date of birth YYYY-MM-DD (for credit check flows)"},
+                        "session_id": {"type": "string", "description": "Session ID for state tracking"},
+                    },
+                    "additionalProperties": False,
+                },
+            ),
+            handler=_get_quick_quote_adaptive,
+            default_response_text="Processing adaptive quick quote.",
         )
     )
 
