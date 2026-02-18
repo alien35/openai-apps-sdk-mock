@@ -7,6 +7,7 @@ import mcp.types as types
 
 from .insurance_state_widget import INSURANCE_STATE_WIDGET_HTML
 from .insurance_rate_results_widget import INSURANCE_RATE_RESULTS_WIDGET_HTML
+from .quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
 from .constants import MIME_TYPE
 from .models import ToolHandler
 
@@ -50,6 +51,8 @@ INSURANCE_STATE_WIDGET_IDENTIFIER = "insurance-state-selector"
 INSURANCE_STATE_WIDGET_TEMPLATE_URI = "ui://widget/insurance-state.html"
 INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER = "insurance-rate-results"
 INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI = "ui://widget/insurance-rate-results.html"
+QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER = "quick-quote-results"
+QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI = "ui://widget/quick-quote-results.html"
 
 # Input schema for insurance state selector
 INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
@@ -93,6 +96,19 @@ ADDITIONAL_WIDGETS: Tuple[WidgetDefinition, ...] = (
             "Summarizes carrier premiums, payment plans, and shared coverages for a personal auto quote."
         ),
     ),
+    WidgetDefinition(
+        identifier=QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER,
+        title="Display quick quote estimate",
+        template_uri=QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI,
+        invoking="Generating quick quote estimate",
+        invoked="Displayed quick quote estimate",
+        html=QUICK_QUOTE_RESULTS_WIDGET_HTML,
+        response_text="Here's your quick quote estimate based on your location and driver count.",
+        input_schema=None,
+        tool_description=(
+            "Displays instant premium range estimates for auto insurance with visual cards showing best and worst case scenarios."
+        ),
+    ),
 )
 
 # All widgets
@@ -132,6 +148,20 @@ if INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
     msg = (
         "Personal auto rate results widget must expose the correct template URI; "
         f"expected '{INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI}' in widgets"
+    )
+    raise RuntimeError(msg)
+
+if QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER not in WIDGETS_BY_ID:
+    msg = (
+        "Quick quote results widget must be registered; "
+        f"expected identifier '{QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER}' in widgets"
+    )
+    raise RuntimeError(msg)
+
+if QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
+    msg = (
+        "Quick quote results widget must expose the correct template URI; "
+        f"expected '{QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI}' in widgets"
     )
     raise RuntimeError(msg)
 
@@ -238,6 +268,16 @@ def _register_personal_auto_intake_tools() -> None:
     from .constants import AIS_POLICY_COVERAGE_SUMMARY
 
     # Register quick quote tool (Initial step)
+    quick_quote_widget = WIDGETS_BY_ID[QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER]
+    quick_quote_meta = {
+        **_tool_meta(quick_quote_widget),
+        "openai/widgetAccessible": True,
+    }
+    quick_quote_default_meta = {
+        **quick_quote_meta,
+        "openai.com/widget": _embedded_widget_resource(quick_quote_widget).model_dump(mode="json"),
+    }
+
     register_tool(
         ToolRegistration(
             tool=types.Tool(
@@ -257,9 +297,11 @@ def _register_personal_auto_intake_tools() -> None:
                     "These are ESTIMATES only. After showing the range, collect detailed information to get actual carrier quotes."
                 ),
                 inputSchema=_model_schema(QuickQuoteIntake),
+                _meta=quick_quote_meta,
             ),
             handler=_get_quick_quote,
             default_response_text="Generated quick quote range estimate.",
+            default_meta=quick_quote_default_meta,
         )
     )
 
