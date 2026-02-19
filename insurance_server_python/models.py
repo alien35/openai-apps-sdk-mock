@@ -575,19 +575,19 @@ class AdditionalDriverInfo(BaseModel):
 
 
 class EnhancedQuickQuoteIntake(BaseModel):
-    """Enhanced quick quote with detailed information for better rate estimates."""
-    zip_code: str = Field(
-        ...,
-        alias="ZipCode",
-        description="5-digit zip code for the insurance quote"
-    )
-    primary_driver_age: int = Field(
-        ...,
-        alias="PrimaryDriverAge",
-        ge=16,
-        le=100,
-        description="Age of the primary driver (16-100)"
-    )
+    """Enhanced quick quote with grouped collection: vehicles first, then drivers.
+
+    FIRST - Vehicle Information:
+    - Vehicle 1: Year, Make, Model
+    - Vehicle 2 (optional): Year, Make, Model
+    - Coverage Type
+
+    THEN - Driver Information:
+    - Primary Driver: Age, Marital Status
+    - Additional Driver (optional): Age, Marital Status
+    - Zip Code
+    """
+    # BATCH 1: Vehicle Information
     vehicle_1: VehicleInfo = Field(
         ...,
         alias="Vehicle1",
@@ -603,10 +603,29 @@ class EnhancedQuickQuoteIntake(BaseModel):
         alias="CoverageType",
         description="Coverage type: 'liability' for liability-only or 'full_coverage' for liability + comprehensive/collision"
     )
+
+    # BATCH 2: Driver Information
+    primary_driver_age: int = Field(
+        ...,
+        alias="PrimaryDriverAge",
+        ge=16,
+        le=100,
+        description="Age of the primary driver (16-100)"
+    )
+    primary_driver_marital_status: Literal["single", "married", "divorced", "widowed"] = Field(
+        ...,
+        alias="PrimaryDriverMaritalStatus",
+        description="Marital status of the primary driver"
+    )
     additional_driver: Optional[AdditionalDriverInfo] = Field(
         default=None,
         alias="AdditionalDriver",
         description="Additional driver information (optional)"
+    )
+    zip_code: str = Field(
+        ...,
+        alias="ZipCode",
+        description="5-digit zip code for the insurance quote"
     )
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")

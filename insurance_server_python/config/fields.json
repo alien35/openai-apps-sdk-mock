@@ -118,6 +118,23 @@
       "group": "driver_info",
       "api_path": "PrimaryDriverAge"
     },
+    "PrimaryDriverMaritalStatus": {
+      "name": "PrimaryDriverMaritalStatus",
+      "alias": "PrimaryDriverMaritalStatus",
+      "field_type": "string",
+      "required": true,
+      "validation": {
+        "enum": ["single", "married", "divorced", "widowed"],
+        "error_message": "Marital status must be 'single', 'married', 'divorced', or 'widowed'"
+      },
+      "enum_values": ["single", "married", "divorced", "widowed"],
+      "prompt_text": "What's the primary driver's marital status?",
+      "help_text": "Marital status can affect insurance rates",
+      "example": "married",
+      "contexts": ["quick_quote"],
+      "group": "driver_info",
+      "api_path": "PrimaryDriverMaritalStatus"
+    },
     "Vehicle1Year": {
       "name": "Vehicle1Year",
       "alias": "Vehicle1Year",

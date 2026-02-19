@@ -149,11 +149,13 @@ def calculate_enhanced_quote_range(
     city: str,
     state: str,
     primary_driver_age: int,
+    primary_driver_marital_status: str,
     vehicle_1_year: int,
     coverage_type: str,
     num_drivers: int = 1,
     num_vehicles: int = 1,
     additional_driver_age: Optional[int] = None,
+    additional_driver_marital_status: Optional[str] = None,
 ) -> Tuple[int, int, int, int]:
     """Calculate enhanced quote range based on detailed driver and vehicle information.
 
@@ -162,11 +164,13 @@ def calculate_enhanced_quote_range(
         city: City name
         state: State name
         primary_driver_age: Age of primary driver
+        primary_driver_marital_status: Marital status of primary driver
         vehicle_1_year: Year of primary vehicle
         coverage_type: 'liability' or 'full_coverage'
         num_drivers: Number of drivers (1 or 2)
         num_vehicles: Number of vehicles (1 or 2)
         additional_driver_age: Age of additional driver if present
+        additional_driver_marital_status: Marital status of additional driver if present
 
     Returns:
         Tuple of (best_min, best_max, worst_min, worst_max) for 6-month premium
@@ -183,6 +187,13 @@ def calculate_enhanced_quote_range(
         age_factor = 1.2
     elif primary_driver_age >= 60:
         age_factor = 1.1
+
+    # Marital status factor (married drivers typically get lower rates)
+    marital_factor = 1.0
+    if primary_driver_marital_status == "married":
+        marital_factor = 0.9  # 10% discount for married
+    elif primary_driver_marital_status in ["divorced", "widowed"]:
+        marital_factor = 0.95  # 5% discount
 
     # Vehicle age factor (newer vehicles cost more to insure for full coverage)
     current_year = 2026
@@ -208,11 +219,15 @@ def calculate_enhanced_quote_range(
         else:
             driver_factor = 1.3
 
+        # Additional driver marital status bonus
+        if additional_driver_marital_status == "married":
+            driver_factor *= 0.95  # Small additional discount if both married
+
     # Additional vehicle factor
     vehicle_count_factor = 1.4 if num_vehicles > 1 else 1.0
 
     # Apply all factors
-    total_factor = age_factor * vehicle_factor * coverage_factor * driver_factor * vehicle_count_factor
+    total_factor = age_factor * marital_factor * vehicle_factor * coverage_factor * driver_factor * vehicle_count_factor
 
     # Calculate adjusted ranges
     best_min = int(base_best_min * total_factor * 0.8)  # Best case: 20% discount
