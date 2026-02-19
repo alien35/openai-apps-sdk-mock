@@ -474,7 +474,7 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
 
     payload = EnhancedQuickQuoteIntake.model_validate(arguments)
 
-    logger.info(f"Enhanced quick quote request: zip={payload.zip_code}, age={payload.primary_driver_age}, coverage={payload.coverage_type}")
+    logger.info(f"Enhanced quick quote request: zip={payload.zip_code}, age={payload.primary_driver_age}, marital={payload.primary_driver_marital_status}, coverage={payload.coverage_type}")
 
     # Look up city and state from zip code
     city_state = _lookup_city_state_from_zip(payload.zip_code)
@@ -496,24 +496,28 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
         city=city,
         state=state,
         primary_driver_age=payload.primary_driver_age,
+        primary_driver_marital_status=payload.primary_driver_marital_status,
         vehicle_1_year=payload.vehicle_1.year,
         coverage_type=payload.coverage_type,
         num_drivers=num_drivers,
         num_vehicles=num_vehicles,
         additional_driver_age=payload.additional_driver.age if payload.additional_driver else None,
+        additional_driver_marital_status=payload.additional_driver.marital_status if payload.additional_driver else None,
     )
 
     # Build message
     message = f"Based on your information:\n\n"
-    message += f"📍 Location: {city}, {state} {payload.zip_code}\n"
-    message += f"👤 Primary Driver: Age {payload.primary_driver_age}\n"
+    message += f"**VEHICLES:**\n"
     message += f"🚗 Vehicle 1: {payload.vehicle_1.year} {payload.vehicle_1.make} {payload.vehicle_1.model}\n"
     if payload.vehicle_2:
         message += f"🚗 Vehicle 2: {payload.vehicle_2.year} {payload.vehicle_2.make} {payload.vehicle_2.model}\n"
     message += f"🛡️ Coverage: {'Full Coverage (Liability + Comp/Coll)' if payload.coverage_type == 'full_coverage' else 'Liability Only'}\n"
+    message += f"\n**DRIVERS:**\n"
+    message += f"👤 Primary Driver: Age {payload.primary_driver_age}, {payload.primary_driver_marital_status.title()}\n"
     if payload.additional_driver:
         message += f"👥 Additional Driver: Age {payload.additional_driver.age}, {payload.additional_driver.marital_status.title()}\n"
-    message += f"\nHere's your estimated rate range based on this information:"
+    message += f"📍 Location: {city}, {state} {payload.zip_code}\n"
+    message += f"\n**Here's your estimated rate range:**"
 
     import mcp.types as types
     return {
@@ -524,6 +528,7 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
             "city": city,
             "state": state,
             "primary_driver_age": payload.primary_driver_age,
+            "primary_driver_marital_status": payload.primary_driver_marital_status,
             "coverage_type": payload.coverage_type,
             "vehicle_1": {
                 "year": payload.vehicle_1.year,

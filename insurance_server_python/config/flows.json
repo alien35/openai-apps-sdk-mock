@@ -130,11 +130,9 @@
       "flow_type": "enhanced_quick_quote",
       "stages": [
         {
-          "name": "initial",
+          "name": "vehicles_stage",
           "stage_type": "collection",
           "fields": [
-            "ZipCode",
-            "PrimaryDriverAge",
             "Vehicle1Year",
             "Vehicle1Make",
             "Vehicle1Model",
@@ -143,22 +141,36 @@
           "optional_fields": [
             "Vehicle2Year",
             "Vehicle2Make",
-            "Vehicle2Model",
+            "Vehicle2Model"
+          ],
+          "description": "FIRST: Collect vehicle details and coverage type",
+          "allow_corrections": true
+        },
+        {
+          "name": "drivers_stage",
+          "stage_type": "collection",
+          "fields": [
+            "PrimaryDriverAge",
+            "PrimaryDriverMaritalStatus",
+            "ZipCode"
+          ],
+          "optional_fields": [
             "AdditionalDriverAge",
             "AdditionalDriverMaritalStatus"
           ],
-          "description": "Detailed quote with driver age, vehicle details, and coverage type",
+          "description": "THEN: Collect driver information and location",
           "allow_corrections": true
         }
       ],
       "submission_criteria": {
         "required_fields": [
-          "ZipCode",
-          "PrimaryDriverAge",
           "Vehicle1Year",
           "Vehicle1Make",
           "Vehicle1Model",
-          "CoverageType"
+          "CoverageType",
+          "PrimaryDriverAge",
+          "PrimaryDriverMaritalStatus",
+          "ZipCode"
         ],
         "generate_enhanced_scenarios": true,
         "review_required": false
@@ -166,8 +178,8 @@
       "metadata": {
         "version": "1.0",
         "active": true,
-        "description": "Enhanced quick quote with detailed driver and vehicle information for more accurate rates",
-        "use_case": "Users ready to provide specific details for better rate estimates"
+        "description": "Enhanced quick quote with grouped collection: vehicles first, then drivers",
+        "use_case": "Organized information collection in logical groups for better UX"
       }
     }
   ]
