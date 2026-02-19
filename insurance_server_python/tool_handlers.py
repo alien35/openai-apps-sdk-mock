@@ -517,7 +517,43 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
     if payload.additional_driver:
         message += f"👥 Additional Driver: Age {payload.additional_driver.age}, {payload.additional_driver.marital_status.title()}\n"
     message += f"📍 Location: {city}, {state} {payload.zip_code}\n"
-    message += f"\n**Here's your estimated rate range:**"
+    message += f"\n**Here are your carrier quotes:**"
+
+    # Generate mock carrier quotes based on calculated ranges
+    # Use the best_min as the base for the lowest quote
+    base_annual = (best_min + best_max) // 2 * 2  # Convert 6-month to annual
+    carriers = [
+        {
+            "name": "Mercury Insurance",
+            "annual_cost": int(base_annual),
+            "monthly_cost": int(base_annual / 12),
+            "notes": "Strong digital tools & mobile app"
+        },
+        {
+            "name": "Aspire",
+            "annual_cost": int(base_annual * 1.05),
+            "monthly_cost": int((base_annual * 1.05) / 12),
+            "notes": "Savings for multiple cars"
+        },
+        {
+            "name": "Progressive",
+            "annual_cost": int(base_annual * 1.27),
+            "monthly_cost": int((base_annual * 1.27) / 12),
+            "notes": "Best balance of cost & claims"
+        },
+        {
+            "name": "Anchor General Insurance",
+            "annual_cost": int(base_annual * 1.31),
+            "monthly_cost": int((base_annual * 1.31) / 12),
+            "notes": "Solid coverage at a fair cost"
+        },
+        {
+            "name": "Orion Indemnity",
+            "annual_cost": int(base_annual * 1.37),
+            "monthly_cost": int((base_annual * 1.37) / 12),
+            "notes": "Budget-friendly option"
+        },
+    ]
 
     import mcp.types as types
     return {
@@ -544,6 +580,7 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
                 "age": payload.additional_driver.age,
                 "marital_status": payload.additional_driver.marital_status,
             } if payload.additional_driver else None,
+            "carriers": carriers,
             "best_case_range": {
                 "min": best_min,
                 "max": best_max,
