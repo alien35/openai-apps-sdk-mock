@@ -1050,12 +1050,16 @@ async def _start_wizard_flow(arguments: Mapping[str, Any]) -> ToolInvocationResu
     wizard_config = get_wizard_flow()
     fields_config = get_wizard_fields()
 
+    # Get server base URL from environment (for widgets to make API calls)
+    server_base_url = os.getenv("SERVER_BASE_URL", "http://localhost:8000")
+
     import mcp.types as types
     return {
         "structured_content": {
             "wizard_started": True,
             "wizard_config": wizard_config,
             "fields_config": fields_config,
+            "server_url": server_base_url,
             "pre_fill_data": {
                 "zipCode": zip_code,
                 "numberOfDrivers": num_drivers,

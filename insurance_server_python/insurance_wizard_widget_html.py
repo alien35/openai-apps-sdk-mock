@@ -252,9 +252,12 @@ INSURANCE_WIZARD_WIDGET_HTML = """<!DOCTYPE html>
                     // Fallback: fetch configuration from API
                     console.log('Fetching config from API');
 
-                    // Try multiple server URLs
+                    // Get server URL from structured content if available
+                    const serverBaseUrl = structuredContent.server_url || 'http://localhost:8000';
+
+                    // Try multiple server URLs (prioritize server_url from backend)
                     const serverUrls = [
-                        'http://localhost:8000/api/wizard-config',
+                        serverBaseUrl + '/api/wizard-config',
                         '/api/wizard-config',
                         window.location.origin + '/api/wizard-config'
                     ];
@@ -504,8 +507,10 @@ INSURANCE_WIZARD_WIDGET_HTML = """<!DOCTYPE html>
 
         async function submitWizard() {
             try {
-                // This would call the backend submission handler
-                // For now, just show a success message
+                // Get the zip code from form data
+                const zipCode = formData.zipCode || formData.zip_code || '';
+                const quoteUrl = `https://aisinsurance.com/?zip=${encodeURIComponent(zipCode)}`;
+
                 const content = document.querySelector('.wizard-content');
                 content.innerHTML = `
                     <div style="text-align: center; padding: 60px 20px;">
@@ -515,7 +520,10 @@ INSURANCE_WIZARD_WIDGET_HTML = """<!DOCTYPE html>
                             </svg>
                         </div>
                         <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">Application Submitted!</h2>
-                        <p style="color: #6b7280;">We're processing your insurance quote. You'll receive your detailed quote shortly.</p>
+                        <p style="color: #6b7280; margin-bottom: 24px;">We're processing your insurance quote. Continue to get your personalized quote.</p>
+                        <a href="${quoteUrl}" target="_blank" style="display: inline-block; padding: 12px 32px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 14px; transition: background 0.2s ease;">
+                            Continue to Personalized Quote
+                        </a>
                     </div>
                 `;
 
