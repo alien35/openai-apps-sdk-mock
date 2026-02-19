@@ -556,18 +556,19 @@ class QuickQuoteIntake(BaseModel):
 
 class VehicleInfo(BaseModel):
     """Vehicle information for enhanced quick quote."""
-    year: int = Field(..., ge=1900, le=2030, description="Vehicle year (1900-2030)")
-    make: str = Field(..., min_length=1, description="Vehicle make (e.g., Toyota, Honda)")
-    model: str = Field(..., min_length=1, description="Vehicle model (e.g., Camry, Accord)")
+    year: int = Field(..., alias="Year", ge=1900, le=2030, description="Vehicle year (1900-2030)")
+    make: str = Field(..., alias="Make", min_length=1, description="Vehicle make (e.g., Toyota, Honda)")
+    model: str = Field(..., alias="Model", min_length=1, description="Vehicle model (e.g., Camry, Accord)")
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
 
 class AdditionalDriverInfo(BaseModel):
     """Additional driver information for enhanced quick quote."""
-    age: int = Field(..., ge=16, le=100, description="Driver age (16-100)")
+    age: int = Field(..., alias="Age", ge=16, le=100, description="Driver age (16-100)")
     marital_status: Literal["single", "married", "divorced", "widowed"] = Field(
         ...,
+        alias="Marital Status",
         description="Marital status of the additional driver"
     )
 
@@ -590,41 +591,41 @@ class EnhancedQuickQuoteIntake(BaseModel):
     # BATCH 1: Vehicle Information
     vehicle_1: VehicleInfo = Field(
         ...,
-        alias="Vehicle1",
+        alias="Vehicle",
         description="Primary vehicle information (year, make, model)"
     )
     vehicle_2: Optional[VehicleInfo] = Field(
         default=None,
-        alias="Vehicle2",
+        alias="Second Vehicle",
         description="Second vehicle information (optional)"
     )
     coverage_type: Literal["liability", "full_coverage"] = Field(
         ...,
-        alias="CoverageType",
+        alias="Coverage",
         description="Coverage type: 'liability' for liability-only or 'full_coverage' for liability + comprehensive/collision"
     )
 
     # BATCH 2: Driver Information
     primary_driver_age: int = Field(
         ...,
-        alias="PrimaryDriverAge",
+        alias="Age",
         ge=16,
         le=100,
         description="Age of the primary driver (16-100)"
     )
     primary_driver_marital_status: Literal["single", "married", "divorced", "widowed"] = Field(
         ...,
-        alias="PrimaryDriverMaritalStatus",
+        alias="Marital Status",
         description="Marital status of the primary driver"
     )
     additional_driver: Optional[AdditionalDriverInfo] = Field(
         default=None,
-        alias="AdditionalDriver",
+        alias="Additional Driver",
         description="Additional driver information (optional)"
     )
     zip_code: str = Field(
         ...,
-        alias="ZipCode",
+        alias="Zip Code",
         description="5-digit zip code for the insurance quote"
     )
 

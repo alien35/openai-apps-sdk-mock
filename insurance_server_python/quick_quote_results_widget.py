@@ -84,12 +84,14 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
 
   .carrier-left {
     flex: 0 0 200px;
+    display: flex;
+    align-items: center;
   }
 
   .carrier-logo {
-    font-weight: 600;
-    font-size: 18px;
-    color: #333;
+    max-width: 100%;
+    height: auto;
+    max-height: 60px;
   }
 
   .carrier-right {
@@ -230,9 +232,10 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
       const left = document.createElement("div");
       left.className = "carrier-left";
 
-      const logo = document.createElement("div");
+      const logo = document.createElement("img");
       logo.className = "carrier-logo";
-      logo.textContent = carrier.name;
+      logo.src = carrier.logo || "";
+      logo.alt = carrier.name;
       left.appendChild(logo);
 
       // Right section - Costs and Notes

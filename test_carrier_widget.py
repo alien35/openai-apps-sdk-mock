@@ -14,17 +14,17 @@ async def test_carrier_widget():
     # Test case: Young driver, newer vehicle, full coverage in LA
     test_data = {
         # Vehicles
-        "Vehicle1": {
-            "year": 2022,
-            "make": "Honda",
-            "model": "Civic"
+        "Vehicle": {
+            "Year": 2022,
+            "Make": "Honda",
+            "Model": "Civic"
         },
-        "CoverageType": "full_coverage",
+        "Coverage": "full_coverage",
 
         # Drivers
-        "PrimaryDriverAge": 25,
-        "PrimaryDriverMaritalStatus": "single",
-        "ZipCode": "90210"  # Beverly Hills / LA area
+        "Age": 25,
+        "Marital Status": "married",
+        "Zip Code": "90210"  # Beverly Hills / LA area
     }
 
     result = await _get_enhanced_quick_quote(test_data)
@@ -65,12 +65,15 @@ async def test_carrier_widget():
 
     if 'carriers' in structured:
         print(f"\n✓ Carriers array present with {len(structured['carriers'])} carriers")
-        carrier_required = ['name', 'annual_cost', 'monthly_cost', 'notes']
+        carrier_required = ['name', 'logo', 'annual_cost', 'monthly_cost', 'notes']
         for i, carrier in enumerate(structured['carriers'], 1):
             print(f"\n  Carrier {i}: {carrier.get('name', 'MISSING NAME')}")
             for field in carrier_required:
                 status = "✓" if field in carrier else "✗"
-                print(f"    {status} {field}")
+                value = ""
+                if field == 'logo' and field in carrier:
+                    value = f" (length: {len(carrier[field])} chars)"
+                print(f"    {status} {field}{value}")
 
     print("\n" + "=" * 80)
     print("TEST COMPLETED")
