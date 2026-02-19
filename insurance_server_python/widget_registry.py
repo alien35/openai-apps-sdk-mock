@@ -280,6 +280,7 @@ def _register_personal_auto_intake_tools() -> None:
     """Register personal auto insurance intake tools."""
     from .tool_handlers import (
         _get_quick_quote,
+        _get_enhanced_quick_quote,
         _get_quick_quote_adaptive,
         _collect_personal_auto_customer,
         _collect_personal_auto_drivers,
@@ -291,6 +292,7 @@ def _register_personal_auto_intake_tools() -> None:
     )
     from .models import (
         QuickQuoteIntake,
+        EnhancedQuickQuoteIntake,
         CumulativeCustomerIntake,
         CumulativeDriverIntake,
         CumulativeVehicleIntake,
@@ -311,29 +313,62 @@ def _register_personal_auto_intake_tools() -> None:
         "openai.com/widget": _embedded_widget_resource(quick_quote_widget).model_dump(mode="json"),
     }
 
+    # Register ENHANCED quick quote tool (PRIMARY - with detailed driver/vehicle info)
+    register_tool(
+        ToolRegistration(
+            tool=types.Tool(
+                name="get-enhanced-quick-quote",
+                title="Get auto insurance quote with detailed information [PRIMARY]",
+                description=(
+                    "**PRIMARY TOOL FOR INSURANCE QUOTES** - Get an accurate auto insurance quote by collecting key information upfront: "
+                    "\n\n"
+                    "**Required Information:**\n"
+                    "• Zip code\n"
+                    "• Primary driver age\n"
+                    "• Vehicle details (year, make, model)\n"
+                    "• Coverage type (liability-only or full coverage with comp/collision)\n"
+                    "\n"
+                    "**Optional Information:**\n"
+                    "• Second vehicle details\n"
+                    "• Additional driver (age and marital status)\n"
+                    "\n"
+                    "Returns personalized rate estimates based on these specific factors. This is the RECOMMENDED TOOL for "
+                    "providing users with insurance quotes as it gives much more accurate rates than the basic quick quote. "
+                    "\n\n"
+                    "Use this tool by default when users ask for insurance quotes. Only use the basic quick quote if the user "
+                    "explicitly refuses to provide detailed information."
+                ),
+                inputSchema=_model_schema(EnhancedQuickQuoteIntake),
+                _meta=quick_quote_meta,
+            ),
+            handler=_get_enhanced_quick_quote,
+            default_response_text="Generated personalized quote range based on your specific details.",
+            default_meta=quick_quote_default_meta,
+        )
+    )
+
+    # Register BASIC quick quote tool (fallback - minimal info only)
     register_tool(
         ToolRegistration(
             tool=types.Tool(
                 name="get-quick-quote",
-                title="Get quick auto insurance quote range",
+                title="Get basic auto insurance range (fallback)",
                 description=(
-                    "Get an instant quote range estimate for auto insurance with just a zip code and number of drivers. "
-                    "Returns placeholder premium ranges based on typical rates in the area. "
-                    "Use this as the first step to give users an immediate sense of cost before collecting detailed information. "
+                    "**FALLBACK TOOL** - Get a very rough quote range with minimal information (just zip code and number of drivers). "
+                    "Returns broad placeholder premium ranges based only on location. "
                     "\n\n"
-                    "Best case range assumes: experienced drivers (35+ years old), clean driving records, reliable vehicles, "
-                    "homeowners with property insurance, and continuous insurance history. "
+                    "⚠️ **Use enhanced-quick-quote instead for better accuracy!** Only use this tool if:\n"
+                    "• User explicitly refuses to provide vehicle/driver details\n"
+                    "• User wants the absolute fastest estimate with zero details\n"
                     "\n\n"
-                    "Worst case range assumes: young drivers (18-25 years old), limited experience, newer/higher-value vehicles, "
-                    "renters without property insurance, and minimal insurance history. "
-                    "\n\n"
-                    "These are ESTIMATES only. After showing the range, collect detailed information to get actual carrier quotes."
+                    "The ranges are very wide and generic. After showing results, strongly encourage users to provide "
+                    "actual details for a more accurate quote using get-enhanced-quick-quote."
                 ),
                 inputSchema=_model_schema(QuickQuoteIntake),
                 _meta=quick_quote_meta,
             ),
             handler=_get_quick_quote,
-            default_response_text="Generated quick quote range estimate.",
+            default_response_text="Generated rough quote range estimate. Consider using enhanced quote for better accuracy.",
             default_meta=quick_quote_default_meta,
         )
     )

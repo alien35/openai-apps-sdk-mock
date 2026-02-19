@@ -462,6 +462,102 @@ async def _get_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocationResult
     }
 
 
+async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocationResult:
+    """Get an enhanced quick quote with detailed driver and vehicle information.
+
+    Returns more accurate rate estimates based on provided driver age, vehicle details,
+    coverage type, and optional additional driver information.
+    """
+    from .utils import _lookup_city_state_from_zip
+    from .quick_quote_ranges import calculate_enhanced_quote_range
+    from .models import EnhancedQuickQuoteIntake
+
+    payload = EnhancedQuickQuoteIntake.model_validate(arguments)
+
+    logger.info(f"Enhanced quick quote request: zip={payload.zip_code}, age={payload.primary_driver_age}, coverage={payload.coverage_type}")
+
+    # Look up city and state from zip code
+    city_state = _lookup_city_state_from_zip(payload.zip_code)
+    if not city_state:
+        return {
+            "response_text": f"Unable to find location information for zip code {payload.zip_code}. Please provide a valid US zip code.",
+        }
+
+    city, state = city_state
+    logger.info(f"Resolved location: {city}, {state}")
+
+    # Count drivers and vehicles
+    num_drivers = 2 if payload.additional_driver else 1
+    num_vehicles = 2 if payload.vehicle_2 else 1
+
+    # Calculate enhanced ranges based on provided details
+    best_min, best_max, worst_min, worst_max = calculate_enhanced_quote_range(
+        zip_code=payload.zip_code,
+        city=city,
+        state=state,
+        primary_driver_age=payload.primary_driver_age,
+        vehicle_1_year=payload.vehicle_1.year,
+        coverage_type=payload.coverage_type,
+        num_drivers=num_drivers,
+        num_vehicles=num_vehicles,
+        additional_driver_age=payload.additional_driver.age if payload.additional_driver else None,
+    )
+
+    # Build message
+    message = f"Based on your information:\n\n"
+    message += f"📍 Location: {city}, {state} {payload.zip_code}\n"
+    message += f"👤 Primary Driver: Age {payload.primary_driver_age}\n"
+    message += f"🚗 Vehicle 1: {payload.vehicle_1.year} {payload.vehicle_1.make} {payload.vehicle_1.model}\n"
+    if payload.vehicle_2:
+        message += f"🚗 Vehicle 2: {payload.vehicle_2.year} {payload.vehicle_2.make} {payload.vehicle_2.model}\n"
+    message += f"🛡️ Coverage: {'Full Coverage (Liability + Comp/Coll)' if payload.coverage_type == 'full_coverage' else 'Liability Only'}\n"
+    if payload.additional_driver:
+        message += f"👥 Additional Driver: Age {payload.additional_driver.age}, {payload.additional_driver.marital_status.title()}\n"
+    message += f"\nHere's your estimated rate range based on this information:"
+
+    import mcp.types as types
+    return {
+        "structured_content": {
+            "zip_code": payload.zip_code,
+            "number_of_drivers": num_drivers,
+            "number_of_vehicles": num_vehicles,
+            "city": city,
+            "state": state,
+            "primary_driver_age": payload.primary_driver_age,
+            "coverage_type": payload.coverage_type,
+            "vehicle_1": {
+                "year": payload.vehicle_1.year,
+                "make": payload.vehicle_1.make,
+                "model": payload.vehicle_1.model,
+            },
+            "vehicle_2": {
+                "year": payload.vehicle_2.year,
+                "make": payload.vehicle_2.make,
+                "model": payload.vehicle_2.model,
+            } if payload.vehicle_2 else None,
+            "additional_driver": {
+                "age": payload.additional_driver.age,
+                "marital_status": payload.additional_driver.marital_status,
+            } if payload.additional_driver else None,
+            "best_case_range": {
+                "min": best_min,
+                "max": best_max,
+                "per_month_min": int(best_min / 6),
+                "per_month_max": int(best_max / 6),
+            },
+            "worst_case_range": {
+                "min": worst_min,
+                "max": worst_max,
+                "per_month_min": int(worst_min / 6),
+                "per_month_max": int(worst_max / 6),
+            },
+            "stage": "enhanced_quick_quote_complete",
+            "is_placeholder": False,  # More accurate than basic quick quote
+        },
+        "content": [types.TextContent(type="text", text=message)],
+    }
+
+
 
 def _collect_personal_auto_customer(arguments: Mapping[str, Any]) -> ToolInvocationResult:
     """Collect and validate customer profile information."""

@@ -124,6 +124,51 @@
         "description": "Quick quote with mandatory review step",
         "use_case": "Higher accuracy, user verification"
       }
+    },
+    {
+      "name": "enhanced_quick_quote_v1",
+      "flow_type": "enhanced_quick_quote",
+      "stages": [
+        {
+          "name": "initial",
+          "stage_type": "collection",
+          "fields": [
+            "ZipCode",
+            "PrimaryDriverAge",
+            "Vehicle1Year",
+            "Vehicle1Make",
+            "Vehicle1Model",
+            "CoverageType"
+          ],
+          "optional_fields": [
+            "Vehicle2Year",
+            "Vehicle2Make",
+            "Vehicle2Model",
+            "AdditionalDriverAge",
+            "AdditionalDriverMaritalStatus"
+          ],
+          "description": "Detailed quote with driver age, vehicle details, and coverage type",
+          "allow_corrections": true
+        }
+      ],
+      "submission_criteria": {
+        "required_fields": [
+          "ZipCode",
+          "PrimaryDriverAge",
+          "Vehicle1Year",
+          "Vehicle1Make",
+          "Vehicle1Model",
+          "CoverageType"
+        ],
+        "generate_enhanced_scenarios": true,
+        "review_required": false
+      },
+      "metadata": {
+        "version": "1.0",
+        "active": true,
+        "description": "Enhanced quick quote with detailed driver and vehicle information for more accurate rates",
+        "use_case": "Users ready to provide specific details for better rate estimates"
+      }
     }
   ]
 }

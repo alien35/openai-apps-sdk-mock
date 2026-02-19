@@ -100,6 +100,172 @@
       "contexts": ["customer", "driver"],
       "group": "personal_info",
       "api_path": "Customer.DateOfBirth"
+    },
+    "PrimaryDriverAge": {
+      "name": "PrimaryDriverAge",
+      "alias": "PrimaryDriverAge",
+      "field_type": "integer",
+      "required": true,
+      "validation": {
+        "min": 16,
+        "max": 100,
+        "error_message": "Driver age must be between 16 and 100"
+      },
+      "prompt_text": "What's the primary driver's age?",
+      "help_text": "Age of the main driver on the policy",
+      "example": 35,
+      "contexts": ["quick_quote"],
+      "group": "driver_info",
+      "api_path": "PrimaryDriverAge"
+    },
+    "Vehicle1Year": {
+      "name": "Vehicle1Year",
+      "alias": "Vehicle1Year",
+      "field_type": "integer",
+      "required": true,
+      "validation": {
+        "min": 1900,
+        "max": 2030,
+        "error_message": "Vehicle year must be between 1900 and 2030"
+      },
+      "prompt_text": "What year is your primary vehicle?",
+      "help_text": "Model year of the vehicle",
+      "example": 2022,
+      "contexts": ["quick_quote"],
+      "group": "vehicle_info",
+      "api_path": "Vehicle1.Year"
+    },
+    "Vehicle1Make": {
+      "name": "Vehicle1Make",
+      "alias": "Vehicle1Make",
+      "field_type": "string",
+      "required": true,
+      "validation": {
+        "min_length": 1,
+        "error_message": "Vehicle make is required"
+      },
+      "prompt_text": "What's the make of your primary vehicle?",
+      "help_text": "Manufacturer (e.g., Toyota, Honda, Ford)",
+      "example": "Toyota",
+      "contexts": ["quick_quote"],
+      "group": "vehicle_info",
+      "api_path": "Vehicle1.Make"
+    },
+    "Vehicle1Model": {
+      "name": "Vehicle1Model",
+      "alias": "Vehicle1Model",
+      "field_type": "string",
+      "required": true,
+      "validation": {
+        "min_length": 1,
+        "error_message": "Vehicle model is required"
+      },
+      "prompt_text": "What's the model of your primary vehicle?",
+      "help_text": "Model name (e.g., Camry, Accord, F-150)",
+      "example": "Camry",
+      "contexts": ["quick_quote"],
+      "group": "vehicle_info",
+      "api_path": "Vehicle1.Model"
+    },
+    "Vehicle2Year": {
+      "name": "Vehicle2Year",
+      "alias": "Vehicle2Year",
+      "field_type": "integer",
+      "required": false,
+      "validation": {
+        "min": 1900,
+        "max": 2030,
+        "error_message": "Vehicle year must be between 1900 and 2030"
+      },
+      "prompt_text": "What year is your second vehicle? (optional)",
+      "help_text": "Model year of the second vehicle",
+      "example": 2020,
+      "contexts": ["quick_quote"],
+      "group": "vehicle_info",
+      "api_path": "Vehicle2.Year"
+    },
+    "Vehicle2Make": {
+      "name": "Vehicle2Make",
+      "alias": "Vehicle2Make",
+      "field_type": "string",
+      "required": false,
+      "validation": {
+        "min_length": 1,
+        "error_message": "Vehicle make is required if providing a second vehicle"
+      },
+      "prompt_text": "What's the make of your second vehicle? (optional)",
+      "help_text": "Manufacturer of second vehicle",
+      "example": "Honda",
+      "contexts": ["quick_quote"],
+      "group": "vehicle_info",
+      "api_path": "Vehicle2.Make"
+    },
+    "Vehicle2Model": {
+      "name": "Vehicle2Model",
+      "alias": "Vehicle2Model",
+      "field_type": "string",
+      "required": false,
+      "validation": {
+        "min_length": 1,
+        "error_message": "Vehicle model is required if providing a second vehicle"
+      },
+      "prompt_text": "What's the model of your second vehicle? (optional)",
+      "help_text": "Model name of second vehicle",
+      "example": "Accord",
+      "contexts": ["quick_quote"],
+      "group": "vehicle_info",
+      "api_path": "Vehicle2.Model"
+    },
+    "CoverageType": {
+      "name": "CoverageType",
+      "alias": "CoverageType",
+      "field_type": "string",
+      "required": true,
+      "validation": {
+        "enum": ["liability", "full_coverage"],
+        "error_message": "Coverage type must be 'liability' or 'full_coverage'"
+      },
+      "enum_values": ["liability", "full_coverage"],
+      "prompt_text": "What type of coverage do you need?",
+      "help_text": "Liability only or full coverage (liability + comprehensive/collision)",
+      "example": "full_coverage",
+      "contexts": ["quick_quote"],
+      "group": "coverage_info",
+      "api_path": "CoverageType"
+    },
+    "AdditionalDriverAge": {
+      "name": "AdditionalDriverAge",
+      "alias": "AdditionalDriverAge",
+      "field_type": "integer",
+      "required": false,
+      "validation": {
+        "min": 16,
+        "max": 100,
+        "error_message": "Driver age must be between 16 and 100"
+      },
+      "prompt_text": "What's the age of the additional driver? (optional)",
+      "help_text": "Age of second driver on the policy",
+      "example": 33,
+      "contexts": ["quick_quote"],
+      "group": "driver_info",
+      "api_path": "AdditionalDriver.Age"
+    },
+    "AdditionalDriverMaritalStatus": {
+      "name": "AdditionalDriverMaritalStatus",
+      "alias": "AdditionalDriverMaritalStatus",
+      "field_type": "string",
+      "required": false,
+      "validation": {
+        "enum": ["single", "married", "divorced", "widowed"],
+        "error_message": "Marital status must be 'single', 'married', 'divorced', or 'widowed'"
+      },
+      "enum_values": ["single", "married", "divorced", "widowed"],
+      "prompt_text": "What's the marital status of the additional driver? (optional)",
+      "help_text": "Marital status can affect insurance rates",
+      "example": "married",
+      "contexts": ["quick_quote"],
+      "group": "driver_info",
+      "api_path": "AdditionalDriver.MaritalStatus"
     }
   }
 }

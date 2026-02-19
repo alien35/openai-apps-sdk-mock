@@ -6,6 +6,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Literal,
     Mapping,
     Optional,
     Sequence,
@@ -546,6 +547,66 @@ class QuickQuoteIntake(BaseModel):
         ge=1,
         le=10,
         description="Number of drivers (1-10)"
+    )
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    _strip_zip = field_validator("zip_code", mode="before")(_strip_string)
+
+
+class VehicleInfo(BaseModel):
+    """Vehicle information for enhanced quick quote."""
+    year: int = Field(..., ge=1900, le=2030, description="Vehicle year (1900-2030)")
+    make: str = Field(..., min_length=1, description="Vehicle make (e.g., Toyota, Honda)")
+    model: str = Field(..., min_length=1, description="Vehicle model (e.g., Camry, Accord)")
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+
+class AdditionalDriverInfo(BaseModel):
+    """Additional driver information for enhanced quick quote."""
+    age: int = Field(..., ge=16, le=100, description="Driver age (16-100)")
+    marital_status: Literal["single", "married", "divorced", "widowed"] = Field(
+        ...,
+        description="Marital status of the additional driver"
+    )
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+
+class EnhancedQuickQuoteIntake(BaseModel):
+    """Enhanced quick quote with detailed information for better rate estimates."""
+    zip_code: str = Field(
+        ...,
+        alias="ZipCode",
+        description="5-digit zip code for the insurance quote"
+    )
+    primary_driver_age: int = Field(
+        ...,
+        alias="PrimaryDriverAge",
+        ge=16,
+        le=100,
+        description="Age of the primary driver (16-100)"
+    )
+    vehicle_1: VehicleInfo = Field(
+        ...,
+        alias="Vehicle1",
+        description="Primary vehicle information (year, make, model)"
+    )
+    vehicle_2: Optional[VehicleInfo] = Field(
+        default=None,
+        alias="Vehicle2",
+        description="Second vehicle information (optional)"
+    )
+    coverage_type: Literal["liability", "full_coverage"] = Field(
+        ...,
+        alias="CoverageType",
+        description="Coverage type: 'liability' for liability-only or 'full_coverage' for liability + comprehensive/collision"
+    )
+    additional_driver: Optional[AdditionalDriverInfo] = Field(
+        default=None,
+        alias="AdditionalDriver",
+        description="Additional driver information (optional)"
     )
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")

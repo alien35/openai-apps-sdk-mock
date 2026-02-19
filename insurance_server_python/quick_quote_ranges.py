@@ -144,6 +144,85 @@ def calculate_quote_range(
     return (best_min, best_max, worst_min, worst_max)
 
 
+def calculate_enhanced_quote_range(
+    zip_code: str,
+    city: str,
+    state: str,
+    primary_driver_age: int,
+    vehicle_1_year: int,
+    coverage_type: str,
+    num_drivers: int = 1,
+    num_vehicles: int = 1,
+    additional_driver_age: Optional[int] = None,
+) -> Tuple[int, int, int, int]:
+    """Calculate enhanced quote range based on detailed driver and vehicle information.
+
+    Args:
+        zip_code: 5-digit zip code
+        city: City name
+        state: State name
+        primary_driver_age: Age of primary driver
+        vehicle_1_year: Year of primary vehicle
+        coverage_type: 'liability' or 'full_coverage'
+        num_drivers: Number of drivers (1 or 2)
+        num_vehicles: Number of vehicles (1 or 2)
+        additional_driver_age: Age of additional driver if present
+
+    Returns:
+        Tuple of (best_min, best_max, worst_min, worst_max) for 6-month premium
+    """
+    # Start with base region ranges
+    region = get_region_from_zip(zip_code)
+    base_best_min, base_best_max, base_worst_min, base_worst_max = REGION_BASE_RANGES[region]
+
+    # Age factor (younger drivers = higher rates)
+    age_factor = 1.0
+    if primary_driver_age < 25:
+        age_factor = 1.8 if primary_driver_age < 20 else 1.5
+    elif primary_driver_age < 30:
+        age_factor = 1.2
+    elif primary_driver_age >= 60:
+        age_factor = 1.1
+
+    # Vehicle age factor (newer vehicles cost more to insure for full coverage)
+    current_year = 2026
+    vehicle_age = current_year - vehicle_1_year
+    vehicle_factor = 1.0
+    if coverage_type == "full_coverage":
+        if vehicle_age < 3:
+            vehicle_factor = 1.3  # Newer vehicles cost more for comp/coll
+        elif vehicle_age < 7:
+            vehicle_factor = 1.15
+    else:
+        # Liability only is cheaper
+        vehicle_factor = 0.7
+
+    # Coverage type factor
+    coverage_factor = 1.5 if coverage_type == "full_coverage" else 1.0
+
+    # Additional driver factor
+    driver_factor = 1.0
+    if num_drivers > 1 and additional_driver_age:
+        if additional_driver_age < 25:
+            driver_factor = 1.6 if additional_driver_age < 20 else 1.4
+        else:
+            driver_factor = 1.3
+
+    # Additional vehicle factor
+    vehicle_count_factor = 1.4 if num_vehicles > 1 else 1.0
+
+    # Apply all factors
+    total_factor = age_factor * vehicle_factor * coverage_factor * driver_factor * vehicle_count_factor
+
+    # Calculate adjusted ranges
+    best_min = int(base_best_min * total_factor * 0.8)  # Best case: 20% discount
+    best_max = int(base_best_max * total_factor * 0.9)  # Best case: 10% discount
+    worst_min = int(base_worst_min * total_factor * 1.1)  # Worst case: 10% surcharge
+    worst_max = int(base_worst_max * total_factor * 1.3)  # Worst case: 30% surcharge
+
+    return (best_min, best_max, worst_min, worst_max)
+
+
 def format_quote_range_message(
     zip_code: str,
     city: str,
