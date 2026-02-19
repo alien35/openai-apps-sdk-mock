@@ -540,10 +540,13 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
 
       widget.appendChild(disclaimer);
 
-      // CTA
-      const cta = document.createElement("button");
+      // CTA - Link to aisinsurance.com with zip code
+      const cta = document.createElement("a");
       cta.className = "quick-quote__cta";
-      cta.type = "button";
+      cta.href = `https://aisinsurance.com/?zip=${encodeURIComponent(zip_code)}`;
+      cta.target = "_blank";
+      cta.rel = "noopener noreferrer";
+      cta.style.textDecoration = "none";
 
       const ctaText = document.createElement("div");
       ctaText.className = "cta__text";
