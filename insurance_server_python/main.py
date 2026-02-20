@@ -192,7 +192,7 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
     meta = handler_payload.get("meta") or registration.default_meta
 
     # Log what we're sending for key tools
-    if req.params.name in ["request-personal-auto-rate", "retrieve-personal-auto-rate-results"]:
+    if req.params.name in ["request-personal-auto-rate", "retrieve-personal-auto-rate-results", "get-enhanced-quick-quote"]:
         logger.info("=== TOOL HANDLER SENDING RESPONSE FOR %s ===", req.params.name)
         logger.info("Content array length: %s", len(content))
         for idx, item in enumerate(content):
@@ -202,6 +202,17 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
             if hasattr(item, 'annotations') and item.annotations:
                 logger.info("Content[%s] annotations: %s", idx, item.annotations.model_dump(mode="json"))
         logger.info("Structured content keys: %s", list(structured_content.keys()))
+
+        # Log carriers if present
+        if "carriers" in structured_content:
+            carriers = structured_content["carriers"]
+            logger.info("!!! CARRIERS IN STRUCTURED_CONTENT: %s", len(carriers))
+            for i, carrier in enumerate(carriers):
+                logger.info("  Carrier %s: %s - $%s/year ($%s/month)",
+                           i+1, carrier.get('name'), carrier.get('annual_cost'), carrier.get('monthly_cost'))
+        else:
+            logger.warning("!!! NO CARRIERS IN STRUCTURED_CONTENT !!!")
+
         if "rate_results" in structured_content:
             rate_results = structured_content["rate_results"]
             logger.info("rate_results type: %s", type(rate_results))
