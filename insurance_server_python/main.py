@@ -399,6 +399,23 @@ async def get_quick_quote_carriers(request: Request):
         headers={"Access-Control-Allow-Origin": "*"}
     )
 
+
+@app.route("/assets/images/{filename}", methods=["GET"])
+async def serve_image(request: Request):
+    """Serve static images from assets/images directory."""
+    from starlette.responses import FileResponse
+
+    filename = request.path_params["filename"]
+    image_path = Path(__file__).parent / "assets" / "images" / filename
+
+    if not image_path.exists():
+        return JSONResponse({"error": "Image not found"}, status_code=404)
+
+    return FileResponse(
+        image_path,
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
+
 # Add CORS middleware
 try:
     from starlette.middleware.cors import CORSMiddleware

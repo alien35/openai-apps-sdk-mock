@@ -31,17 +31,14 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
   }
 
   .logo-mercury {
-    font-size: 18px;
-    font-weight: 700;
-    color: #c41e3a;
     display: flex;
     align-items: center;
     gap: 8px;
   }
 
-  .logo-mercury::before {
-    content: "▲";
-    font-size: 24px;
+  .logo-mercury img {
+    height: 40px;
+    width: auto;
   }
 
   .powered-by {
@@ -168,7 +165,9 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
 
 <div class="quote-container">
   <div class="header">
-    <div class="logo-mercury">MERCURY INSURANCE</div>
+    <div class="logo-mercury">
+      <img id="mercury-logo" src="" alt="Mercury Insurance">
+    </div>
     <div class="powered-by">Powered by AIS</div>
   </div>
 
@@ -253,9 +252,10 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
   if (typeof document === "undefined") return;
 
   const descriptionEl = document.getElementById("quote-description");
+  const mercuryLogoEl = document.getElementById("mercury-logo");
   if (!descriptionEl) return;
 
-  function updateDescription(data) {
+  function updateWidget(data) {
     if (!data) {
       console.log("Quick quote widget: No data for description");
       return;
@@ -265,22 +265,28 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     const state = data.state || "CA";
     const numDrivers = data.num_drivers || (data.additional_driver ? 2 : 1);
     const numVehicles = data.num_vehicles || (data.vehicle_2 ? 2 : 1);
+    const serverUrl = data.server_url || data.serverUrl || "";
 
     const driverText = numDrivers === 1 ? "a solo driver" : `${numDrivers} drivers`;
     const vehicleText = numVehicles === 1 ? "one vehicle" : `${numVehicles} vehicles`;
 
     descriptionEl.textContent = `Assuming you're in the ${city} area as ${driverText} and own ${vehicleText}, the estimates shown below are ranges you may see for insurance. However, final rates may differ.`;
+
+    // Set Mercury logo
+    if (mercuryLogoEl && serverUrl) {
+      mercuryLogoEl.src = `${serverUrl}/assets/images/mercury-logo.png`;
+    }
   }
 
   function hydrate(globals) {
-    console.log("Quick quote widget: Hydrating description");
+    console.log("Quick quote widget: Hydrating widget");
     if (!globals || typeof globals !== "object") return;
 
     const toolOutput = globals.toolOutput || globals.tool_output || globals.structuredContent || globals.structured_content;
     console.log("Quick quote widget: toolOutput", toolOutput);
 
     if (toolOutput) {
-      updateDescription(toolOutput);
+      updateWidget(toolOutput);
     }
   }
 
