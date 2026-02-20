@@ -359,6 +359,46 @@ async def get_wizard_config(request: Request):
             status_code=500
         )
 
+
+@app.route("/api/quick-quote-carriers", methods=["GET"])
+async def get_quick_quote_carriers(request: Request):
+    """Serve hard-coded carrier estimates for quick quote widget."""
+    from .carrier_logos import get_carrier_logo
+
+    carriers = [
+        {
+            "name": "Mercury Auto Insurance",
+            "logo": get_carrier_logo("Mercury Auto Insurance"),
+            "annual_cost": 3200,
+            "monthly_cost": 267,
+            "notes": "Strong digital tools & mobile app"
+        },
+        {
+            "name": "Progressive Insurance",
+            "logo": get_carrier_logo("Progressive Insurance"),
+            "annual_cost": 4064,
+            "monthly_cost": 339,
+            "notes": "Best balance of cost & claims service"
+        },
+        {
+            "name": "Orion",
+            "logo": get_carrier_logo("Orion"),
+            "annual_cost": 3360,
+            "monthly_cost": 280,
+            "notes": "Competitive rates for safe drivers"
+        },
+    ]
+
+    return JSONResponse(
+        {
+            "carriers": carriers,
+            "zip_code": "90210",
+            "city": "Beverly Hills",
+            "state": "CA"
+        },
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
+
 # Add CORS middleware
 try:
     from starlette.middleware.cors import CORSMiddleware
