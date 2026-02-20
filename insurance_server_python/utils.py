@@ -511,46 +511,113 @@ def validate_required_fields(data: Dict[str, Any], required_fields: list[str]) -
 
 
 def _lookup_city_state_from_zip(zip_code: str) -> Optional[tuple[str, str]]:
-    """Look up city and state from a zip code.
+    """Look up city and state from a zip code using Google Maps Geocoding API.
 
-    This is a simplified implementation using common California zip codes.
-    In production, this would use a comprehensive zip code database or API.
+    Uses GOOGLE_MAPS_API_KEY from environment variables. Falls back to
+    hard-coded values if API fails.
+
+    Args:
+        zip_code: 5-digit US zip code
 
     Returns:
         Tuple of (city, state) or None if zip code not found
     """
-    # Common California zip codes for demonstration
+    import httpx
+    import os
+    from urllib.parse import quote
+
+    api_key = os.getenv("GOOGLE_MAPS_API_KEY")
+
+    if not api_key:
+        logger.warning("GOOGLE_MAPS_API_KEY not set, using fallback zip code lookup")
+        return _lookup_city_state_from_zip_fallback(zip_code)
+
+    try:
+        # Call Google Geocoding API
+        url = f"https://maps.googleapis.com/maps/api/geocode/json"
+        params = {
+            "address": zip_code,
+            "key": api_key,
+            "components": "country:US"  # Restrict to US addresses
+        }
+
+        response = httpx.get(url, params=params, timeout=5.0)
+
+        if response.status_code != 200:
+            logger.warning(f"Google Geocoding API returned status {response.status_code}")
+            return _lookup_city_state_from_zip_fallback(zip_code)
+
+        data = response.json()
+
+        if data.get("status") != "OK" or not data.get("results"):
+            logger.warning(f"Google Geocoding API status: {data.get('status')} for zip {zip_code}")
+            return _lookup_city_state_from_zip_fallback(zip_code)
+
+        # Parse address components to extract city and state
+        address_components = data["results"][0].get("address_components", [])
+
+        city = None
+        state = None
+
+        for component in address_components:
+            types = component.get("types", [])
+
+            # Look for city (locality)
+            if "locality" in types:
+                city = component.get("long_name")
+
+            # Look for state (administrative_area_level_1)
+            if "administrative_area_level_1" in types:
+                state = component.get("long_name")
+
+        if city and state:
+            logger.info(f"Resolved zip {zip_code} to {city}, {state}")
+            return (city, state)
+        else:
+            logger.warning(f"Could not extract city/state from Google API for zip {zip_code}")
+            return _lookup_city_state_from_zip_fallback(zip_code)
+
+    except httpx.TimeoutException:
+        logger.warning(f"Google Geocoding API timeout for zip {zip_code}")
+        return _lookup_city_state_from_zip_fallback(zip_code)
+    except Exception as e:
+        logger.warning(f"Error looking up zip {zip_code}: {e}")
+        return _lookup_city_state_from_zip_fallback(zip_code)
+
+
+def _lookup_city_state_from_zip_fallback(zip_code: str) -> Optional[tuple[str, str]]:
+    """Fallback zip code lookup using hard-coded common zip codes.
+
+    Used when Google Maps API is unavailable or fails.
+    """
+    # Common zip codes for demonstration
     ZIP_TO_LOCATION = {
-        # Los Angeles area
+        # California - Los Angeles area
         "90001": ("Los Angeles", "California"),
-        "90002": ("Los Angeles", "California"),
         "90210": ("Beverly Hills", "California"),
-        "90211": ("Beverly Hills", "California"),
         "91101": ("Pasadena", "California"),
-        "91201": ("Glendale", "California"),
-
-        # San Francisco area
         "94102": ("San Francisco", "California"),
-        "94103": ("San Francisco", "California"),
-        "94104": ("San Francisco", "California"),
-        "94105": ("San Francisco", "California"),
-        "94110": ("San Francisco", "California"),
-        "94115": ("San Francisco", "California"),
-
-        # San Diego area
         "92101": ("San Diego", "California"),
-        "92102": ("San Diego", "California"),
-        "92103": ("San Diego", "California"),
 
-        # Sacramento area
-        "95814": ("Sacramento", "California"),
-        "95815": ("Sacramento", "California"),
-        "95816": ("Sacramento", "California"),
+        # Texas
+        "75201": ("Dallas", "Texas"),
+        "77001": ("Houston", "Texas"),
+        "78701": ("Austin", "Texas"),
+        "78201": ("San Antonio", "Texas"),
 
-        # San Jose area
-        "95110": ("San Jose", "California"),
-        "95111": ("San Jose", "California"),
-        "95112": ("San Jose", "California"),
+        # Florida
+        "33101": ("Miami", "Florida"),
+        "32801": ("Orlando", "Florida"),
+        "33601": ("Tampa", "Florida"),
+
+        # New York
+        "10001": ("New York", "New York"),
+        "10002": ("New York", "New York"),
+        "11201": ("Brooklyn", "New York"),
+
+        # Illinois
+        "60601": ("Chicago", "Illinois"),
+        "60602": ("Chicago", "Illinois"),
     }
 
     # Try exact lookup
@@ -558,11 +625,20 @@ def _lookup_city_state_from_zip(zip_code: str) -> Optional[tuple[str, str]]:
     if location:
         return location
 
-    # For any other zip code, try to determine state by prefix
-    if zip_code.startswith("9"):
-        # California zip codes are in the 90000-96999 range
-        return ("California City", "California")
+    # Guess state by zip code prefix (rough approximation)
+    # https://en.wikipedia.org/wiki/List_of_ZIP_Code_prefixes
+    prefix = zip_code[:3]
 
-    # For demo purposes, default to California
-    # In production, this would return None and prompt for manual entry
-    return ("California City", "California")
+    if prefix.startswith("9"):
+        return ("California City", "California")
+    elif prefix.startswith("7"):
+        return ("Texas City", "Texas")
+    elif prefix.startswith("3"):
+        return ("Florida City", "Florida")
+    elif prefix.startswith("1"):
+        return ("New York City", "New York")
+    elif prefix.startswith("6"):
+        return ("Illinois City", "Illinois")
+
+    # Default fallback
+    return None
