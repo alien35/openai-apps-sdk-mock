@@ -308,6 +308,24 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     }
   }
 
+  async function loadCarriers(serverUrl) {
+    try {
+      console.log("Quick quote widget: Fetching carriers from API");
+      const url = serverUrl ? `${serverUrl}/api/quick-quote-carriers` : '/api/quick-quote-carriers';
+      console.log("Quick quote widget: API URL:", url);
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch carriers: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log("Quick quote widget: Received data", data);
+      render(data);
+    } catch (error) {
+      console.error("Quick quote widget: Failed to load carriers", error);
+      root.textContent = "Failed to load quick quote data. Please try again.";
+    }
+  }
+
   function hydrate(globals) {
     console.log("Quick quote widget: Hydrating with globals", globals);
     if (!globals || typeof globals !== "object") {
@@ -316,11 +334,9 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     }
     const toolOutput = globals.toolOutput || globals.tool_output;
     console.log("Quick quote widget: toolOutput", toolOutput);
-    if (toolOutput) {
-      render(toolOutput);
-    } else {
-      console.warn("Quick quote widget: No toolOutput found in globals");
-    }
+    const serverUrl = toolOutput?.server_url || toolOutput?.serverUrl;
+    console.log("Quick quote widget: Server URL:", serverUrl);
+    loadCarriers(serverUrl);
   }
 
   // Initial hydration

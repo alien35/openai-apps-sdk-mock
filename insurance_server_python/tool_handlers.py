@@ -518,67 +518,24 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
     if payload.additional_driver:
         message += f"👥 Additional Driver: Age {payload.additional_driver.age}, {payload.additional_driver.marital_status.title()}\n"
     message += f"📍 Location: {city}, {state} {payload.zip_code}\n"
-    # Don't generate carrier quotes yet - let ChatGPT do it
-    # Message will be followed by model-only instructions
-    message += (
-        f"\n\n**Generating carrier quotes...**"
-    )
+    message += f"\n\nHere are your estimated insurance quotes:"
 
     import mcp.types as types
 
-    # Model-only instructions for ChatGPT to generate carrier estimates
-    model_instructions = f"""
-**CRITICAL: You must now call the 'submit-carrier-estimates' tool immediately with carrier estimates.**
+    # Get server base URL from environment
+    server_base_url = os.getenv("SERVER_BASE_URL", "http://localhost:8000")
 
-Profile data collected:
-- Location: {city}, {state} {payload.zip_code}
-- Driver: Age {payload.primary_driver_age}, {payload.primary_driver_marital_status}
-- Vehicle: {payload.vehicle_1.year} {payload.vehicle_1.make} {payload.vehicle_1.model}
-- Coverage: {payload.coverage_type}
-- Estimated annual range: ${(best_min * 2):,}-${(best_max * 2):,}
-- Estimated monthly range: ${int((best_min * 2)/12):,}-${int((best_max * 2)/12):,}
-
-**YOUR TASK:** Generate 3-5 carrier estimates and immediately call 'submit-carrier-estimates':
-
-Required carriers:
-1. Mercury Insurance (REQUIRED - must be first)
-
-Suggested additional carriers (choose 2-4):
-- Aspire
-- Progressive
-- Anchor General Insurance
-- Orion Indemnity
-- State Farm
-- Geico
-
-For each carrier, provide:
-- Carrier Name: (full name)
-- Annual Cost: (integer, vary between ${(best_min * 2):,} - ${(best_max * 2 + 1000):,})
-- Monthly Cost: (integer, annual/12)
-- Notes: (brief value prop, e.g., "Strong digital tools", "Multi-car discounts", "Name your price tool")
-
-**DO NOT show estimates as text. MUST call 'submit-carrier-estimates' tool immediately.**
-
-Example call structure:
-{{
-  "Zip Code": "{payload.zip_code}",
-  "Age": {payload.primary_driver_age},
-  "Carriers": [
-    {{"Carrier Name": "Mercury Insurance", "Annual Cost": 3200, "Monthly Cost": 267, "Notes": "Strong digital tools"}},
-    {{"Carrier Name": "Aspire", "Annual Cost": 3360, "Monthly Cost": 280, "Notes": "Multi-car savings"}},
-    ...
-  ]
-}}
-"""
-
-    # Don't render widget yet - just return text and instructions
-    # Widget will render on the second tool call (submit-carrier-estimates)
+    # Return the widget directly - it will fetch carriers from the API
     return {
-        "content": [
-            types.TextContent(type="text", text=message),
-            types.TextContent(type="text", text=model_instructions, annotations=types.Annotations(audience=["assistant"]))
-        ],
-        "meta": {},  # No widget metadata - prevents widget from rendering
+        "structured_content": {
+            "zip_code": payload.zip_code,
+            "city": city,
+            "state": state,
+            "primary_driver_age": payload.primary_driver_age,
+            "server_url": server_base_url,
+            "stage": "quick_quote_complete",
+        },
+        "content": [types.TextContent(type="text", text=message)],
     }
 
 
