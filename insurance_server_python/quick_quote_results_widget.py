@@ -172,8 +172,8 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     <div class="powered-by">Powered by AIS</div>
   </div>
 
-  <div class="description">
-    Assuming you're in the Los Angeles area as a solo driver and own one vehicle, the estimates shown below are ranges you may see for insurance. However, final rates may differ.
+  <div class="description" id="quote-description">
+    <!-- Description will be populated by JavaScript -->
   </div>
 
   <div class="carriers-table">
@@ -247,4 +247,53 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     </a>
   </div>
 </div>
+
+<script>
+(() => {
+  if (typeof document === "undefined") return;
+
+  const descriptionEl = document.getElementById("quote-description");
+  if (!descriptionEl) return;
+
+  function updateDescription(data) {
+    if (!data) {
+      console.log("Quick quote widget: No data for description");
+      return;
+    }
+
+    const city = data.city || "Los Angeles";
+    const state = data.state || "CA";
+    const numDrivers = data.num_drivers || (data.additional_driver ? 2 : 1);
+    const numVehicles = data.num_vehicles || (data.vehicle_2 ? 2 : 1);
+
+    const driverText = numDrivers === 1 ? "a solo driver" : `${numDrivers} drivers`;
+    const vehicleText = numVehicles === 1 ? "one vehicle" : `${numVehicles} vehicles`;
+
+    descriptionEl.textContent = `Assuming you're in the ${city} area as ${driverText} and own ${vehicleText}, the estimates shown below are ranges you may see for insurance. However, final rates may differ.`;
+  }
+
+  function hydrate(globals) {
+    console.log("Quick quote widget: Hydrating description");
+    if (!globals || typeof globals !== "object") return;
+
+    const toolOutput = globals.toolOutput || globals.tool_output || globals.structuredContent || globals.structured_content;
+    console.log("Quick quote widget: toolOutput", toolOutput);
+
+    if (toolOutput) {
+      updateDescription(toolOutput);
+    }
+  }
+
+  // Initial hydration
+  const initialGlobals = typeof window !== "undefined" && window.openai ? window.openai : {};
+  hydrate(initialGlobals);
+
+  // Listen for updates
+  window.addEventListener("openai:set_globals", (event) => {
+    const detail = event.detail;
+    if (!detail || !detail.globals) return;
+    hydrate(detail.globals);
+  });
+})();
+</script>
 """.strip()

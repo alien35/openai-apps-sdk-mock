@@ -491,6 +491,8 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
     num_drivers = 2 if payload.additional_driver else 1
     num_vehicles = 2 if payload.vehicle_2 else 1
 
+    logger.info(f"Enhanced quick quote: {num_drivers} drivers, {num_vehicles} vehicles in {city}, {state}")
+
     # Calculate enhanced ranges based on provided details
     best_min, best_max, worst_min, worst_max = calculate_enhanced_quote_range(
         zip_code=payload.zip_code,
@@ -507,18 +509,18 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
     )
 
     # Build message
-    message = f"Based on your information:\n\n"
-    message += f"**VEHICLES:**\n"
-    message += f"🚗 Vehicle 1: {payload.vehicle_1.year} {payload.vehicle_1.make} {payload.vehicle_1.model}\n"
+    message = f"Perfect! I've generated your insurance quote estimates.\n\n"
+    message += f"**Your Profile:**\n"
+    message += f"📍 Location: {city}, {state} {payload.zip_code}\n"
+    message += f"🚗 Vehicle: {payload.vehicle_1.year} {payload.vehicle_1.make} {payload.vehicle_1.model}\n"
     if payload.vehicle_2:
         message += f"🚗 Vehicle 2: {payload.vehicle_2.year} {payload.vehicle_2.make} {payload.vehicle_2.model}\n"
     message += f"🛡️ Coverage: {'Full Coverage (Liability + Comp/Coll)' if payload.coverage_type == 'full_coverage' else 'Liability Only'}\n"
-    message += f"\n**DRIVERS:**\n"
     message += f"👤 Primary Driver: Age {payload.primary_driver_age}, {payload.primary_driver_marital_status.title()}\n"
     if payload.additional_driver:
         message += f"👥 Additional Driver: Age {payload.additional_driver.age}, {payload.additional_driver.marital_status.title()}\n"
-    message += f"📍 Location: {city}, {state} {payload.zip_code}\n"
-    message += f"\n\nHere are your estimated insurance quotes:"
+    message += f"\n\n**Your estimated quotes from 3 carriers are displayed above.**\n\n"
+    message += f"These are estimates based on your information. Click 'Continue to Personalized Quote' to get a final rate."
 
     import mcp.types as types
     from .widget_registry import WIDGETS_BY_ID, QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER, _embedded_widget_resource, _tool_meta
@@ -541,6 +543,8 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
             "city": city,
             "state": state,
             "primary_driver_age": payload.primary_driver_age,
+            "num_drivers": num_drivers,
+            "num_vehicles": num_vehicles,
             "server_url": server_base_url,
             "stage": "quick_quote_complete",
         },
