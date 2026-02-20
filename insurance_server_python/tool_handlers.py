@@ -521,9 +521,18 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
     message += f"\n\nHere are your estimated insurance quotes:"
 
     import mcp.types as types
+    from .widget_registry import WIDGETS_BY_ID, QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER, _embedded_widget_resource, _tool_meta
 
     # Get server base URL from environment
     server_base_url = os.getenv("SERVER_BASE_URL", "http://localhost:8000")
+
+    # Get widget metadata
+    quick_quote_widget = WIDGETS_BY_ID[QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER]
+    widget_resource = _embedded_widget_resource(quick_quote_widget)
+    widget_meta = {
+        **_tool_meta(quick_quote_widget),
+        "openai.com/widget": widget_resource.model_dump(mode="json"),
+    }
 
     # Return the widget directly - it will fetch carriers from the API
     return {
@@ -536,6 +545,7 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
             "stage": "quick_quote_complete",
         },
         "content": [types.TextContent(type="text", text=message)],
+        "meta": widget_meta,
     }
 
 
