@@ -281,6 +281,7 @@ def _register_personal_auto_intake_tools() -> None:
     from .tool_handlers import (
         _get_quick_quote,
         _get_enhanced_quick_quote,
+        _submit_carrier_estimates,
         _get_quick_quote_adaptive,
         _collect_personal_auto_customer,
         _collect_personal_auto_drivers,
@@ -293,6 +294,7 @@ def _register_personal_auto_intake_tools() -> None:
     from .models import (
         QuickQuoteIntake,
         EnhancedQuickQuoteIntake,
+        CarrierEstimatesSubmission,
         CumulativeCustomerIntake,
         CumulativeDriverIntake,
         CumulativeVehicleIntake,
@@ -359,6 +361,56 @@ def _register_personal_auto_intake_tools() -> None:
             ),
             handler=_get_enhanced_quick_quote,
             default_response_text="Generated personalized quote range based on your specific details.",
+            default_meta=quick_quote_default_meta,
+        )
+    )
+
+    # Register carrier estimates submission tool (Step 2 of enhanced quote flow)
+    register_tool(
+        ToolRegistration(
+            tool=types.Tool(
+                name="submit-carrier-estimates",
+                title="Submit ChatGPT-generated carrier cost estimates",
+                description=(
+                    "**⚠️ REQUIRED: CALL THIS TOOL IMMEDIATELY AFTER 'get-enhanced-quick-quote'** "
+                    "\n\n"
+                    "This is STEP 2 of the enhanced quote flow. After 'get-enhanced-quick-quote' collects the user's profile, "
+                    "you will receive model-only instructions telling you to call THIS tool with carrier estimates. "
+                    "\n\n"
+                    "**DO NOT display estimates as text. MUST call this tool to show the widget.**"
+                    "\n\n"
+                    "**Your task:**\n"
+                    "1. Generate 3-5 realistic carrier estimates based on:\n"
+                    "   - User's location, age, vehicle, coverage type\n"
+                    "   - The provided rate range estimate\n"
+                    "   - Typical market positioning of carriers\n"
+                    "\n"
+                    "2. MUST include Mercury Insurance as one of the carriers\n"
+                    "\n"
+                    "3. Other carriers to consider: Aspire, Progressive, Anchor General Insurance, Orion Indemnity, State Farm, Geico, etc.\n"
+                    "\n"
+                    "4. For each carrier provide:\n"
+                    "   - Carrier Name\n"
+                    "   - Annual Cost (integer, in dollars)\n"
+                    "   - Monthly Cost (integer, annual/12)\n"
+                    "   - Notes (brief value proposition, e.g., 'Strong digital tools', 'Best for multiple cars')\n"
+                    "\n"
+                    "5. Vary the costs realistically - don't make them all the same\n"
+                    "\n"
+                    "6. Include the user's zip code and age from the profile\n"
+                    "\n"
+                    "**Example carrier estimates:**\n"
+                    "- Mercury Insurance: $3,200/year ($267/month) - 'Strong digital tools & mobile app'\n"
+                    "- Aspire: $3,360/year ($280/month) - 'Savings for multiple cars'\n"
+                    "- Progressive: $4,064/year ($339/month) - 'Best balance of cost & claims'\n"
+                    "\n"
+                    "After calling this tool, the user will see a widget with the carrier quotes displayed."
+                ),
+                inputSchema=_model_schema(CarrierEstimatesSubmission),
+                _meta=quick_quote_meta,
+            ),
+            handler=_submit_carrier_estimates,
+            default_response_text="Compiled carrier estimates for your profile.",
             default_meta=quick_quote_default_meta,
         )
     )
