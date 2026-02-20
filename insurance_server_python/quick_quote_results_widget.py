@@ -1,7 +1,6 @@
 """Quick quote results display widget markup for the Python MCP server - Carrier Table Format."""
 
 QUICK_QUOTE_RESULTS_WIDGET_HTML = """
-<div id="quick-quote-results-root"></div>
 <style>
   * {
     box-sizing: border-box;
@@ -167,193 +166,85 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
   }
 </style>
 
-<script>
-(() => {
-  if (typeof document === "undefined") return;
+<div class="quote-container">
+  <div class="header">
+    <div class="logo-mercury">MERCURY INSURANCE</div>
+    <div class="powered-by">Powered by AIS</div>
+  </div>
 
-  const root = document.getElementById("quick-quote-results-root");
-  if (!root) return;
+  <div class="description">
+    Assuming you're in the Los Angeles area as a solo driver and own one vehicle, the estimates shown below are ranges you may see for insurance. However, final rates may differ.
+  </div>
 
-  const currencyFormatter = new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  });
+  <div class="carriers-table">
+    <!-- Mercury Auto Insurance -->
+    <div class="carrier-row">
+      <div class="carrier-left">
+        <img class="carrier-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60'%3E%3Ctext x='10' y='40' font-family='Arial' font-size='24' font-weight='bold' fill='%23c41e3a'%3E%E2%96%B2 MERCURY%3C/text%3E%3C/svg%3E" alt="Mercury Auto Insurance">
+      </div>
+      <div class="carrier-right">
+        <div class="cost-column">
+          <div class="cost-label">Est. Annual Cost</div>
+          <div class="cost-value">$3,200</div>
+        </div>
+        <div class="cost-column">
+          <div class="cost-label">Est. Monthly Cost</div>
+          <div class="cost-value">$267</div>
+        </div>
+        <div class="notes-column">
+          <div class="notes-label">Notes</div>
+          <div class="notes-text">Strong digital tools & mobile app</div>
+        </div>
+      </div>
+    </div>
 
-  function formatCurrency(value) {
-    if (value === null || value === undefined) return "--";
-    try {
-      return currencyFormatter.format(value);
-    } catch {
-      return `$${value}`;
-    }
-  }
+    <!-- Progressive Insurance -->
+    <div class="carrier-row">
+      <div class="carrier-left">
+        <img class="carrier-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60'%3E%3Ctext x='10' y='40' font-family='Arial' font-size='20' font-weight='bold' fill='%230066b2'%3EPROGRESSIVE%3C/text%3E%3C/svg%3E" alt="Progressive Insurance">
+      </div>
+      <div class="carrier-right">
+        <div class="cost-column">
+          <div class="cost-label">Est. Annual Cost</div>
+          <div class="cost-value">$4,064</div>
+        </div>
+        <div class="cost-column">
+          <div class="cost-label">Est. Monthly Cost</div>
+          <div class="cost-value">$339</div>
+        </div>
+        <div class="notes-column">
+          <div class="notes-label">Notes</div>
+          <div class="notes-text">Best balance of cost & claims service</div>
+        </div>
+      </div>
+    </div>
 
-  function createWidget(data) {
-    if (!data) {
-      console.error("Quick quote widget: No data provided");
-      return null;
-    }
+    <!-- Orion -->
+    <div class="carrier-row">
+      <div class="carrier-left">
+        <img class="carrier-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60'%3E%3Ctext x='10' y='40' font-family='Arial' font-size='24' font-weight='bold' fill='%23004080'%3EORION%3C/text%3E%3C/svg%3E" alt="Orion">
+      </div>
+      <div class="carrier-right">
+        <div class="cost-column">
+          <div class="cost-label">Est. Annual Cost</div>
+          <div class="cost-value">$3,360</div>
+        </div>
+        <div class="cost-column">
+          <div class="cost-label">Est. Monthly Cost</div>
+          <div class="cost-value">$280</div>
+        </div>
+        <div class="notes-column">
+          <div class="notes-label">Notes</div>
+          <div class="notes-text">Competitive rates for safe drivers</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    const {
-      zip_code,
-      city,
-      state,
-      carriers = []
-    } = data;
-
-    const widget = document.createElement("div");
-    widget.className = "quote-container";
-
-    // Header
-    const header = document.createElement("div");
-    header.className = "header";
-    header.innerHTML = `
-      <div class="logo-mercury">MERCURY INSURANCE</div>
-      <div class="powered-by">Powered by AIS</div>
-    `;
-    widget.appendChild(header);
-
-    // Description
-    const description = document.createElement("div");
-    description.className = "description";
-    description.textContent = `Assuming you're in the ${city || 'Los Angeles'} area as a solo driver and own one vehicle, the estimates shown below are ranges you may see for insurance. However, final rates may differ.`;
-    widget.appendChild(description);
-
-    // Carriers Table
-    const table = document.createElement("div");
-    table.className = "carriers-table";
-
-    carriers.forEach(carrier => {
-      const row = document.createElement("div");
-      row.className = "carrier-row";
-
-      // Left section - Logo
-      const left = document.createElement("div");
-      left.className = "carrier-left";
-
-      const logo = document.createElement("img");
-      logo.className = "carrier-logo";
-      logo.src = carrier.logo || "";
-      logo.alt = carrier.name;
-      left.appendChild(logo);
-
-      // Right section - Costs and Notes
-      const right = document.createElement("div");
-      right.className = "carrier-right";
-
-      // Annual Cost
-      const annualCost = document.createElement("div");
-      annualCost.className = "cost-column";
-      annualCost.innerHTML = `
-        <div class="cost-label">Est. Annual Cost</div>
-        <div class="cost-value">${formatCurrency(carrier.annual_cost)}</div>
-      `;
-      right.appendChild(annualCost);
-
-      // Monthly Cost
-      const monthlyCost = document.createElement("div");
-      monthlyCost.className = "cost-column";
-      monthlyCost.innerHTML = `
-        <div class="cost-label">Est. Monthly Cost</div>
-        <div class="cost-value">${formatCurrency(carrier.monthly_cost)}</div>
-      `;
-      right.appendChild(monthlyCost);
-
-      // Notes
-      const notes = document.createElement("div");
-      notes.className = "notes-column";
-      notes.innerHTML = `
-        <div class="notes-label">Notes</div>
-        <div class="notes-text">${carrier.notes || ''}</div>
-      `;
-      right.appendChild(notes);
-
-      row.appendChild(left);
-      row.appendChild(right);
-      table.appendChild(row);
-    });
-
-    widget.appendChild(table);
-
-    // CTA Button
-    const ctaContainer = document.createElement("div");
-    ctaContainer.className = "cta-container";
-
-    const ctaButton = document.createElement("a");
-    ctaButton.className = "cta-button";
-    ctaButton.href = `https://aisinsurance.com/?zip=${encodeURIComponent(zip_code)}`;
-    ctaButton.target = "_blank";
-    ctaButton.rel = "noopener noreferrer";
-    ctaButton.textContent = "Continue to Personalized Quote";
-
-    ctaContainer.appendChild(ctaButton);
-    widget.appendChild(ctaContainer);
-
-    return widget;
-  }
-
-  function render(data) {
-    root.innerHTML = "";
-    if (!data) {
-      root.textContent = "No quick quote data available.";
-      return;
-    }
-
-    const widget = createWidget(data);
-    if (widget) {
-      root.appendChild(widget);
-    } else {
-      root.textContent = "Unable to display quick quote.";
-    }
-  }
-
-  async function loadCarriers(serverUrl) {
-    try {
-      console.log("Quick quote widget: Fetching carriers from API");
-      const url = serverUrl ? `${serverUrl}/api/quick-quote-carriers` : '/api/quick-quote-carriers';
-      console.log("Quick quote widget: API URL:", url);
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch carriers: ${response.status}`);
-      }
-      const data = await response.json();
-      console.log("Quick quote widget: Received data", data);
-      render(data);
-    } catch (error) {
-      console.error("Quick quote widget: Failed to load carriers", error);
-      root.textContent = "Failed to load quick quote data. Please try again.";
-    }
-  }
-
-  function hydrate(globals) {
-    console.log("Quick quote widget: Hydrating with globals", JSON.stringify(globals, null, 2));
-    if (!globals || typeof globals !== "object") {
-      console.warn("Quick quote widget: No valid globals object");
-      return;
-    }
-    const toolOutput = globals.toolOutput || globals.tool_output || globals.structuredContent || globals.structured_content;
-    console.log("Quick quote widget: toolOutput", JSON.stringify(toolOutput, null, 2));
-    const serverUrl = toolOutput?.server_url || toolOutput?.serverUrl;
-    console.log("Quick quote widget: Server URL:", serverUrl);
-    if (!serverUrl) {
-      console.error("Quick quote widget: No server URL found in toolOutput!");
-      console.error("Available keys in toolOutput:", Object.keys(toolOutput || {}));
-    }
-    loadCarriers(serverUrl);
-  }
-
-  // Initial hydration
-  const initialGlobals =
-    typeof window !== "undefined" && window.openai ? window.openai : {};
-  hydrate(initialGlobals);
-
-  // Listen for updates
-  window.addEventListener("openai:set_globals", (event) => {
-    const detail = event.detail;
-    if (!detail || !detail.globals) return;
-    hydrate(detail.globals);
-  });
-})();
-</script>
+  <div class="cta-container">
+    <a class="cta-button" href="https://aisinsurance.com/?zip=90210" target="_blank" rel="noopener noreferrer">
+      Continue to Personalized Quote
+    </a>
+  </div>
+</div>
 """.strip()
