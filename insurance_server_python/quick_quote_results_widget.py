@@ -179,7 +179,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     <!-- Mercury Auto Insurance -->
     <div class="carrier-row">
       <div class="carrier-left">
-        <img class="carrier-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60'%3E%3Ctext x='10' y='40' font-family='Arial' font-size='24' font-weight='bold' fill='%23c41e3a'%3E%E2%96%B2 MERCURY%3C/text%3E%3C/svg%3E" alt="Mercury Auto Insurance">
+        <img class="carrier-logo carrier-logo-mercury" src="" alt="Mercury Auto Insurance">
       </div>
       <div class="carrier-right">
         <div class="cost-column">
@@ -200,7 +200,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     <!-- Progressive Insurance -->
     <div class="carrier-row">
       <div class="carrier-left">
-        <img class="carrier-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60'%3E%3Ctext x='10' y='40' font-family='Arial' font-size='20' font-weight='bold' fill='%230066b2'%3EPROGRESSIVE%3C/text%3E%3C/svg%3E" alt="Progressive Insurance">
+        <img class="carrier-logo carrier-logo-progressive" src="" alt="Progressive Insurance">
       </div>
       <div class="carrier-right">
         <div class="cost-column">
@@ -221,7 +221,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     <!-- Orion -->
     <div class="carrier-row">
       <div class="carrier-left">
-        <img class="carrier-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60'%3E%3Ctext x='10' y='40' font-family='Arial' font-size='24' font-weight='bold' fill='%23004080'%3EORION%3C/text%3E%3C/svg%3E" alt="Orion">
+        <img class="carrier-logo carrier-logo-orion" src="" alt="Orion">
       </div>
       <div class="carrier-right">
         <div class="cost-column">
@@ -252,12 +252,16 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
   if (typeof document === "undefined") return;
 
   const descriptionEl = document.getElementById("quote-description");
-  const mercuryLogoEl = document.getElementById("mercury-logo");
+  const mercuryHeaderLogoEl = document.getElementById("mercury-logo");
+  const mercuryCarrierLogoEl = document.querySelector(".carrier-logo-mercury");
+  const progressiveLogoEl = document.querySelector(".carrier-logo-progressive");
+  const orionLogoEl = document.querySelector(".carrier-logo-orion");
+
   if (!descriptionEl) return;
 
   function updateWidget(data) {
     if (!data) {
-      console.log("Quick quote widget: No data for description");
+      console.log("Quick quote widget: No data for widget");
       return;
     }
 
@@ -267,14 +271,33 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     const numVehicles = data.num_vehicles || (data.vehicle_2 ? 2 : 1);
     const serverUrl = data.server_url || data.serverUrl || "";
 
+    console.log("Quick quote widget: Server URL:", serverUrl);
+
     const driverText = numDrivers === 1 ? "a solo driver" : `${numDrivers} drivers`;
     const vehicleText = numVehicles === 1 ? "one vehicle" : `${numVehicles} vehicles`;
 
     descriptionEl.textContent = `Assuming you're in the ${city} area as ${driverText} and own ${vehicleText}, the estimates shown below are ranges you may see for insurance. However, final rates may differ.`;
 
-    // Set Mercury logo
-    if (mercuryLogoEl && serverUrl) {
-      mercuryLogoEl.src = `${serverUrl}/assets/images/mercury-logo.png`;
+    // Set all logos if server URL is available
+    if (serverUrl) {
+      if (mercuryHeaderLogoEl) {
+        mercuryHeaderLogoEl.src = `${serverUrl}/assets/images/mercury-logo.png`;
+        console.log("Quick quote widget: Set Mercury header logo");
+      }
+      if (mercuryCarrierLogoEl) {
+        mercuryCarrierLogoEl.src = `${serverUrl}/assets/images/mercury-logo.png`;
+        console.log("Quick quote widget: Set Mercury carrier logo");
+      }
+      if (progressiveLogoEl) {
+        progressiveLogoEl.src = `${serverUrl}/assets/images/progressive.png`;
+        console.log("Quick quote widget: Set Progressive logo");
+      }
+      if (orionLogoEl) {
+        orionLogoEl.src = `${serverUrl}/assets/images/orion.png`;
+        console.log("Quick quote widget: Set Orion logo");
+      }
+    } else {
+      console.warn("Quick quote widget: No server URL available for logos");
     }
   }
 
