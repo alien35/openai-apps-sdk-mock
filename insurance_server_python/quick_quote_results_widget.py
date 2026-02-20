@@ -160,56 +160,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
   </div>
 
   <div class="carriers-table">
-    <!-- Mercury Auto Insurance -->
-    <div class="carrier-row">
-      <div class="carrier-left">
-        <img class="carrier-logo carrier-logo-mercury" src="" alt="Mercury Auto Insurance">
-      </div>
-      <div class="carrier-right">
-        <div class="cost-column">
-          <div class="cost-label">Est. Annual Cost</div>
-          <div class="cost-value">$3,200</div>
-        </div>
-        <div class="cost-column">
-          <div class="cost-label">Est. Monthly Cost</div>
-          <div class="cost-value">$267</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Progressive Insurance -->
-    <div class="carrier-row">
-      <div class="carrier-left">
-        <img class="carrier-logo carrier-logo-progressive" src="" alt="Progressive Insurance">
-      </div>
-      <div class="carrier-right">
-        <div class="cost-column">
-          <div class="cost-label">Est. Annual Cost</div>
-          <div class="cost-value">$4,064</div>
-        </div>
-        <div class="cost-column">
-          <div class="cost-label">Est. Monthly Cost</div>
-          <div class="cost-value">$339</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Orion -->
-    <div class="carrier-row">
-      <div class="carrier-left">
-        <img class="carrier-logo carrier-logo-orion" src="" alt="Orion">
-      </div>
-      <div class="carrier-right">
-        <div class="cost-column">
-          <div class="cost-label">Est. Annual Cost</div>
-          <div class="cost-value">$3,360</div>
-        </div>
-        <div class="cost-column">
-          <div class="cost-label">Est. Monthly Cost</div>
-          <div class="cost-value">$280</div>
-        </div>
-      </div>
-    </div>
+    <!-- Carriers will be populated by JavaScript -->
   </div>
 
   <div class="cta-container">
@@ -225,11 +176,30 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
 
   const descriptionEl = document.getElementById("quote-description");
   const mercuryHeaderLogoEl = document.getElementById("mercury-logo");
-  const mercuryCarrierLogoEl = document.querySelector(".carrier-logo-mercury");
-  const progressiveLogoEl = document.querySelector(".carrier-logo-progressive");
-  const orionLogoEl = document.querySelector(".carrier-logo-orion");
+  const carriersTableEl = document.querySelector(".carriers-table");
 
-  if (!descriptionEl) return;
+  if (!descriptionEl || !carriersTableEl) return;
+
+  function getLogoPath(carrierName, serverUrl) {
+    const name = carrierName.toLowerCase();
+    if (name.includes("mercury")) {
+      return `${serverUrl}/assets/images/mercury-logo.png`;
+    } else if (name.includes("progressive")) {
+      return `${serverUrl}/assets/images/progressive.png`;
+    } else if (name.includes("orion")) {
+      return `${serverUrl}/assets/images/orion.png`;
+    } else if (name.includes("state farm")) {
+      return `${serverUrl}/assets/images/statefarm.png`;
+    }
+    // Fallback
+    console.warn("Quick quote widget: No logo found for carrier:", carrierName);
+    return `${serverUrl}/assets/images/mercury-logo.png`;
+  }
+
+  function formatCurrency(value) {
+    if (!value) return "--";
+    return `$${value.toLocaleString()}`;
+  }
 
   function updateWidget(data) {
     if (!data) {
@@ -237,39 +207,78 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
       return;
     }
 
+    console.log("Quick quote widget: Received data:", data);
+
     const city = data.city || "Los Angeles";
     const state = data.state || "CA";
     const numDrivers = data.num_drivers || (data.additional_driver ? 2 : 1);
     const numVehicles = data.num_vehicles || (data.vehicle_2 ? 2 : 1);
     const serverUrl = data.server_url || data.serverUrl || "";
 
+    // Use provided carriers or fallback to defaults
+    let carriers = data.carriers || [];
+
+    // If no carriers provided, use hard-coded fallback (California defaults)
+    if (carriers.length === 0) {
+      console.warn("Quick quote widget: No carriers in data, using fallback");
+      carriers = [
+        { name: "Orion Indemnity", annual_cost: 3360, monthly_cost: 280 },
+        { name: "Mercury Auto Insurance", annual_cost: 3200, monthly_cost: 267 },
+        { name: "Progressive Insurance", annual_cost: 4064, monthly_cost: 339 }
+      ];
+    }
+
     console.log("Quick quote widget: Server URL:", serverUrl);
+    console.log("Quick quote widget: Carriers:", carriers);
+    console.log("Quick quote widget: City/State:", city, state);
+    console.log("Quick quote widget: Drivers/Vehicles:", numDrivers, numVehicles);
 
     const driverText = numDrivers === 1 ? "a solo driver" : `${numDrivers} drivers`;
     const vehicleText = numVehicles === 1 ? "one vehicle" : `${numVehicles} vehicles`;
 
     descriptionEl.textContent = `Assuming you're in the ${city} area as ${driverText} and own ${vehicleText}, the estimates shown below are ranges you may see for insurance. However, final rates may differ.`;
 
-    // Set all logos if server URL is available
-    if (serverUrl) {
-      if (mercuryHeaderLogoEl) {
-        mercuryHeaderLogoEl.src = `${serverUrl}/assets/images/mercury-logo.png`;
-        console.log("Quick quote widget: Set Mercury header logo");
-      }
-      if (mercuryCarrierLogoEl) {
-        mercuryCarrierLogoEl.src = `${serverUrl}/assets/images/mercury-logo.png`;
-        console.log("Quick quote widget: Set Mercury carrier logo");
-      }
-      if (progressiveLogoEl) {
-        progressiveLogoEl.src = `${serverUrl}/assets/images/progressive.png`;
-        console.log("Quick quote widget: Set Progressive logo");
-      }
-      if (orionLogoEl) {
-        orionLogoEl.src = `${serverUrl}/assets/images/orion.png`;
-        console.log("Quick quote widget: Set Orion logo");
+    // Set Mercury header logo
+    if (mercuryHeaderLogoEl && serverUrl) {
+      mercuryHeaderLogoEl.src = `${serverUrl}/assets/images/mercury-logo.png`;
+      console.log("Quick quote widget: Set Mercury header logo");
+    }
+
+    // Populate carriers table dynamically
+    if (carriers.length > 0) {
+      carriersTableEl.innerHTML = ""; // Clear existing content
+
+      carriers.forEach(carrier => {
+        const row = document.createElement("div");
+        row.className = "carrier-row";
+
+        const logoPath = serverUrl ? getLogoPath(carrier.name, serverUrl) : "";
+
+        row.innerHTML = `
+          <div class="carrier-left">
+            ${logoPath ? `<img class="carrier-logo" src="${logoPath}" alt="${carrier.name}">` : `<div style="font-weight: 600; font-size: 16px;">${carrier.name}</div>`}
+          </div>
+          <div class="carrier-right">
+            <div class="cost-column">
+              <div class="cost-label">Est. Annual Cost</div>
+              <div class="cost-value">${formatCurrency(carrier.annual_cost)}</div>
+            </div>
+            <div class="cost-column">
+              <div class="cost-label">Est. Monthly Cost</div>
+              <div class="cost-value">${formatCurrency(carrier.monthly_cost)}</div>
+            </div>
+          </div>
+        `;
+
+        carriersTableEl.appendChild(row);
+      });
+
+      console.log(`Quick quote widget: Populated ${carriers.length} carriers`);
+      if (!serverUrl) {
+        console.warn("Quick quote widget: No server URL, displaying carrier names as text");
       }
     } else {
-      console.warn("Quick quote widget: No server URL available for logos");
+      console.error("Quick quote widget: No carriers available to display!");
     }
   }
 
