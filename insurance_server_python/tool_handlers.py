@@ -524,9 +524,41 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
 
     import mcp.types as types
     from .widget_registry import WIDGETS_BY_ID, QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER, _embedded_widget_resource, _tool_meta
+    from .carrier_mapping import get_carriers_for_state
 
     # Get server base URL from environment
     server_base_url = os.getenv("SERVER_BASE_URL", "http://localhost:8000")
+
+    # Get state-specific carriers
+    carrier_names = get_carriers_for_state(state)
+    logger.info(f"Using carriers for {state}: {carrier_names}")
+
+    # Generate carrier estimates based on the quote ranges
+    # Use the calculated ranges to create realistic carrier estimates
+    carriers = []
+    base_annual = (best_min + best_max + worst_min + worst_max) // 4  # Average across scenarios
+
+    # Vary carrier prices by +/- 15% around the base
+    for i, carrier_name in enumerate(carrier_names):
+        if i == 0:
+            # First carrier: slightly below average
+            annual_cost = int(base_annual * 0.90)
+        elif i == 1:
+            # Second carrier: at average
+            annual_cost = base_annual
+        else:
+            # Third carrier: slightly above average
+            annual_cost = int(base_annual * 1.10)
+
+        monthly_cost = annual_cost // 12
+
+        carriers.append({
+            "name": carrier_name,
+            "annual_cost": annual_cost,
+            "monthly_cost": monthly_cost,
+        })
+
+    logger.info(f"Generated carrier estimates: {carriers}")
 
     # Get widget metadata
     quick_quote_widget = WIDGETS_BY_ID[QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER]
@@ -536,7 +568,7 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
         "openai.com/widget": widget_resource.model_dump(mode="json"),
     }
 
-    # Return the widget directly - it will fetch carriers from the API
+    # Return the widget with carrier data
     return {
         "structured_content": {
             "zip_code": payload.zip_code,
@@ -546,6 +578,7 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
             "num_drivers": num_drivers,
             "num_vehicles": num_vehicles,
             "server_url": server_base_url,
+            "carriers": carriers,
             "stage": "quick_quote_complete",
         },
         "content": [types.TextContent(type="text", text=message)],
