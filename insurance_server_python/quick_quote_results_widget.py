@@ -93,7 +93,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
   .carrier-right {
     flex: 1;
     display: grid;
-    grid-template-columns: 1fr 1fr 2fr;
+    grid-template-columns: 1fr 1fr;
     gap: 40px;
     align-items: center;
   }
@@ -113,22 +113,6 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     font-size: 28px;
     font-weight: 700;
     color: #2563eb;
-  }
-
-  .notes-column {
-    text-align: left;
-  }
-
-  .notes-label {
-    font-size: 12px;
-    color: #999;
-    margin-bottom: 4px;
-    font-weight: 500;
-  }
-
-  .notes-text {
-    font-size: 14px;
-    color: #333;
   }
 
   .cta-container {
@@ -190,10 +174,6 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
           <div class="cost-label">Est. Monthly Cost</div>
           <div class="cost-value">$267</div>
         </div>
-        <div class="notes-column">
-          <div class="notes-label">Notes</div>
-          <div class="notes-text">Strong digital tools & mobile app</div>
-        </div>
       </div>
     </div>
 
@@ -211,10 +191,6 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
           <div class="cost-label">Est. Monthly Cost</div>
           <div class="cost-value">$339</div>
         </div>
-        <div class="notes-column">
-          <div class="notes-label">Notes</div>
-          <div class="notes-text">Best balance of cost & claims service</div>
-        </div>
       </div>
     </div>
 
@@ -231,10 +207,6 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
         <div class="cost-column">
           <div class="cost-label">Est. Monthly Cost</div>
           <div class="cost-value">$280</div>
-        </div>
-        <div class="notes-column">
-          <div class="notes-label">Notes</div>
-          <div class="notes-text">Competitive rates for safe drivers</div>
         </div>
       </div>
     </div>
