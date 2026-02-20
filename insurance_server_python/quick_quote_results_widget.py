@@ -327,15 +327,19 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
   }
 
   function hydrate(globals) {
-    console.log("Quick quote widget: Hydrating with globals", globals);
+    console.log("Quick quote widget: Hydrating with globals", JSON.stringify(globals, null, 2));
     if (!globals || typeof globals !== "object") {
       console.warn("Quick quote widget: No valid globals object");
       return;
     }
-    const toolOutput = globals.toolOutput || globals.tool_output;
-    console.log("Quick quote widget: toolOutput", toolOutput);
+    const toolOutput = globals.toolOutput || globals.tool_output || globals.structuredContent || globals.structured_content;
+    console.log("Quick quote widget: toolOutput", JSON.stringify(toolOutput, null, 2));
     const serverUrl = toolOutput?.server_url || toolOutput?.serverUrl;
     console.log("Quick quote widget: Server URL:", serverUrl);
+    if (!serverUrl) {
+      console.error("Quick quote widget: No server URL found in toolOutput!");
+      console.error("Available keys in toolOutput:", Object.keys(toolOutput || {}));
+    }
     loadCarriers(serverUrl);
   }
 
