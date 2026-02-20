@@ -34,6 +34,7 @@ from .utils import (
     format_rate_results_summary,
     _lookup_city_state_from_zip,
 )
+from .carrier_logos import get_carrier_logo
 
 logger = logging.getLogger(__name__)
 
