@@ -362,39 +362,36 @@ async def get_wizard_config(request: Request):
 
 @app.route("/api/quick-quote-carriers", methods=["GET"])
 async def get_quick_quote_carriers(request: Request):
-    """Serve hard-coded carrier estimates for quick quote widget."""
+    """Serve carrier estimates for quick quote widget based on state."""
     from .carrier_logos import get_carrier_logo
+    from .carrier_mapping import get_carriers_for_state
 
-    carriers = [
-        {
-            "name": "Mercury Auto Insurance",
-            "logo": get_carrier_logo("Mercury Auto Insurance"),
-            "annual_cost": 3200,
-            "monthly_cost": 267,
-            "notes": "Strong digital tools & mobile app"
-        },
-        {
-            "name": "Progressive Insurance",
-            "logo": get_carrier_logo("Progressive Insurance"),
-            "annual_cost": 4064,
-            "monthly_cost": 339,
-            "notes": "Best balance of cost & claims service"
-        },
-        {
-            "name": "Orion",
-            "logo": get_carrier_logo("Orion"),
-            "annual_cost": 3360,
-            "monthly_cost": 280,
-            "notes": "Competitive rates for safe drivers"
-        },
-    ]
+    # Get state from query params (default to California)
+    state = request.query_params.get("state", "CA")
+
+    # Get state-specific carriers
+    carrier_names = get_carriers_for_state(state)
+
+    # Build carrier list with logos and sample pricing
+    carriers = []
+    base_prices = [3200, 3600, 4000]  # Sample pricing tiers
+
+    for i, carrier_name in enumerate(carrier_names):
+        annual_cost = base_prices[i] if i < len(base_prices) else 3500
+        carriers.append({
+            "name": carrier_name,
+            "logo": get_carrier_logo(carrier_name),
+            "annual_cost": annual_cost,
+            "monthly_cost": annual_cost // 12,
+            "notes": "Competitive rates and service"
+        })
 
     return JSONResponse(
         {
             "carriers": carriers,
-            "zip_code": "90210",
-            "city": "Beverly Hills",
-            "state": "CA"
+            "zip_code": request.query_params.get("zip_code", "90210"),
+            "city": request.query_params.get("city", "Beverly Hills"),
+            "state": state
         },
         headers={"Access-Control-Allow-Origin": "*"}
     )
