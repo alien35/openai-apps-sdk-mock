@@ -128,14 +128,21 @@ def get_carriers_for_state(state: str) -> List[str]:
     Returns:
         List of 3 carrier names in display order
     """
+    import logging
+    logger = logging.getLogger(__name__)
+
     # Normalize state to abbreviation
     state_abbr = normalize_state(state)
+    logger.info(f"get_carriers_for_state: input='{state}', normalized='{state_abbr}'")
 
     # Look up carriers by abbreviation
     if state_abbr and state_abbr in STATE_CARRIER_MAP:
-        return STATE_CARRIER_MAP[state_abbr]
+        carriers = STATE_CARRIER_MAP[state_abbr]
+        logger.info(f"Found carriers for {state_abbr}: {carriers}")
+        return carriers
 
     # Return default carriers if no match found
+    logger.warning(f"No carriers found for state '{state}' (abbr: {state_abbr}), using defaults: {DEFAULT_CARRIERS}")
     return DEFAULT_CARRIERS
 
 

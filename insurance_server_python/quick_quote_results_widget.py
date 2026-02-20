@@ -275,13 +275,28 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
 
   function hydrate(globals) {
     console.log("Quick quote widget: Hydrating widget");
-    if (!globals || typeof globals !== "object") return;
+    console.log("Quick quote widget: globals keys:", Object.keys(globals || {}));
+
+    if (!globals || typeof globals !== "object") {
+      console.warn("Quick quote widget: No valid globals object");
+      return;
+    }
 
     const toolOutput = globals.toolOutput || globals.tool_output || globals.structuredContent || globals.structured_content;
     console.log("Quick quote widget: toolOutput", toolOutput);
 
     if (toolOutput) {
+      if (toolOutput.carriers) {
+        console.log(`Quick quote widget: Found ${toolOutput.carriers.length} carriers in toolOutput`);
+        toolOutput.carriers.forEach((c, i) => {
+          console.log(`  Carrier ${i+1}: ${c.name} - $${c.annual_cost}/$${c.monthly_cost}`);
+        });
+      } else {
+        console.warn("Quick quote widget: NO CARRIERS in toolOutput!", toolOutput);
+      }
       updateWidget(toolOutput);
+    } else {
+      console.error("Quick quote widget: No toolOutput found. globals keys:", Object.keys(globals));
     }
   }
 

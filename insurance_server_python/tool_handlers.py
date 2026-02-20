@@ -530,8 +530,14 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
     server_base_url = os.getenv("SERVER_BASE_URL", "http://localhost:8000")
 
     # Get state-specific carriers
+    logger.info(f"=== CARRIER SELECTION DEBUG ===")
+    logger.info(f"Raw state from Google API: '{state}'")
+    from .carrier_mapping import normalize_state
+    normalized = normalize_state(state)
+    logger.info(f"Normalized state: '{normalized}'")
     carrier_names = get_carriers_for_state(state)
-    logger.info(f"Using carriers for {state}: {carrier_names}")
+    logger.info(f"Carriers for {state}: {carrier_names}")
+    logger.info(f"=== END CARRIER DEBUG ===")
 
     # Generate carrier estimates based on the quote ranges
     # Use the calculated ranges to create realistic carrier estimates
@@ -568,19 +574,29 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
         "openai.com/widget": widget_resource.model_dump(mode="json"),
     }
 
+    # Build structured content
+    structured_content = {
+        "zip_code": payload.zip_code,
+        "city": city,
+        "state": state,
+        "primary_driver_age": payload.primary_driver_age,
+        "num_drivers": num_drivers,
+        "num_vehicles": num_vehicles,
+        "server_url": server_base_url,
+        "carriers": carriers,
+        "stage": "quick_quote_complete",
+    }
+
+    logger.info(f"=== RETURNING STRUCTURED CONTENT ===")
+    logger.info(f"City: {city}, State: {state}")
+    logger.info(f"Number of carriers in response: {len(carriers)}")
+    for i, carrier in enumerate(carriers):
+        logger.info(f"  Carrier {i+1}: {carrier['name']} - ${carrier['annual_cost']}/year")
+    logger.info(f"=== END STRUCTURED CONTENT ===")
+
     # Return the widget with carrier data
     return {
-        "structured_content": {
-            "zip_code": payload.zip_code,
-            "city": city,
-            "state": state,
-            "primary_driver_age": payload.primary_driver_age,
-            "num_drivers": num_drivers,
-            "num_vehicles": num_vehicles,
-            "server_url": server_base_url,
-            "carriers": carriers,
-            "stage": "quick_quote_complete",
-        },
+        "structured_content": structured_content,
         "content": [types.TextContent(type="text", text=message)],
         "meta": widget_meta,
     }
