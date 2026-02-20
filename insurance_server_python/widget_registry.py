@@ -670,5 +670,5 @@ def _register_personal_auto_intake_tools() -> None:
 
 
 # Initialize the registry
-_register_default_tools()
+# _register_default_tools()  # DISABLED - insurance state selector form not used in simplified flow
 _register_personal_auto_intake_tools()
