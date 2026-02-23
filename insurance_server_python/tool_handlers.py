@@ -25,6 +25,7 @@ from .constants import (
     PERSONAL_AUTO_RATE_RESULTS_ENDPOINT,
     DEFAULT_CARRIER_INFORMATION,
 )
+from .carrier_logos import get_carrier_logo
 from .utils import (
     _extract_request_id,
     _sanitize_personal_auto_rate_request,
@@ -560,6 +561,7 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
 
         carriers.append({
             "name": carrier_name,
+            "logo": get_carrier_logo(carrier_name),
             "annual_cost": annual_cost,
             "monthly_cost": monthly_cost,
         })

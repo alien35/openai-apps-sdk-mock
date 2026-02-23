@@ -180,21 +180,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
 
   if (!descriptionEl || !carriersTableEl) return;
 
-  function getLogoPath(carrierName, serverUrl) {
-    const name = carrierName.toLowerCase();
-    if (name.includes("mercury")) {
-      return `${serverUrl}/assets/images/mercury-logo.png`;
-    } else if (name.includes("progressive")) {
-      return `${serverUrl}/assets/images/progressive.png`;
-    } else if (name.includes("orion")) {
-      return `${serverUrl}/assets/images/orion.png`;
-    } else if (name.includes("state farm")) {
-      return `${serverUrl}/assets/images/statefarm.png`;
-    }
-    // Fallback
-    console.warn("Quick quote widget: No logo found for carrier:", carrierName);
-    return `${serverUrl}/assets/images/mercury-logo.png`;
-  }
+  // Logo handling moved to backend - logos are now passed as base64 data URIs in carrier.logo field
 
   function formatCurrency(value) {
     if (!value) return "--";
@@ -213,7 +199,6 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     const state = data.state || "CA";
     const numDrivers = data.num_drivers || (data.additional_driver ? 2 : 1);
     const numVehicles = data.num_vehicles || (data.vehicle_2 ? 2 : 1);
-    const serverUrl = data.server_url || data.serverUrl || "";
 
     // Use provided carriers or fallback to defaults
     let carriers = data.carriers || [];
@@ -228,7 +213,6 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
       ];
     }
 
-    console.log("Quick quote widget: Server URL:", serverUrl);
     console.log("Quick quote widget: Carriers:", carriers);
     console.log("Quick quote widget: City/State:", city, state);
     console.log("Quick quote widget: Drivers/Vehicles:", numDrivers, numVehicles);
@@ -238,11 +222,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
 
     descriptionEl.textContent = `Assuming you're in the ${city} area as ${driverText} and own ${vehicleText}, the estimates shown below are ranges you may see for insurance. However, final rates may differ.`;
 
-    // Set Mercury header logo
-    if (mercuryHeaderLogoEl && serverUrl) {
-      mercuryHeaderLogoEl.src = `${serverUrl}/assets/images/mercury-logo.png`;
-      console.log("Quick quote widget: Set Mercury header logo");
-    }
+    // Mercury header logo is now embedded in HTML as base64 - no dynamic setting needed
 
     // Populate carriers table dynamically
     if (carriers.length > 0) {
@@ -252,11 +232,12 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
         const row = document.createElement("div");
         row.className = "carrier-row";
 
-        const logoPath = serverUrl ? getLogoPath(carrier.name, serverUrl) : "";
+        // Use logo from backend (base64 data URI)
+        const logoSrc = carrier.logo || "";
 
         row.innerHTML = `
           <div class="carrier-left">
-            ${logoPath ? `<img class="carrier-logo" src="${logoPath}" alt="${carrier.name}">` : `<div style="font-weight: 600; font-size: 16px;">${carrier.name}</div>`}
+            ${logoSrc ? `<img class="carrier-logo" src="${logoSrc}" alt="${carrier.name}">` : `<div style="font-weight: 600; font-size: 16px;">${carrier.name}</div>`}
           </div>
           <div class="carrier-right">
             <div class="cost-column">
@@ -274,9 +255,6 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
       });
 
       console.log(`Quick quote widget: Populated ${carriers.length} carriers`);
-      if (!serverUrl) {
-        console.warn("Quick quote widget: No server URL, displaying carrier names as text");
-      }
     } else {
       console.error("Quick quote widget: No carriers available to display!");
     }
