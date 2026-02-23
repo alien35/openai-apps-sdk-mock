@@ -211,10 +211,9 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
 
   .phone-call-section {
     display: none;
-    text-align: center;
-    padding: 60px 40px;
-    background: #f9fafb;
-    border-radius: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
     margin-bottom: 32px;
   }
 
@@ -222,31 +221,45 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     display: block;
   }
 
+  .phone-call-content {
+    text-align: center;
+    padding: 48px 40px;
+    background: white;
+  }
+
   .phone-call-icon {
-    font-size: 64px;
-    margin-bottom: 24px;
+    font-size: 48px;
+    margin-bottom: 20px;
+    opacity: 0.9;
   }
 
   .phone-call-title {
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 700;
     color: #1f2937;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
 
   .phone-call-text {
-    font-size: 16px;
-    color: #4b5563;
-    line-height: 1.8;
-    max-width: 600px;
-    margin: 0 auto 32px;
+    font-size: 15px;
+    color: #666;
+    line-height: 1.7;
+    max-width: 560px;
+    margin: 0 auto 28px;
   }
 
   .phone-number {
-    font-size: 32px;
+    font-size: 28px;
     font-weight: 700;
     color: #2563eb;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
+    letter-spacing: 0.5px;
+  }
+
+  .phone-hours {
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.6;
   }
 
   @media (max-width: 768px) {
@@ -318,15 +331,17 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     </div>
 
     <div class="phone-call-section" id="phone-call-section">
-      <div class="phone-call-icon">📞</div>
-      <div class="phone-call-title">Call for Your Quote</div>
-      <div class="phone-call-text">
-        Due to state-specific regulations and insurance requirements, we're unable to provide online quotes for your state at this time. Please call our licensed insurance agents who can help you find the best coverage options.
-      </div>
-      <div class="phone-number">(888) 772-4247</div>
-      <div style="font-size: 14px; color: #6b7280;">
-        Monday - Friday: 8am - 8pm ET<br>
-        Saturday: 9am - 5pm ET
+      <div class="phone-call-content">
+        <div class="phone-call-icon">📞</div>
+        <div class="phone-call-title">Speak with a Licensed Agent</div>
+        <div class="phone-call-text" id="phone-call-text">
+          To get your personalized quote, please call us. Our licensed insurance agents specialize in your area and can help you find the best coverage options and competitive rates.
+        </div>
+        <div class="phone-number">(888) 772-4247</div>
+        <div class="phone-hours">
+          Monday - Friday: 8am - 8pm ET<br>
+          Saturday: 9am - 5pm ET
+        </div>
       </div>
     </div>
 
@@ -336,7 +351,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
       </a>
     </div>
 
-    <div class="disclaimer" style="margin-top: 32px; padding: 16px; background: #f9fafb; border-left: 3px solid #2563eb; font-size: 12px; color: #666; line-height: 1.6;">
+    <div class="disclaimer" id="disclaimer" style="margin-top: 32px; padding: 16px; background: #f9fafb; border-left: 3px solid #2563eb; font-size: 12px; color: #666; line-height: 1.6;">
       <strong style="color: #333;">Important:</strong> These are estimated price ranges based on limited information and industry averages. Actual quotes from carriers may differ significantly based on your complete driving history (accidents, violations), credit score (where permitted), exact coverage selections and deductibles, discounts you may qualify for (bundling, safety features, etc.), and carrier-specific underwriting criteria. To get an accurate quote, you'll need to contact carriers directly or complete a full application.
     </div>
   </div>
@@ -353,6 +368,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
   const carriersTableEl = document.getElementById("carriers-table-content");
   const phoneCallSectionEl = document.getElementById("phone-call-section");
   const ctaButtonEl = document.getElementById("cta-button");
+  const disclaimerEl = document.getElementById("disclaimer");
 
   if (!descriptionEl || !carriersTableEl || !loadingSkeletonEl || !contentLoadedEl || !phoneCallSectionEl || !ctaButtonEl) return;
 
@@ -423,9 +439,16 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     if (isPhoneOnlyState) {
       console.log(`Quick quote widget: ${state} is a phone-only state - showing call prompt`);
 
-      // Hide carrier table and description
+      // Hide carrier table, regular description, and disclaimer
       carriersTableEl.style.display = "none";
       descriptionEl.style.display = "none";
+      if (disclaimerEl) disclaimerEl.style.display = "none";
+
+      // Personalize phone call text with city/state
+      const phoneCallTextEl = document.getElementById("phone-call-text");
+      if (phoneCallTextEl) {
+        phoneCallTextEl.textContent = `We're ready to help you get the best insurance rates in the ${city} area. Our licensed agents specialize in ${state} insurance and can provide personalized quotes and answer any questions you have.`;
+      }
 
       // Show phone call section
       phoneCallSectionEl.classList.add("visible");
@@ -433,12 +456,13 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
       // Update CTA button to call
       ctaButtonEl.href = "tel:+18887724247";
       ctaButtonEl.textContent = "Call Now";
-      ctaButtonEl.style.background = "#10b981"; // Green for call action
+      ctaButtonEl.style.background = "#e67e50"; // Keep brand orange color
 
     } else {
       // Normal flow - show carrier table
       carriersTableEl.style.display = "";
       descriptionEl.style.display = "";
+      if (disclaimerEl) disclaimerEl.style.display = "";
       phoneCallSectionEl.classList.remove("visible");
 
       // Reset CTA button to normal
