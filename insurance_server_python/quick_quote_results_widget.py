@@ -209,6 +209,46 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     display: block;
   }
 
+  .phone-call-section {
+    display: none;
+    text-align: center;
+    padding: 60px 40px;
+    background: #f9fafb;
+    border-radius: 8px;
+    margin-bottom: 32px;
+  }
+
+  .phone-call-section.visible {
+    display: block;
+  }
+
+  .phone-call-icon {
+    font-size: 64px;
+    margin-bottom: 24px;
+  }
+
+  .phone-call-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 16px;
+  }
+
+  .phone-call-text {
+    font-size: 16px;
+    color: #4b5563;
+    line-height: 1.8;
+    max-width: 600px;
+    margin: 0 auto 32px;
+  }
+
+  .phone-number {
+    font-size: 32px;
+    font-weight: 700;
+    color: #2563eb;
+    margin-bottom: 24px;
+  }
+
   @media (max-width: 768px) {
     .carrier-row {
       grid-template-columns: 1fr;
@@ -277,8 +317,21 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
       <!-- Carriers will be populated by JavaScript -->
     </div>
 
+    <div class="phone-call-section" id="phone-call-section">
+      <div class="phone-call-icon">📞</div>
+      <div class="phone-call-title">Call for Your Quote</div>
+      <div class="phone-call-text">
+        Due to state-specific regulations and insurance requirements, we're unable to provide online quotes for your state at this time. Please call our licensed insurance agents who can help you find the best coverage options.
+      </div>
+      <div class="phone-number">(888) 772-4247</div>
+      <div style="font-size: 14px; color: #6b7280;">
+        Monday - Friday: 8am - 8pm ET<br>
+        Saturday: 9am - 5pm ET
+      </div>
+    </div>
+
     <div class="cta-container">
-      <a class="cta-button" href="https://aisinsurance.com/?zip=90210" target="_blank" rel="noopener noreferrer">
+      <a class="cta-button" id="cta-button" href="https://aisinsurance.com/?zip=90210" target="_blank" rel="noopener noreferrer">
         Continue to Personalized Quote
       </a>
     </div>
@@ -298,8 +351,10 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
   const descriptionEl = document.getElementById("quote-description");
   const mercuryHeaderLogoEl = document.getElementById("mercury-logo");
   const carriersTableEl = document.getElementById("carriers-table-content");
+  const phoneCallSectionEl = document.getElementById("phone-call-section");
+  const ctaButtonEl = document.getElementById("cta-button");
 
-  if (!descriptionEl || !carriersTableEl || !loadingSkeletonEl || !contentLoadedEl) return;
+  if (!descriptionEl || !carriersTableEl || !loadingSkeletonEl || !contentLoadedEl || !phoneCallSectionEl || !ctaButtonEl) return;
 
   // Logo handling moved to backend - logos are now passed as base64 data URIs in carrier.logo field
 
@@ -321,17 +376,32 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     const numDrivers = data.num_drivers || (data.additional_driver ? 2 : 1);
     const numVehicles = data.num_vehicles || (data.vehicle_2 ? 2 : 1);
 
-    // Use provided carriers or fallback to defaults
-    let carriers = data.carriers || [];
+    // Check if this is a phone-only state (AK, HI, MA)
+    // IMPORTANT: Check this FIRST before processing carriers
+    // Note: State can be abbreviation ("MA") OR full name ("Massachusetts")
+    const phoneOnlyStates = ["AK", "HI", "MA", "Alaska", "Hawaii", "Massachusetts"];
+    const isPhoneOnlyState = phoneOnlyStates.includes(state);
 
-    // If no carriers provided, use hard-coded fallback (defaults)
-    if (carriers.length === 0) {
-      console.warn("Quick quote widget: No carriers in data, using fallback");
-      carriers = [
-        { name: "Geico", annual_cost: 3100, monthly_cost: 258 },
-        { name: "Progressive Insurance", annual_cost: 3600, monthly_cost: 300 },
-        { name: "Safeco Insurance", annual_cost: 3800, monthly_cost: 317 }
-      ];
+    // For phone-only states, ALWAYS force empty carriers (ignore backend data)
+    // This provides defense-in-depth: even if backend mistakenly sends carriers,
+    // we'll show the call prompt based on state alone
+    let carriers = [];
+
+    if (!isPhoneOnlyState) {
+      // Only process carriers for non-phone-only states
+      carriers = data.carriers || [];
+
+      // If no carriers provided, use hard-coded fallback (defaults)
+      if (carriers.length === 0) {
+        console.warn("Quick quote widget: No carriers in data, using fallback");
+        carriers = [
+          { name: "Geico", annual_cost: 3100, monthly_cost: 258 },
+          { name: "Progressive Insurance", annual_cost: 3600, monthly_cost: 300 },
+          { name: "Safeco Insurance", annual_cost: 3800, monthly_cost: 317 }
+        ];
+      }
+    } else {
+      console.log(`Quick quote widget: ${state} is a phone-only state - forcing empty carriers and call prompt`);
     }
 
     console.log("Quick quote widget: Carriers:", carriers);
@@ -349,8 +419,36 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
       mercuryHeaderLogoEl.alt = "Mercury Auto Insurance";
     }
 
-    // Populate carriers table dynamically
-    if (carriers.length > 0) {
+    // Handle phone-only states differently
+    if (isPhoneOnlyState) {
+      console.log(`Quick quote widget: ${state} is a phone-only state - showing call prompt`);
+
+      // Hide carrier table and description
+      carriersTableEl.style.display = "none";
+      descriptionEl.style.display = "none";
+
+      // Show phone call section
+      phoneCallSectionEl.classList.add("visible");
+
+      // Update CTA button to call
+      ctaButtonEl.href = "tel:+18887724247";
+      ctaButtonEl.textContent = "Call Now";
+      ctaButtonEl.style.background = "#10b981"; // Green for call action
+
+    } else {
+      // Normal flow - show carrier table
+      carriersTableEl.style.display = "";
+      descriptionEl.style.display = "";
+      phoneCallSectionEl.classList.remove("visible");
+
+      // Reset CTA button to normal
+      ctaButtonEl.href = "https://aisinsurance.com/?zip=90210";
+      ctaButtonEl.textContent = "Continue to Personalized Quote";
+      ctaButtonEl.style.background = "#e67e50";
+    }
+
+    // Populate carriers table dynamically (only if not phone-only state)
+    if (!isPhoneOnlyState && carriers.length > 0) {
       carriersTableEl.innerHTML = ""; // Clear existing content
 
       carriers.forEach((carrier, idx) => {

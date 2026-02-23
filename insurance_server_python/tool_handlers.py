@@ -624,11 +624,14 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
         "openai.com/widget": widget_resource.model_dump(mode="json"),
     }
 
+    # Normalize state to abbreviation for consistent frontend handling
+    state_abbr = state_abbreviation(state) or state
+
     # Build structured content
     structured_content = {
         "zip_code": payload.zip_code,
         "city": city,
-        "state": state,
+        "state": state_abbr,  # Use abbreviation for consistent phone-only state detection
         "primary_driver_age": payload.primary_driver_age,
         "num_drivers": num_drivers,
         "num_vehicles": num_vehicles,
@@ -639,7 +642,7 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
     }
 
     logger.info(f"=== RETURNING STRUCTURED CONTENT ===")
-    logger.info(f"City: {city}, State: {state}")
+    logger.info(f"City: {city}, State: {state_abbr} (original: {state})")
     logger.info(f"Number of carriers in response: {len(carriers)}")
     for i, carrier in enumerate(carriers):
         logger.info(f"  Carrier {i+1}: {carrier['name']} - ${carrier['annual_cost']}/year")

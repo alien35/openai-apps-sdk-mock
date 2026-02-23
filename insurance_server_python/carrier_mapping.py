@@ -154,10 +154,10 @@ def get_carriers_for_state(state: str) -> List[str]:
     if state_abbr and state_abbr in STATE_CARRIER_MAP:
         carriers = STATE_CARRIER_MAP[state_abbr]
 
-        # If empty list, use defaults
+        # If empty list, return empty (phone-only states like AK, HI, MA)
         if not carriers:
-            logger.warning(f"Empty carrier list for {state_abbr}, using defaults: {DEFAULT_CARRIERS}")
-            return DEFAULT_CARRIERS
+            logger.info(f"Empty carrier list for {state_abbr} - this is a phone-only state")
+            return []
 
         logger.info(f"Found carriers for {state_abbr}: {carriers}")
         return carriers
