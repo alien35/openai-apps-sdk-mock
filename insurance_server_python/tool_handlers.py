@@ -540,33 +540,81 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
     logger.info(f"Carriers for {state}: {carrier_names}")
     logger.info(f"=== END CARRIER DEBUG ===")
 
-    # Generate carrier estimates based on the quote ranges
-    # Use the calculated ranges to create realistic carrier estimates
-    carriers = []
-    base_annual = (best_min + best_max + worst_min + worst_max) // 4  # Average across scenarios
+    # Generate carrier estimates using the estimation engine
+    from .pricing import InsuranceQuoteEstimator
 
-    # Vary carrier prices by +/- 15% around the base
-    for i, carrier_name in enumerate(carrier_names):
-        if i == 0:
-            # First carrier: slightly below average
-            annual_cost = int(base_annual * 0.90)
-        elif i == 1:
-            # Second carrier: at average
-            annual_cost = base_annual
-        else:
-            # Third carrier: slightly above average
-            annual_cost = int(base_annual * 1.10)
+    estimator = InsuranceQuoteEstimator()
 
-        monthly_cost = annual_cost // 12
+    # Prepare vehicle dict
+    vehicle_dict = {
+        "year": payload.vehicle_1.year,
+        "make": payload.vehicle_1.make,
+        "model": payload.vehicle_1.model,
+    }
 
-        carriers.append({
-            "name": carrier_name,
-            "logo": get_carrier_logo(carrier_name),
-            "annual_cost": annual_cost,
-            "monthly_cost": monthly_cost,
-        })
+    # Determine coverage type
+    coverage_type = "full" if payload.coverage_type == "full_coverage" else "liability"
 
-    logger.info(f"Generated carrier estimates: {carriers}")
+    # Generate estimates
+    try:
+        estimates = estimator.estimate_quotes(
+            state=normalized or "CA",
+            zip_code=payload.zip_code,
+            age=payload.primary_driver_age,
+            marital_status=payload.primary_driver_marital_status,
+            vehicle=vehicle_dict,
+            coverage_type=coverage_type,
+            carriers=carrier_names,
+        )
+
+        # Format for widget
+        carriers = []
+        for quote in estimates["quotes"]:
+            carriers.append({
+                "name": quote["carrier"],
+                "logo": get_carrier_logo(quote["carrier"]),
+                "annual_cost": quote["annual"],
+                "monthly_cost": quote["monthly"],
+                "range_low": quote["range_monthly"][0],
+                "range_high": quote["range_monthly"][1],
+                "confidence": quote["confidence"],
+                "explanations": quote["explanations"],
+            })
+
+        logger.info(f"Generated {len(carriers)} carrier estimates using estimation engine")
+        for carrier in carriers:
+            logger.info(
+                f"  {carrier['name']}: ${carrier['monthly_cost']}/mo "
+                f"(${carrier['range_low']}-${carrier['range_high']})"
+            )
+
+    except Exception as e:
+        logger.error(f"Error generating estimates: {e}", exc_info=True)
+        # Fallback to simple estimates
+        carriers = []
+        base_annual = (best_min + best_max + worst_min + worst_max) // 4
+
+        for i, carrier_name in enumerate(carrier_names):
+            if i == 0:
+                annual_cost = int(base_annual * 0.90)
+            elif i == 1:
+                annual_cost = base_annual
+            else:
+                annual_cost = int(base_annual * 1.10)
+
+            monthly_cost = annual_cost // 12
+
+            carriers.append({
+                "name": carrier_name,
+                "logo": get_carrier_logo(carrier_name),
+                "annual_cost": annual_cost,
+                "monthly_cost": monthly_cost,
+                "range_low": int(monthly_cost * 0.70),
+                "range_high": int(monthly_cost * 1.30),
+                "confidence": "low",
+                "explanations": ["Limited information - estimates may vary significantly"],
+            })
+        logger.warning("Using fallback estimates due to error")
 
     # Get widget metadata
     quick_quote_widget = WIDGETS_BY_ID[QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER]

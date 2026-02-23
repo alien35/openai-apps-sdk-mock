@@ -282,6 +282,10 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
         Continue to Personalized Quote
       </a>
     </div>
+
+    <div class="disclaimer" style="margin-top: 32px; padding: 16px; background: #f9fafb; border-left: 3px solid #2563eb; font-size: 12px; color: #666; line-height: 1.6;">
+      <strong style="color: #333;">Important:</strong> These are estimated price ranges based on limited information and industry averages. Actual quotes from carriers may differ significantly based on your complete driving history (accidents, violations), credit score (where permitted), exact coverage selections and deductibles, discounts you may qualify for (bundling, safety features, etc.), and carrier-specific underwriting criteria. To get an accurate quote, you'll need to contact carriers directly or complete a full application.
+    </div>
   </div>
 </div>
 
@@ -349,12 +353,25 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     if (carriers.length > 0) {
       carriersTableEl.innerHTML = ""; // Clear existing content
 
-      carriers.forEach(carrier => {
+      carriers.forEach((carrier, idx) => {
         const row = document.createElement("div");
         row.className = "carrier-row";
 
         // Use logo from backend (base64 data URI)
         const logoSrc = carrier.logo || "";
+
+        // Log detailed information to console (not displayed in UI)
+        console.log(`Quick quote widget: ${carrier.name} details:`);
+        if (carrier.confidence) {
+          console.log(`  Confidence: ${carrier.confidence}`);
+        }
+        if (carrier.range_low && carrier.range_high) {
+          console.log(`  Range: $${carrier.range_low.toLocaleString()} - $${carrier.range_high.toLocaleString()}/month`);
+        }
+        if (carrier.explanations && carrier.explanations.length > 0) {
+          console.log(`  Pricing factors:`);
+          carrier.explanations.forEach(exp => console.log(`    • ${exp}`));
+        }
 
         row.innerHTML = `
           <div class="carrier-left">
@@ -362,12 +379,12 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
           </div>
           <div class="carrier-right">
             <div class="cost-column">
-              <div class="cost-label">Est. Annual Cost</div>
-              <div class="cost-value">${formatCurrency(carrier.annual_cost)}</div>
-            </div>
-            <div class="cost-column">
               <div class="cost-label">Est. Monthly Cost</div>
               <div class="cost-value">${formatCurrency(carrier.monthly_cost)}</div>
+            </div>
+            <div class="cost-column">
+              <div class="cost-label">Est. Annual Cost</div>
+              <div class="cost-value">${formatCurrency(carrier.annual_cost)}</div>
             </div>
           </div>
         `;
