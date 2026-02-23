@@ -150,7 +150,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
 <div class="quote-container">
   <div class="header">
     <div class="logo-mercury">
-      <img id="mercury-logo" src="" alt="Mercury Insurance">
+      <img id="mercury-logo" src="" alt="Insurance Carrier">
     </div>
     <div class="powered-by">Powered by AIS</div>
   </div>
@@ -222,7 +222,11 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
 
     descriptionEl.textContent = `Assuming you're in the ${city} area as ${driverText} and own ${vehicleText}, the estimates shown below are ranges you may see for insurance. However, final rates may differ.`;
 
-    // Mercury header logo is now embedded in HTML as base64 - no dynamic setting needed
+    // Set header logo to match the first carrier
+    if (carriers.length > 0 && carriers[0].logo) {
+      mercuryHeaderLogoEl.src = carriers[0].logo;
+      mercuryHeaderLogoEl.alt = carriers[0].name;
+    }
 
     // Populate carriers table dynamically
     if (carriers.length > 0) {
