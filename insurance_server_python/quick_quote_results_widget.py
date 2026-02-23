@@ -135,6 +135,80 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     background: #d46940;
   }
 
+  /* Loading skeleton styles */
+  .loading-skeleton {
+    display: block;
+  }
+
+  .loading-skeleton.hidden {
+    display: none;
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  .skeleton-logo {
+    width: 120px;
+    height: 40px;
+    margin-right: 12px;
+  }
+
+  .skeleton-description {
+    height: 20px;
+    width: 80%;
+    margin-bottom: 32px;
+  }
+
+  .skeleton-carrier {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 20px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .skeleton-carrier:last-child {
+    border-bottom: none;
+  }
+
+  .skeleton-carrier-logo {
+    width: 150px;
+    height: 50px;
+  }
+
+  .skeleton-costs {
+    display: flex;
+    gap: 60px;
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  .skeleton-cost {
+    width: 120px;
+    height: 40px;
+  }
+
+  .content-loaded {
+    display: none;
+  }
+
+  .content-loaded.visible {
+    display: block;
+  }
+
   @media (max-width: 768px) {
     .carrier-row {
       grid-template-columns: 1fr;
@@ -148,25 +222,66 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
 </style>
 
 <div class="quote-container">
-  <div class="header">
-    <div class="logo-mercury">
-      <img id="mercury-logo" src="" alt="Insurance Carrier">
+  <!-- Loading Skeleton -->
+  <div class="loading-skeleton" id="loading-skeleton">
+    <div class="header">
+      <div class="skeleton skeleton-logo"></div>
+      <div class="powered-by">Powered by AIS</div>
     </div>
-    <div class="powered-by">Powered by AIS</div>
+
+    <div class="skeleton skeleton-description"></div>
+
+    <div class="carriers-table">
+      <div class="skeleton-carrier">
+        <div class="skeleton skeleton-carrier-logo"></div>
+        <div class="skeleton-costs">
+          <div class="skeleton skeleton-cost"></div>
+          <div class="skeleton skeleton-cost"></div>
+        </div>
+      </div>
+      <div class="skeleton-carrier">
+        <div class="skeleton skeleton-carrier-logo"></div>
+        <div class="skeleton-costs">
+          <div class="skeleton skeleton-cost"></div>
+          <div class="skeleton skeleton-cost"></div>
+        </div>
+      </div>
+      <div class="skeleton-carrier">
+        <div class="skeleton skeleton-carrier-logo"></div>
+        <div class="skeleton-costs">
+          <div class="skeleton skeleton-cost"></div>
+          <div class="skeleton skeleton-cost"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-container">
+      <div class="skeleton cta-button" style="width: 300px; height: 56px; margin: 0 auto;"></div>
+    </div>
   </div>
 
-  <div class="description" id="quote-description">
-    <!-- Description will be populated by JavaScript -->
-  </div>
+  <!-- Actual Content (hidden until loaded) -->
+  <div class="content-loaded" id="content-loaded">
+    <div class="header">
+      <div class="logo-mercury">
+        <img id="mercury-logo" src="" alt="Insurance Carrier">
+      </div>
+      <div class="powered-by">Powered by AIS</div>
+    </div>
 
-  <div class="carriers-table">
-    <!-- Carriers will be populated by JavaScript -->
-  </div>
+    <div class="description" id="quote-description">
+      <!-- Description will be populated by JavaScript -->
+    </div>
 
-  <div class="cta-container">
-    <a class="cta-button" href="https://aisinsurance.com/?zip=90210" target="_blank" rel="noopener noreferrer">
-      Continue to Personalized Quote
-    </a>
+    <div class="carriers-table" id="carriers-table-content">
+      <!-- Carriers will be populated by JavaScript -->
+    </div>
+
+    <div class="cta-container">
+      <a class="cta-button" href="https://aisinsurance.com/?zip=90210" target="_blank" rel="noopener noreferrer">
+        Continue to Personalized Quote
+      </a>
+    </div>
   </div>
 </div>
 
@@ -174,11 +289,13 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
 (() => {
   if (typeof document === "undefined") return;
 
+  const loadingSkeletonEl = document.getElementById("loading-skeleton");
+  const contentLoadedEl = document.getElementById("content-loaded");
   const descriptionEl = document.getElementById("quote-description");
   const mercuryHeaderLogoEl = document.getElementById("mercury-logo");
-  const carriersTableEl = document.querySelector(".carriers-table");
+  const carriersTableEl = document.getElementById("carriers-table-content");
 
-  if (!descriptionEl || !carriersTableEl) return;
+  if (!descriptionEl || !carriersTableEl || !loadingSkeletonEl || !contentLoadedEl) return;
 
   // Logo handling moved to backend - logos are now passed as base64 data URIs in carrier.logo field
 
@@ -262,6 +379,10 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     } else {
       console.error("Quick quote widget: No carriers available to display!");
     }
+
+    // Hide loading skeleton and show content
+    loadingSkeletonEl.classList.add("hidden");
+    contentLoadedEl.classList.add("visible");
   }
 
   function hydrate(globals) {
