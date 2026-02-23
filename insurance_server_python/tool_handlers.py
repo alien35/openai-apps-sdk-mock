@@ -638,25 +638,25 @@ async def _submit_carrier_estimates(arguments: Mapping[str, Any]) -> ToolInvocat
         logger.info("Using hard-coded carrier data (provided carriers: %d)", len(carriers_with_logos))
         carriers_with_logos = [
             {
-                "name": "Mercury Auto Insurance",
-                "logo": get_carrier_logo("Mercury Auto Insurance"),
-                "annual_cost": 3200,
-                "monthly_cost": 267,
-                "notes": "Strong digital tools & mobile app"
-            },
-            {
-                "name": "Orion",
-                "logo": get_carrier_logo("Orion"),
-                "annual_cost": 3360,
-                "monthly_cost": 280,
-                "notes": "Competitive rates for safe drivers"
+                "name": "Geico",
+                "logo": get_carrier_logo("Geico"),
+                "annual_cost": 3100,
+                "monthly_cost": 258,
+                "notes": "Widely available nationwide"
             },
             {
                 "name": "Progressive Insurance",
                 "logo": get_carrier_logo("Progressive Insurance"),
-                "annual_cost": 4064,
-                "monthly_cost": 339,
+                "annual_cost": 3600,
+                "monthly_cost": 300,
                 "notes": "Best balance of cost & claims service"
+            },
+            {
+                "name": "Safeco Insurance",
+                "logo": get_carrier_logo("Safeco Insurance"),
+                "annual_cost": 3800,
+                "monthly_cost": 317,
+                "notes": "Strong coverage options"
             },
         ]
 

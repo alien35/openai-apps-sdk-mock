@@ -1,10 +1,24 @@
 """State-specific carrier mapping for quick quote estimates.
 
-Each state has a predefined set of 3 insurance carriers that are shown
+Each state has a predefined set of insurance carriers that are shown
 to users when they request a quick quote.
 """
 
 from typing import List, Dict, Optional
+
+# Carrier name constants
+GEICO = "Geico"
+PROGRESSIVE = "Progressive Insurance"
+SAFECO = "Safeco Insurance"
+MERCURY = "Mercury Auto Insurance"
+NATGEN = "National General"
+FOREMOST = "Foremost Insurance Group"
+DAIRYLAND = "Dairyland Insurance"
+CLEARCOVER = "Clearcover"
+ASSURANCE_AMERICA = "Assurance America"
+GAINSCO = "Gainsco"
+INFINITY = "Infinity Insurance Company"
+ROOT = "Root"
 
 # State name to abbreviation mapping
 STATE_NAME_TO_ABBR: Dict[str, str] = {
@@ -24,65 +38,66 @@ STATE_NAME_TO_ABBR: Dict[str, str] = {
 }
 
 # State-specific carrier mappings (using abbreviations only)
-# Each state maps to exactly 3 carriers in display order
 STATE_CARRIER_MAP: Dict[str, List[str]] = {
-    "CA": [
-        "Mercury Auto Insurance",
-        "Orion Indemnity",
-        "Progressive Insurance"
-    ],
-    "TX": [
-        "Mercury Auto Insurance",
-        "Progressive Insurance",
-        "State Farm"
-    ],
-    "FL": [
-        "Progressive Insurance",
-        "Mercury Auto Insurance",
-        "State Farm"
-    ],
-    "NY": [
-        "Mercury Auto Insurance",
-        "State Farm",
-        "Progressive Insurance"
-    ],
-    "IL": [
-        "State Farm",
-        "Mercury Auto Insurance",
-        "Progressive Insurance"
-    ],
-    "PA": [
-        "Mercury Auto Insurance",
-        "Progressive Insurance",
-        "State Farm"
-    ],
-    "OH": [
-        "State Farm",
-        "Progressive Insurance",
-        "Mercury Auto Insurance"
-    ],
-    "GA": [
-        "Progressive Insurance",
-        "State Farm",
-        "Mercury Auto Insurance"
-    ],
-    "NC": [
-        "Mercury Auto Insurance",
-        "State Farm",
-        "Progressive Insurance"
-    ],
-    "MI": [
-        "Progressive Insurance",
-        "Mercury Auto Insurance",
-        "State Farm"
-    ],
+    "AL": [GEICO, PROGRESSIVE, SAFECO],
+    "AK": [],
+    "AZ": [GEICO, PROGRESSIVE, MERCURY],
+    "AR": [GEICO, PROGRESSIVE, SAFECO],
+    "CA": [PROGRESSIVE, MERCURY, NATGEN],
+    "CO": [GEICO, PROGRESSIVE, SAFECO],
+    "CT": [PROGRESSIVE, SAFECO, NATGEN],
+    "DE": [GEICO, PROGRESSIVE, NATGEN],
+    "DC": [GEICO, PROGRESSIVE],
+    "FL": [GEICO, PROGRESSIVE, MERCURY],
+    "GA": [GEICO, PROGRESSIVE, MERCURY],
+    "HI": [],
+    "ID": [GEICO, PROGRESSIVE, SAFECO],
+    "IL": [GEICO, PROGRESSIVE, MERCURY],
+    "IN": [GEICO, PROGRESSIVE, SAFECO],
+    "IA": [GEICO, PROGRESSIVE, SAFECO],
+    "KS": [GEICO, PROGRESSIVE, SAFECO],
+    "KY": [GEICO, PROGRESSIVE, SAFECO],
+    "LA": [GEICO, PROGRESSIVE, SAFECO],
+    "ME": [GEICO, PROGRESSIVE, SAFECO],
+    "MD": [GEICO, PROGRESSIVE, SAFECO],
+    "MA": [],
+    "MI": [PROGRESSIVE, FOREMOST],
+    "MN": [PROGRESSIVE, SAFECO, FOREMOST],
+    "MS": [GEICO, PROGRESSIVE, SAFECO],
+    "MO": [GEICO, PROGRESSIVE, SAFECO],
+    "MT": [GEICO, PROGRESSIVE, SAFECO],
+    "NE": [GEICO, PROGRESSIVE, SAFECO],
+    "NV": [PROGRESSIVE, MERCURY, SAFECO],
+    "NH": [PROGRESSIVE, SAFECO, NATGEN],
+    "NJ": [PROGRESSIVE, MERCURY, SAFECO],
+    "NM": [GEICO, PROGRESSIVE, SAFECO],
+    "NY": [PROGRESSIVE, MERCURY],
+    "NC": [PROGRESSIVE, SAFECO, NATGEN],
+    "ND": [GEICO, SAFECO],
+    "OH": [GEICO, PROGRESSIVE, SAFECO],
+    "OK": [GEICO, PROGRESSIVE, SAFECO],
+    "OR": [GEICO, PROGRESSIVE, SAFECO],
+    "PA": [PROGRESSIVE, SAFECO, NATGEN],
+    "RI": [PROGRESSIVE, SAFECO, NATGEN],
+    "SC": [GEICO, PROGRESSIVE, SAFECO],
+    "SD": [GEICO, PROGRESSIVE, SAFECO],
+    "TN": [GEICO, PROGRESSIVE, SAFECO],
+    "TX": [GEICO, PROGRESSIVE, MERCURY],
+    "UT": [GEICO, PROGRESSIVE, SAFECO],
+    "VT": [PROGRESSIVE, SAFECO],
+    "WT": [PROGRESSIVE, SAFECO, NATGEN],
+    "VA": [GEICO, PROGRESSIVE, SAFECO],
+    "WA": [PROGRESSIVE, SAFECO, NATGEN],
+    "WV": [GEICO, PROGRESSIVE, SAFECO],
+    "WI": [GEICO, PROGRESSIVE, SAFECO],
+    "WY": [GEICO, PROGRESSIVE, SAFECO],
 }
 
-# Default carriers for states not in the map
+# Default carriers for states not in the map or with empty lists
 DEFAULT_CARRIERS = [
-    "Mercury Auto Insurance",
-    "Progressive Insurance",
-    "State Farm"
+    GEICO,
+    PROGRESSIVE,
+    SAFECO
 ]
 
 
@@ -126,7 +141,7 @@ def get_carriers_for_state(state: str) -> List[str]:
         state: State name or abbreviation (e.g., "California", "CA", "california")
 
     Returns:
-        List of 3 carrier names in display order
+        List of carrier names in display order (may be empty list for some states)
     """
     import logging
     logger = logging.getLogger(__name__)
@@ -138,6 +153,12 @@ def get_carriers_for_state(state: str) -> List[str]:
     # Look up carriers by abbreviation
     if state_abbr and state_abbr in STATE_CARRIER_MAP:
         carriers = STATE_CARRIER_MAP[state_abbr]
+
+        # If empty list, use defaults
+        if not carriers:
+            logger.warning(f"Empty carrier list for {state_abbr}, using defaults: {DEFAULT_CARRIERS}")
+            return DEFAULT_CARRIERS
+
         logger.info(f"Found carriers for {state_abbr}: {carriers}")
         return carriers
 
@@ -157,14 +178,31 @@ def get_carrier_display_name(carrier: str) -> str:
     """
     carrier_lower = carrier.lower()
 
-    if "orion" in carrier_lower:
-        return "Orion Indemnity"
-    elif "mercury" in carrier_lower:
-        return "Mercury Auto Insurance"
+    # Match against known carriers
+    if "geico" in carrier_lower:
+        return GEICO
     elif "progressive" in carrier_lower:
-        return "Progressive Insurance"
-    elif "state farm" in carrier_lower or "statefarm" in carrier_lower:
-        return "State Farm"
+        return PROGRESSIVE
+    elif "safeco" in carrier_lower:
+        return SAFECO
+    elif "mercury" in carrier_lower:
+        return MERCURY
+    elif "national general" in carrier_lower or "natgen" in carrier_lower:
+        return NATGEN
+    elif "foremost" in carrier_lower:
+        return FOREMOST
+    elif "dairyland" in carrier_lower:
+        return DAIRYLAND
+    elif "clearcover" in carrier_lower:
+        return CLEARCOVER
+    elif "assurance america" in carrier_lower:
+        return ASSURANCE_AMERICA
+    elif "gainsco" in carrier_lower:
+        return GAINSCO
+    elif "infinity" in carrier_lower:
+        return INFINITY
+    elif "root" in carrier_lower:
+        return ROOT
 
     # Return original if no match
     return carrier

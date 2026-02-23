@@ -203,13 +203,13 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     // Use provided carriers or fallback to defaults
     let carriers = data.carriers || [];
 
-    // If no carriers provided, use hard-coded fallback (California defaults)
+    // If no carriers provided, use hard-coded fallback (defaults)
     if (carriers.length === 0) {
       console.warn("Quick quote widget: No carriers in data, using fallback");
       carriers = [
-        { name: "Mercury Auto Insurance", annual_cost: 3200, monthly_cost: 267 },
-        { name: "Orion Indemnity", annual_cost: 3360, monthly_cost: 280 },
-        { name: "Progressive Insurance", annual_cost: 4064, monthly_cost: 339 }
+        { name: "Geico", annual_cost: 3100, monthly_cost: 258 },
+        { name: "Progressive Insurance", annual_cost: 3600, monthly_cost: 300 },
+        { name: "Safeco Insurance", annual_cost: 3800, monthly_cost: 317 }
       ];
     }
 
