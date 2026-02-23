@@ -207,8 +207,8 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     if (carriers.length === 0) {
       console.warn("Quick quote widget: No carriers in data, using fallback");
       carriers = [
-        { name: "Orion Indemnity", annual_cost: 3360, monthly_cost: 280 },
         { name: "Mercury Auto Insurance", annual_cost: 3200, monthly_cost: 267 },
+        { name: "Orion Indemnity", annual_cost: 3360, monthly_cost: 280 },
         { name: "Progressive Insurance", annual_cost: 4064, monthly_cost: 339 }
       ];
     }
@@ -222,10 +222,10 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
 
     descriptionEl.textContent = `Assuming you're in the ${city} area as ${driverText} and own ${vehicleText}, the estimates shown below are ranges you may see for insurance. However, final rates may differ.`;
 
-    // Set header logo to match the first carrier
-    if (carriers.length > 0 && carriers[0].logo) {
-      mercuryHeaderLogoEl.src = carriers[0].logo;
-      mercuryHeaderLogoEl.alt = carriers[0].name;
+    // Always use Mercury logo in header
+    if (data.mercury_logo) {
+      mercuryHeaderLogoEl.src = data.mercury_logo;
+      mercuryHeaderLogoEl.alt = "Mercury Auto Insurance";
     }
 
     // Populate carriers table dynamically
