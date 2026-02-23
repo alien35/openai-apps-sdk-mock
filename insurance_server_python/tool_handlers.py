@@ -586,6 +586,7 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
         "num_vehicles": num_vehicles,
         "server_url": server_base_url,
         "carriers": carriers,
+        "mercury_logo": get_carrier_logo("Mercury Auto Insurance"),  # Always show Mercury in header
         "stage": "quick_quote_complete",
     }
 
@@ -672,6 +673,7 @@ async def _submit_carrier_estimates(arguments: Mapping[str, Any]) -> ToolInvocat
             "state": state,
             "primary_driver_age": payload.primary_driver_age,
             "carriers": carriers_with_logos,
+            "mercury_logo": get_carrier_logo("Mercury Auto Insurance"),  # Always show Mercury in header
             "stage": "carrier_estimates_complete",
         },
         "content": [types.TextContent(type="text", text=message)],

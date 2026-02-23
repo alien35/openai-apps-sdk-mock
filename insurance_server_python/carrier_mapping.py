@@ -27,8 +27,8 @@ STATE_NAME_TO_ABBR: Dict[str, str] = {
 # Each state maps to exactly 3 carriers in display order
 STATE_CARRIER_MAP: Dict[str, List[str]] = {
     "CA": [
-        "Orion Indemnity",
         "Mercury Auto Insurance",
+        "Orion Indemnity",
         "Progressive Insurance"
     ],
     "TX": [
