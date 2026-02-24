@@ -173,8 +173,10 @@ class TestFieldDefaults(unittest.TestCase):
         self.assertEqual(result["Vin"], "1HGCM82633A123456")
         self.assertIn("CoverageInformation", result)
         self.assertEqual(result["CoverageInformation"]["CollisionDeductible"], "None")
-        self.assertEqual(result["GrayMarket"], False)
-        self.assertEqual(result["HomingDevice"], False)
+        # Verify essential vehicle defaults
+        self.assertEqual(result["LeasedVehicle"], False)
+        self.assertEqual(result["RideShare"], False)
+        self.assertEqual(result["Salvaged"], False)
 
     def test_build_minimal_payload_with_defaults(self):
         """Test building complete payload with defaults."""
@@ -272,7 +274,9 @@ class TestFieldDefaults(unittest.TestCase):
 
         # Verify vehicles with defaults
         self.assertEqual(len(payload["Vehicles"]), 1)
-        self.assertEqual(payload["Vehicles"][0]["GrayMarket"], False)
+        self.assertEqual(payload["Vehicles"][0]["LeasedVehicle"], False)
+        self.assertEqual(payload["Vehicles"][0]["RideShare"], False)
+        self.assertEqual(payload["Vehicles"][0]["Salvaged"], False)
 
         # Verify policy coverages
         self.assertEqual(payload["PolicyCoverages"]["LiabilityBiLimit"], "50000/100000")

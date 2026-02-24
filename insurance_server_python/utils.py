@@ -554,9 +554,11 @@ def _lookup_city_state_from_zip(zip_code: str) -> Optional[tuple[str, str]]:
             return _lookup_city_state_from_zip_fallback(zip_code)
 
         # Parse address components to extract city and state
-        address_components = data["results"][0].get("address_components", [])
+        result = data["results"][0]
+        address_components = result.get("address_components", [])
 
         city = None
+        neighborhood = None
         state = None
 
         for component in address_components:
@@ -566,9 +568,25 @@ def _lookup_city_state_from_zip(zip_code: str) -> Optional[tuple[str, str]]:
             if "locality" in types:
                 city = component.get("long_name")
 
+            # Look for neighborhood as fallback (some zips only have neighborhood)
+            if "neighborhood" in types and not city:
+                neighborhood = component.get("long_name")
+
             # Look for state (administrative_area_level_1)
             if "administrative_area_level_1" in types:
                 state = component.get("long_name")
+
+        # If no locality found, check postcode_localities (multi-city zips)
+        if not city:
+            postcode_localities = result.get("postcode_localities", [])
+            if postcode_localities:
+                city = postcode_localities[0]  # Use first city
+                logger.info(f"Zip {zip_code} has multiple cities: {postcode_localities}, using {city}")
+
+        # Use neighborhood as last resort if no city found
+        if not city and neighborhood:
+            city = neighborhood
+            logger.info(f"Using neighborhood '{neighborhood}' as city for zip {zip_code}")
 
         if city and state:
             logger.info(f"Resolved zip {zip_code} to {city}, {state}")
