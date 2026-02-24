@@ -577,6 +577,36 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
                 carriers=carrier_names,
             )
 
+            # Log detailed calculation breakdown to file
+            from .quote_logger import log_quick_quote_calculation
+            from .pricing.risk_score import calculate_risk_score
+
+            risk_score = calculate_risk_score(
+                age=payload.primary_driver_age,
+                marital_status=payload.primary_driver_marital_status,
+                vehicle_age=2026 - vehicle_dict["year"],
+                zip_code=payload.zip_code,
+                coverage_type=coverage_type,
+                accidents=0,
+                tickets=0,
+            )
+
+            try:
+                explanation_file = log_quick_quote_calculation(
+                    state=normalized or "CA",
+                    zip_code=payload.zip_code,
+                    age=payload.primary_driver_age,
+                    marital_status=payload.primary_driver_marital_status,
+                    vehicle=vehicle_dict,
+                    coverage_type=coverage_type,
+                    baseline=estimates["baseline"],
+                    quotes=estimates["quotes"],
+                    risk_score=risk_score,
+                )
+                logger.info(f"Quote calculation breakdown saved to: {explanation_file}")
+            except Exception as log_error:
+                logger.warning(f"Failed to write quote explanation: {log_error}")
+
             # Format for widget
             carriers = []
             for quote in estimates["quotes"]:
@@ -1179,6 +1209,18 @@ async def _request_personal_auto_rate(arguments: Mapping[str, Any]) -> ToolInvoc
         summary = format_rate_results_summary(rate_results)
         if summary:
             message += f"\n\n{summary}"
+
+        # Log detailed calculation breakdown to file
+        from .quote_logger import log_full_rate_calculation
+        try:
+            explanation_file = log_full_rate_calculation(
+                request_payload=request_body,
+                response_data=rate_results,
+                api_endpoint=url,
+            )
+            logger.info(f"Full rate calculation breakdown saved to: {explanation_file}")
+        except Exception as log_error:
+            logger.warning(f"Failed to write full rate explanation: {log_error}")
 
     # Build content array with model-visible transaction ID
     import mcp.types as types
