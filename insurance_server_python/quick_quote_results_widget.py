@@ -359,7 +359,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     </div>
 
     <div class="disclaimer" id="disclaimer" style="margin-top: 32px; padding: 16px; background: #f9fafb; border-left: 3px solid #2563eb; font-size: 12px; color: #666; line-height: 1.6;">
-      <strong style="color: #333;">Important:</strong> These are estimated price ranges based on limited information and industry averages. Actual quotes from carriers may differ significantly based on your complete driving history (accidents, violations), credit score (where permitted), exact coverage selections and deductibles, discounts you may qualify for (bundling, safety features, etc.), and carrier-specific underwriting criteria. To get an accurate quote, you'll need to contact carriers directly or complete a full application.
+      <strong style="color: #333;">Why this rate might change:</strong> This is a likely range for drivers like you, but your actual rate is unique. Continue now to get a personalized quote tailored to your driving history and coverage needs.
     </div>
   </div>
 </div>
@@ -439,7 +439,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
 
     // Use city if available, otherwise use zip code (don't default to "Los Angeles")
     const locationText = city ? `the ${city} area` : `zip code ${zipCode}`;
-    descriptionEl.textContent = `Assuming you're in ${locationText} as ${driverText} and own ${vehicleText}, the estimates shown below are ranges you may see for insurance. However, final rates may differ.`;
+    descriptionEl.textContent = `To help you plan, we've estimated the costs based on similar drivers like you. You can see the expected monthly payment and annual cost below.`;
 
     // Always use Mercury logo in header
     if (data.mercury_logo) {
