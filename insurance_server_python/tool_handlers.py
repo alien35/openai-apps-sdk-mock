@@ -615,8 +615,10 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
                     "logo": get_carrier_logo(quote["carrier"]),
                     "annual_cost": quote["annual"],
                     "monthly_cost": quote["monthly"],
-                    "range_low": quote["range_monthly"][0],
-                    "range_high": quote["range_monthly"][1],
+                    "range_monthly_low": quote["range_monthly"][0],
+                    "range_monthly_high": quote["range_monthly"][1],
+                    "range_annual_low": quote["range_annual"][0],
+                    "range_annual_high": quote["range_annual"][1],
                     "confidence": quote["confidence"],
                     "explanations": quote["explanations"],
                 })
@@ -625,7 +627,7 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
             for carrier in carriers:
                 logger.info(
                     f"  {carrier['name']}: ${carrier['monthly_cost']}/mo "
-                    f"(${carrier['range_low']}-${carrier['range_high']})"
+                    f"(${carrier['range_monthly_low']}-${carrier['range_monthly_high']})"
                 )
 
         except Exception as e:

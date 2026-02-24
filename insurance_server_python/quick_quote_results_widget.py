@@ -115,6 +115,13 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     color: #2563eb;
   }
 
+  .cost-range {
+    font-size: 20px;
+    color: #2563eb;
+    margin-top: 4px;
+    font-weight: 700;
+  }
+
   .cta-container {
     text-align: center;
   }
@@ -268,8 +275,8 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
       gap: 12px;
     }
 
-    .cost-value {
-      font-size: 20px;
+    .cost-range {
+      font-size: 16px;
     }
   }
 </style>
@@ -513,11 +520,15 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
           <div class="carrier-right">
             <div class="cost-column">
               <div class="cost-label">Est. Monthly Cost</div>
-              <div class="cost-value">${formatCurrency(carrier.monthly_cost)}</div>
+              ${carrier.range_monthly_low && carrier.range_monthly_high ?
+                `<div class="cost-range">${formatCurrency(carrier.range_monthly_low)} - ${formatCurrency(carrier.range_monthly_high)}</div>` :
+                `<div class="cost-range">${formatCurrency(carrier.monthly_cost)}</div>`}
             </div>
             <div class="cost-column">
               <div class="cost-label">Est. Annual Cost</div>
-              <div class="cost-value">${formatCurrency(carrier.annual_cost)}</div>
+              ${carrier.range_annual_low && carrier.range_annual_high ?
+                `<div class="cost-range">${formatCurrency(carrier.range_annual_low)} - ${formatCurrency(carrier.range_annual_high)}</div>` :
+                `<div class="cost-range">${formatCurrency(carrier.annual_cost)}</div>`}
             </div>
           </div>
         `;
