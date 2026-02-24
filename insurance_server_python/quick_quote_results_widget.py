@@ -387,16 +387,18 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
 
     console.log("Quick quote widget: Received data:", data);
 
-    const city = data.city || "Los Angeles";
-    const state = data.state || "CA";
+    const zipCode = data.zip_code || "";
+    const city = data.city || null;
+    const state = data.state || null;
     const numDrivers = data.num_drivers || (data.additional_driver ? 2 : 1);
     const numVehicles = data.num_vehicles || (data.vehicle_2 ? 2 : 1);
+    const lookupFailed = data.lookup_failed || false;
 
-    // Check if this is a phone-only state (AK, HI, MA)
+    // Check if this is a phone-only state (AK, HI, MA) OR if lookup failed
     // IMPORTANT: Check this FIRST before processing carriers
     // Note: State can be abbreviation ("MA") OR full name ("Massachusetts")
     const phoneOnlyStates = ["AK", "HI", "MA", "Alaska", "Hawaii", "Massachusetts"];
-    const isPhoneOnlyState = phoneOnlyStates.includes(state);
+    const isPhoneOnlyState = (state && phoneOnlyStates.includes(state)) || lookupFailed;
 
     // For phone-only states, ALWAYS force empty carriers (ignore backend data)
     // This provides defense-in-depth: even if backend mistakenly sends carriers,
@@ -417,17 +419,20 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
         ];
       }
     } else {
-      console.log(`Quick quote widget: ${state} is a phone-only state - forcing empty carriers and call prompt`);
+      console.log(`Quick quote widget: ${state || 'unknown location'} is a phone-only state/lookup failed - forcing empty carriers and call prompt`);
     }
 
     console.log("Quick quote widget: Carriers:", carriers);
     console.log("Quick quote widget: City/State:", city, state);
     console.log("Quick quote widget: Drivers/Vehicles:", numDrivers, numVehicles);
+    console.log("Quick quote widget: Lookup failed:", lookupFailed);
 
     const driverText = numDrivers === 1 ? "a solo driver" : `${numDrivers} drivers`;
     const vehicleText = numVehicles === 1 ? "one vehicle" : `${numVehicles} vehicles`;
 
-    descriptionEl.textContent = `Assuming you're in the ${city} area as ${driverText} and own ${vehicleText}, the estimates shown below are ranges you may see for insurance. However, final rates may differ.`;
+    // Use city if available, otherwise use zip code (don't default to "Los Angeles")
+    const locationText = city ? `the ${city} area` : `zip code ${zipCode}`;
+    descriptionEl.textContent = `Assuming you're in ${locationText} as ${driverText} and own ${vehicleText}, the estimates shown below are ranges you may see for insurance. However, final rates may differ.`;
 
     // Always use Mercury logo in header
     if (data.mercury_logo) {
@@ -437,17 +442,23 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
 
     // Handle phone-only states differently
     if (isPhoneOnlyState) {
-      console.log(`Quick quote widget: ${state} is a phone-only state - showing call prompt`);
+      console.log(`Quick quote widget: ${state || 'unknown location'} is a phone-only state/lookup failed - showing call prompt`);
 
       // Hide carrier table, regular description, and disclaimer
       carriersTableEl.style.display = "none";
       descriptionEl.style.display = "none";
       if (disclaimerEl) disclaimerEl.style.display = "none";
 
-      // Personalize phone call text with city/state
+      // Personalize phone call text with city/state (or zip code if lookup failed)
       const phoneCallTextEl = document.getElementById("phone-call-text");
       if (phoneCallTextEl) {
-        phoneCallTextEl.textContent = `We're ready to help you get the best insurance rates in the ${city} area. Our licensed agents specialize in ${state} insurance and can provide personalized quotes and answer any questions you have.`;
+        if (lookupFailed) {
+          // When lookup fails, use zip code instead of city/state
+          phoneCallTextEl.textContent = `We're ready to help you get the best insurance rates for zip code ${zipCode}. Our licensed agents can provide personalized quotes and answer any questions you have.`;
+        } else {
+          // Normal phone-only state with known city/state
+          phoneCallTextEl.textContent = `We're ready to help you get the best insurance rates in the ${city} area. Our licensed agents specialize in ${state} insurance and can provide personalized quotes and answer any questions you have.`;
+        }
       }
 
       // Show phone call section
