@@ -244,10 +244,10 @@ COVERAGE_TYPE_FACTORS: Dict[str, Tuple[float, str]] = {
 
 CARRIER_BASE_MULTIPLIERS: Dict[str, Tuple[float, float]] = {
     "Geico": (0.88, 1.05),                      # Competitive for good risks
-    "Progressive Insurance": (0.92, 1.12),       # Broad appetite, middle market
+    "Progressive Insurance": (0.88, 1.08),       # Broad appetite, middle market (calibrated)
     "Safeco Insurance": (1.00, 1.18),            # Standard/preferred market
     "Mercury Auto Insurance": (0.90, 1.15),      # Strong in CA/NV/AZ
-    "National General": (1.05, 1.30),            # Non-standard friendly
+    "National General": (1.10, 1.35),            # Non-standard friendly (calibrated)
     "Foremost Insurance Group": (1.08, 1.25),    # Non-standard specialty
     "Dairyland Insurance": (1.10, 1.35),         # High-risk specialty
     "Root": (0.85, 1.08),                        # Tech/telematics discount
@@ -266,7 +266,7 @@ CARRIER_BASE_MULTIPLIERS: Dict[str, Tuple[float, float]] = {
 
 CARRIER_STATE_ADJUSTMENTS: Dict[str, Dict[str, float]] = {
     "Mercury Auto Insurance": {
-        "CA": -0.08,  # Very competitive in California
+        "CA": -0.15,  # Extremely competitive in California (calibrated from 90210 data)
         "NV": -0.05,  # Strong Nevada presence
         "AZ": -0.05,  # Strong Arizona presence
     },
@@ -274,7 +274,7 @@ CARRIER_STATE_ADJUSTMENTS: Dict[str, Dict[str, float]] = {
         "FL": 0.05,   # Less competitive in Florida
     },
     "Progressive Insurance": {
-        "CA": -0.03,  # Competitive in California
+        "CA": 0.10,   # Higher pricing in California (calibrated from 90210 data)
     },
 }
 
