@@ -116,7 +116,6 @@ def assess_data_completeness(inputs: Dict[str, Any]) -> Tuple[float, str]:
         Example: (0.30, "medium") means ±30% range with medium confidence
     """
     score = 0
-    max_score = 10
 
     # Core inputs we always collect
     if inputs.get("age") is not None:
