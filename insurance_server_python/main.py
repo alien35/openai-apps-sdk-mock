@@ -252,6 +252,320 @@ def root():
     return {"service": "insurance-mcp-server", "status": "running"}
 
 
+# OpenAPI spec generation
+def generate_openapi_spec():
+    """Generate OpenAPI 3.0 specification for the API."""
+    return {
+        "openapi": "3.0.0",
+        "info": {
+            "title": "Insurance MCP Server API",
+            "version": "1.0.0",
+            "description": "Insurance quoting and data collection API with MCP integration",
+            "contact": {
+                "name": "API Support",
+                "url": "https://github.com/anthropics/openai-apps-sdk-examples"
+            }
+        },
+        "servers": [
+            {
+                "url": "http://localhost:8000",
+                "description": "Local development server"
+            }
+        ],
+        "paths": {
+            "/": {
+                "get": {
+                    "summary": "Root endpoint",
+                    "description": "Returns service information and status",
+                    "tags": ["Health"],
+                    "responses": {
+                        "200": {
+                            "description": "Service information",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "service": {"type": "string", "example": "insurance-mcp-server"},
+                                            "status": {"type": "string", "example": "running"}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "/health": {
+                "get": {
+                    "summary": "Health check",
+                    "description": "Health check endpoint for container orchestration",
+                    "tags": ["Health"],
+                    "responses": {
+                        "200": {
+                            "description": "Service is healthy",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {"type": "string", "example": "healthy"}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "/api/minimal-fields-config": {
+                "get": {
+                    "summary": "Get minimal fields configuration",
+                    "description": "Returns the minimal required fields for insurance quote collection",
+                    "tags": ["Configuration"],
+                    "responses": {
+                        "200": {
+                            "description": "Minimal fields configuration",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "description": "Configuration object with minimal required fields"
+                                    }
+                                }
+                            }
+                        },
+                        "404": {
+                            "description": "Configuration file not found"
+                        }
+                    }
+                }
+            },
+            "/api/wizard-config": {
+                "get": {
+                    "summary": "Get wizard configuration",
+                    "description": "Returns wizard flow and field definitions for frontend",
+                    "tags": ["Configuration"],
+                    "responses": {
+                        "200": {
+                            "description": "Wizard configuration",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "wizard": {
+                                                "type": "object",
+                                                "description": "Wizard flow configuration"
+                                            },
+                                            "fields": {
+                                                "type": "object",
+                                                "description": "Field definitions"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "500": {
+                            "description": "Failed to load wizard configuration"
+                        }
+                    }
+                }
+            },
+            "/api/quick-quote-carriers": {
+                "get": {
+                    "summary": "Get carrier estimates",
+                    "description": "Returns carrier estimates for quick quote widget based on state",
+                    "tags": ["Quotes"],
+                    "parameters": [
+                        {
+                            "name": "state",
+                            "in": "query",
+                            "description": "State code (e.g., CA, TX, NY)",
+                            "schema": {
+                                "type": "string",
+                                "default": "CA"
+                            }
+                        },
+                        {
+                            "name": "zip_code",
+                            "in": "query",
+                            "description": "ZIP code",
+                            "schema": {
+                                "type": "string",
+                                "default": "90210"
+                            }
+                        },
+                        {
+                            "name": "city",
+                            "in": "query",
+                            "description": "City name",
+                            "schema": {
+                                "type": "string",
+                                "default": "Beverly Hills"
+                            }
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Carrier estimates",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "carriers": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {"type": "string"},
+                                                        "logo": {"type": "string"},
+                                                        "annual_cost": {"type": "integer"},
+                                                        "monthly_cost": {"type": "integer"},
+                                                        "notes": {"type": "string"}
+                                                    }
+                                                }
+                                            },
+                                            "zip_code": {"type": "string"},
+                                            "city": {"type": "string"},
+                                            "state": {"type": "string"}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "/assets/images/{filename}": {
+                "get": {
+                    "summary": "Serve static images",
+                    "description": "Serves static images from assets/images directory",
+                    "tags": ["Assets"],
+                    "parameters": [
+                        {
+                            "name": "filename",
+                            "in": "path",
+                            "required": True,
+                            "description": "Image filename",
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Image file",
+                            "content": {
+                                "image/*": {
+                                    "schema": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                }
+                            }
+                        },
+                        "404": {
+                            "description": "Image not found"
+                        }
+                    }
+                }
+            }
+        },
+        "tags": [
+            {
+                "name": "Health",
+                "description": "Health check and service status endpoints"
+            },
+            {
+                "name": "Configuration",
+                "description": "Configuration endpoints for wizard and fields"
+            },
+            {
+                "name": "Quotes",
+                "description": "Insurance quote and carrier information"
+            },
+            {
+                "name": "Assets",
+                "description": "Static asset serving"
+            }
+        ]
+    }
+
+
+# OpenAPI spec endpoint
+@app.route("/openapi.json", methods=["GET"])
+def openapi_spec():
+    """Serve OpenAPI specification."""
+    return JSONResponse(generate_openapi_spec())
+
+
+# Swagger UI endpoint
+@app.route("/docs", methods=["GET"])
+def swagger_ui():
+    """Serve Swagger UI for API documentation."""
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Insurance MCP API - Swagger UI</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.10.5/swagger-ui.css">
+        <style>
+            body { margin: 0; padding: 0; }
+        </style>
+    </head>
+    <body>
+        <div id="swagger-ui"></div>
+        <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.10.5/swagger-ui-bundle.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.10.5/swagger-ui-standalone-preset.js"></script>
+        <script>
+            window.onload = function() {
+                SwaggerUIBundle({
+                    url: "/openapi.json",
+                    dom_id: '#swagger-ui',
+                    presets: [
+                        SwaggerUIBundle.presets.apis,
+                        SwaggerUIStandalonePreset
+                    ],
+                    layout: "BaseLayout",
+                    deepLinking: true
+                });
+            };
+        </script>
+    </body>
+    </html>
+    """
+    from starlette.responses import HTMLResponse
+    return HTMLResponse(html)
+
+
+# ReDoc endpoint (alternative documentation UI)
+@app.route("/redoc", methods=["GET"])
+def redoc_ui():
+    """Serve ReDoc UI for API documentation."""
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Insurance MCP API - ReDoc</title>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body { margin: 0; padding: 0; }
+        </style>
+    </head>
+    <body>
+        <redoc spec-url="/openapi.json"></redoc>
+        <script src="https://cdn.jsdelivr.net/npm/redoc@2.1.3/bundles/redoc.standalone.js"></script>
+    </body>
+    </html>
+    """
+    from starlette.responses import HTMLResponse
+    return HTMLResponse(html)
+
+
 # Initialize schema parser on startup
 @app.on_event("startup")
 async def startup_event():
