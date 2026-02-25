@@ -7,7 +7,6 @@ reusable resource so the ChatGPT client can render it inline."""
 from __future__ import annotations
 
 import inspect
-import json
 import logging
 import os
 from copy import deepcopy
@@ -318,38 +317,6 @@ def generate_openapi_spec():
                     }
                 }
             },
-            "/api/wizard-config": {
-                "get": {
-                    "summary": "Get wizard configuration",
-                    "description": "Returns wizard flow and field definitions for frontend",
-                    "tags": ["Configuration"],
-                    "responses": {
-                        "200": {
-                            "description": "Wizard configuration",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "properties": {
-                                            "wizard": {
-                                                "type": "object",
-                                                "description": "Wizard flow configuration"
-                                            },
-                                            "fields": {
-                                                "type": "object",
-                                                "description": "Field definitions"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "500": {
-                            "description": "Failed to load wizard configuration"
-                        }
-                    }
-                }
-            },
             "/api/quick-quote-carriers": {
                 "get": {
                     "summary": "Get carrier estimates",
@@ -559,29 +526,6 @@ async def startup_event():
             logger.warning("Server will continue without schema-based minimal fields")
     else:
         logger.warning("PERSONAL_AUTO_RATE_API_KEY not set, schema parser not initialized")
-
-
-@app.route("/api/wizard-config", methods=["GET"])
-async def get_wizard_config(request: Request):
-    """Serve wizard configuration to frontend."""
-    from .wizard_config_loader import get_wizard_flow, get_wizard_fields
-
-    try:
-        wizard = get_wizard_flow()
-        fields = get_wizard_fields()
-        return JSONResponse(
-            {
-                "wizard": wizard,
-                "fields": fields
-            },
-            headers={"Access-Control-Allow-Origin": "*"}
-        )
-    except Exception as e:
-        logger.exception("Failed to load wizard configuration")
-        return JSONResponse(
-            {"error": f"Failed to load wizard configuration: {str(e)}"},
-            status_code=500
-        )
 
 
 @app.route("/api/quick-quote-carriers", methods=["GET"])
