@@ -192,7 +192,7 @@ def build_payload_from_form_data(form_data: Dict[str, Any]) -> Dict[str, Any]:
                                 try:
                                     dt = datetime.fromisoformat(field_value)
                                     field_value = dt.isoformat()
-                                except:
+                                except Exception:
                                     pass
                         result[key] = field_value
                     else:

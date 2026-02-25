@@ -451,13 +451,16 @@ def format_rate_results_summary(rate_results: Any) -> str:
         # Coverages
         coverages = []
         bi = result.get("BodilyInjuryLimit") or result.get("bodilyInjuryLimit")
-        if bi: coverages.append(f"BI: {bi}")
-        
+        if bi:
+            coverages.append(f"BI: {bi}")
+
         pd = result.get("PropertyDamageLimit") or result.get("propertyDamageLimit")
-        if pd: coverages.append(f"PD: {pd}")
-        
+        if pd:
+            coverages.append(f"PD: {pd}")
+
         um = result.get("UninsuredMotoristLimit") or result.get("uninsuredMotoristLimit")
-        if um: coverages.append(f"UM: {um}")
+        if um:
+            coverages.append(f"UM: {um}")
         
         if coverages:
             summary_lines.append(f"  Coverages: {', '.join(coverages)}")
@@ -467,18 +470,22 @@ def format_rate_results_summary(rate_results: Any) -> str:
         if isinstance(installments, list) and installments:
             payment_opts = []
             for inst in installments:
-                if not isinstance(inst, dict): continue
+                if not isinstance(inst, dict):
+                    continue
                 amount = inst.get("InstallmentAmount") or inst.get("installmentAmount")
                 count = inst.get("InstallmentCount") or inst.get("installmentCount")
                 down = inst.get("DownPayment") or inst.get("downPayment")
-                
+
                 opt_str = ""
-                if down: opt_str += f"${down:,.2f} down"
+                if down:
+                    opt_str += f"${down:,.2f} down"
                 if amount and count:
-                    if opt_str: opt_str += " + "
+                    if opt_str:
+                        opt_str += " + "
                     opt_str += f"${amount:,.2f} x {count}"
-                
-                if opt_str: payment_opts.append(opt_str)
+
+                if opt_str:
+                    payment_opts.append(opt_str)
             
             if payment_opts:
                 summary_lines.append(f"  Payment Options: {'; '.join(payment_opts)}")

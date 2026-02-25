@@ -256,7 +256,6 @@ def format_quote_range_message(
         Formatted message with quote ranges
     """
     best_min, best_max, worst_min, worst_max = calculate_quote_range(zip_code, num_drivers)
-    region = get_region_from_zip(zip_code)
 
     message = f"**Quick Quote Range for {city}, {state}** (Zip: {zip_code})\n\n"
 
