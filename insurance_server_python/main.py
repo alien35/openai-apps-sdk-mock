@@ -238,6 +238,20 @@ mcp._mcp_server.request_handlers[types.ReadResourceRequest] = _handle_read_resou
 app = mcp.streamable_http_app()
 
 
+# Health check endpoint
+@app.route("/health", methods=["GET"])
+def health_check():
+    """Health check endpoint for container orchestration."""
+    return {"status": "healthy"}
+
+
+# Root endpoint
+@app.route("/", methods=["GET"])
+def root():
+    """Root endpoint."""
+    return {"service": "insurance-mcp-server", "status": "running"}
+
+
 # Initialize schema parser on startup
 @app.on_event("startup")
 async def startup_event():
