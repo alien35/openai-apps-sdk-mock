@@ -49,7 +49,6 @@ Alternative documentation interface with:
 - `GET /health` - Health check for container orchestration
 
 ### Configuration Endpoints
-- `GET /api/minimal-fields-config` - Minimal required fields configuration
 - `GET /api/wizard-config` - Wizard flow and field definitions
 
 ### Quote Endpoints
