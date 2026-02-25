@@ -318,29 +318,6 @@ def generate_openapi_spec():
                     }
                 }
             },
-            "/api/minimal-fields-config": {
-                "get": {
-                    "summary": "Get minimal fields configuration",
-                    "description": "Returns the minimal required fields for insurance quote collection",
-                    "tags": ["Configuration"],
-                    "responses": {
-                        "200": {
-                            "description": "Minimal fields configuration",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "description": "Configuration object with minimal required fields"
-                                    }
-                                }
-                            }
-                        },
-                        "404": {
-                            "description": "Configuration file not found"
-                        }
-                    }
-                }
-            },
             "/api/wizard-config": {
                 "get": {
                     "summary": "Get wizard configuration",
@@ -583,23 +560,6 @@ async def startup_event():
     else:
         logger.warning("PERSONAL_AUTO_RATE_API_KEY not set, schema parser not initialized")
 
-# Serve minimal fields config
-from pathlib import Path
-
-@app.route("/api/minimal-fields-config", methods=["GET"])
-async def get_minimal_fields_config(request: Request):
-    """Serve the minimal fields configuration."""
-    config_path = Path(__file__).parent / "minimal_fields_config.json"
-    if config_path.exists():
-        with open(config_path) as f:
-            config_data = json.load(f)
-        return JSONResponse(
-            config_data,
-            headers={"Access-Control-Allow-Origin": "*"}
-        )
-    logger.error(f"Config file not found at: {config_path}")
-    return JSONResponse({"error": "Config file not found"}, status_code=404)
-
 
 @app.route("/api/wizard-config", methods=["GET"])
 async def get_wizard_config(request: Request):
@@ -664,6 +624,7 @@ async def get_quick_quote_carriers(request: Request):
 @app.route("/assets/images/{filename}", methods=["GET"])
 async def serve_image(request: Request):
     """Serve static images from assets/images directory."""
+    from pathlib import Path
     from starlette.responses import FileResponse
 
     filename = request.path_params["filename"]
