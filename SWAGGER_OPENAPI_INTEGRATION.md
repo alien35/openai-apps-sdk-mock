@@ -48,9 +48,6 @@ Alternative documentation interface with:
 - `GET /` - Root endpoint with service information
 - `GET /health` - Health check for container orchestration
 
-### Configuration Endpoints
-- `GET /api/wizard-config` - Wizard flow and field definitions
-
 ### Quote Endpoints
 - `GET /api/quick-quote-carriers` - Carrier estimates by state
 

@@ -235,57 +235,21 @@ INSURANCE_WIZARD_WIDGET_HTML = """<!DOCTYPE html>
         // Initialize wizard
         async function initWizard() {
             try {
-                // Try to get config from structured content (passed from backend)
+                // Get config from structured content (passed from backend via MCP tool)
                 const structuredContent = window.structuredContent || window.parent?.structuredContent || {};
 
-                if (structuredContent.wizard_config && structuredContent.fields_config) {
-                    // Config was passed from backend
-                    console.log('Using config from structured content');
-                    wizardConfig = structuredContent.wizard_config;
-                    fieldsConfig = structuredContent.fields_config;
+                if (!structuredContent.wizard_config || !structuredContent.fields_config) {
+                    throw new Error('Wizard configuration not provided. This widget must be launched via MCP tool.');
+                }
 
-                    // Pre-fill data if available
-                    if (structuredContent.pre_fill_data) {
-                        formData = { ...structuredContent.pre_fill_data };
-                    }
-                } else {
-                    // Fallback: fetch configuration from API
-                    console.log('Fetching config from API');
+                // Config was passed from backend
+                console.log('Using config from structured content');
+                wizardConfig = structuredContent.wizard_config;
+                fieldsConfig = structuredContent.fields_config;
 
-                    // Get server URL from structured content if available
-                    const serverBaseUrl = structuredContent.server_url || 'http://localhost:8000';
-
-                    // Try multiple server URLs (prioritize server_url from backend)
-                    const serverUrls = [
-                        serverBaseUrl + '/api/wizard-config',
-                        '/api/wizard-config',
-                        window.location.origin + '/api/wizard-config'
-                    ];
-
-                    let configLoaded = false;
-                    let lastError = null;
-
-                    for (const url of serverUrls) {
-                        try {
-                            console.log('Trying URL:', url);
-                            const response = await fetch(url);
-                            if (response.ok) {
-                                const config = await response.json();
-                                wizardConfig = config.wizard;
-                                fieldsConfig = config.fields;
-                                configLoaded = true;
-                                console.log('Config loaded from:', url);
-                                break;
-                            }
-                        } catch (err) {
-                            lastError = err;
-                            console.warn('Failed to fetch from', url, ':', err.message);
-                        }
-                    }
-
-                    if (!configLoaded) {
-                        throw new Error('Failed to load wizard configuration from any source. Last error: ' + (lastError?.message || 'Unknown'));
-                    }
+                // Pre-fill data if available
+                if (structuredContent.pre_fill_data) {
+                    formData = { ...structuredContent.pre_fill_data };
                 }
 
                 // Render first step
