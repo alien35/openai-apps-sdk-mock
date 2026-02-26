@@ -7,6 +7,7 @@ import mcp.types as types
 
 from .insurance_state_widget import INSURANCE_STATE_WIDGET_HTML
 from .quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
+from .phone_only_widget import PHONE_ONLY_WIDGET_HTML
 from .constants import MIME_TYPE
 from .models import ToolHandler
 
@@ -50,6 +51,8 @@ INSURANCE_STATE_WIDGET_IDENTIFIER = "insurance-state-selector"
 INSURANCE_STATE_WIDGET_TEMPLATE_URI = "ui://widget/insurance-state.html"
 QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER = "quick-quote-results"
 QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI = "ui://widget/quick-quote-results.html"
+PHONE_ONLY_WIDGET_IDENTIFIER = "phone-only"
+PHONE_ONLY_WIDGET_TEMPLATE_URI = "ui://widget/phone-only.html"
 
 # Input schema for insurance state selector
 INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
@@ -91,6 +94,19 @@ ADDITIONAL_WIDGETS: Tuple[WidgetDefinition, ...] = (
         input_schema=None,
         tool_description=(
             "Displays instant premium range estimates for auto insurance with visual cards showing best and worst case scenarios."
+        ),
+    ),
+    WidgetDefinition(
+        identifier=PHONE_ONLY_WIDGET_IDENTIFIER,
+        title="Phone-only state message",
+        template_uri=PHONE_ONLY_WIDGET_TEMPLATE_URI,
+        invoking="Checking if phone-only state",
+        invoked="Phone-only state detected",
+        html=PHONE_ONLY_WIDGET_HTML,
+        response_text="This state requires a phone call for quotes.",
+        input_schema=None,
+        tool_description=(
+            "Displays a phone call prompt for states that require speaking with a licensed agent (AK, HI, MA)."
         ),
     ),
 )
@@ -245,91 +261,70 @@ def _register_personal_auto_intake_tools() -> None:
                 name="get-enhanced-quick-quote",
                 title="Get auto insurance quote [PRIMARY]",
                 description=(
-                    "**PRIMARY TOOL FOR AUTO INSURANCE QUOTES** - Collect quote information in TWO crisp batches.\n"
+                    "**PRIMARY TOOL FOR AUTO INSURANCE QUOTES**\n"
                     "\n"
-                    "**⚠️ CRITICAL: TWO-BATCH FLOW - DO NOT ASK ALL QUESTIONS AT ONCE**\n"
+                    "🚨 **CRITICAL: DO NOT CALL THIS TOOL UNTIL YOU HAVE ALL INFORMATION** 🚨\n"
                     "\n"
-                    "**🔍 EARLY ZIP CODE VALIDATION:**\n"
-                    "• If user provides ONLY their ZIP code, you can call this tool immediately with just the ZIP code\n"
-                    "• The tool will check if that location requires a phone call (AK, HI, MA)\n"
-                    "• If it does, you'll get a phone-only widget and can skip all other questions\n"
-                    "• If it doesn't, continue collecting information normally\n"
+                    "This tool REQUIRES all fields from both batches. Calling it early will result in an error.\n"
                     "\n"
                     "═══════════════════════════════════════════════════════════════\n"
-                    "**BATCH 1 - BASIC INFORMATION** (Ask these 4 items together)\n"
+                    "**STEP 1: ASK BATCH 1 QUESTIONS** (Do NOT call the tool yet)\n"
                     "═══════════════════════════════════════════════════════════════\n"
                     "\n"
-                    "Say exactly:\n"
-                    "'To provide quick insurance estimates and help you compare options, please share:'\n"
+                    "Say: \"To provide quick insurance estimates and help you compare options, please share:\"\n"
                     "\n"
-                    "Then list with bullet points:\n"
+                    "Then list:\n"
                     "• **ZIP code**\n"
-                    "• **Number of vehicles**\n"
+                    "• **Number of vehicles** (1 or 2)\n"
                     "• **Year, make, and model** for each vehicle\n"
                     "• **Coverage preference**: full coverage or liability only\n"
                     "\n"
-                    "**⚠️ VALIDATION - After user responds:**\n"
-                    "✓ If they ONLY provided ZIP code → Call this tool with just ZIP code to validate early\n"
-                    "✓ If phone-only state detected → Show phone widget and STOP (don't ask more questions)\n"
-                    "✓ If normal state → Check if you have all 4 items (zip, vehicles count, vehicle details, coverage)\n"
+                    "⛔ **DO NOT CALL THE TOOL YET** - Wait for the user's response.\n"
                     "\n"
-                    "**If ANY field is missing:** Ask specifically for the missing field(s):\n"
-                    "- 'I still need your ZIP code'\n"
-                    "- 'What's the year, make, and model of your second vehicle?'\n"
-                    "- 'Do you want liability only or full coverage?'\n"
-                    "\n"
-                    "⛔ **STOP HERE - WAIT FOR USER TO PROVIDE ALL BATCH 1 INFO**\n"
+                    "If they're missing any fields, ask specifically for what's missing.\n"
+                    "Once you have ALL 4 items, proceed to Step 2.\n"
                     "\n"
                     "═══════════════════════════════════════════════════════════════\n"
-                    "**BATCH 2 - DRIVER DETAILS** (Ask these 3 items together)\n"
+                    "**STEP 2: ASK BATCH 2 QUESTIONS** (Still don't call the tool)\n"
                     "═══════════════════════════════════════════════════════════════\n"
                     "\n"
-                    "**ONLY after Batch 1 is complete,** say:\n"
-                    "'Thanks! Now, I just need a few driver details:'\n"
+                    "Say: \"Thanks! Now, I just need a few driver details:\"\n"
                     "\n"
-                    "Then list with bullet points:\n"
-                    "• **Number of drivers**\n"
+                    "Then list:\n"
+                    "• **Number of drivers** (1 or 2)\n"
                     "• **Age** of each driver\n"
                     "• **Marital status**: single, married, divorced, or widowed\n"
                     "\n"
-                    "**⚠️ VALIDATION - Before calling this tool:**\n"
-                    "✓ Verify you have number of drivers (1 or 2)\n"
-                    "✓ Verify you have age for EACH driver\n"
-                    "✓ Verify you have marital status for EACH driver\n"
+                    "⛔ **DO NOT CALL THE TOOL YET** - Wait for the user's response.\n"
                     "\n"
-                    "**If ANY field is missing:** Ask specifically:\n"
-                    "- 'How many drivers will be on the policy?'\n"
-                    "- 'What is the age of the second driver?'\n"
-                    "- 'What is your marital status?'\n"
-                    "\n"
-                    "⛔ **WAIT FOR USER TO PROVIDE ALL DRIVER INFO**\n"
+                    "If they're missing any fields, ask specifically for what's missing.\n"
+                    "Once you have ALL driver info, proceed to Step 3.\n"
                     "\n"
                     "═══════════════════════════════════════════════════════════════\n"
-                    "**STEP 3 - CALL THE TOOL**\n"
+                    "**STEP 3: CALL THIS TOOL** (Only after Steps 1 and 2 are complete)\n"
                     "═══════════════════════════════════════════════════════════════\n"
                     "\n"
-                    "Only after collecting ALL information from BOTH batches, call this tool.\n"
+                    "✅ **Before calling, verify you have:**\n"
+                    "- ZIP code\n"
+                    "- Number of vehicles\n"
+                    "- Vehicle details (year, make, model) for each vehicle\n"
+                    "- Coverage preference\n"
+                    "- Number of drivers\n"
+                    "- Driver details (age, marital status) for each driver\n"
+                    "\n"
+                    "If ALL fields are present, call this tool with all the data.\n"
+                    "The tool will display the quote widget automatically.\n"
                     "\n"
                     "**⚠️ AFTER CALLING: The quote is complete. Do not call this tool again.**\n"
                     "\n"
-                    "**FORMATTING RULES:**\n"
-                    "• Use markdown **bold** for field labels (ZIP code, Number of vehicles, etc.)\n"
+                    "═══════════════════════════════════════════════════════════════\n"
+                    "**FORMATTING GUIDELINES**\n"
+                    "═══════════════════════════════════════════════════════════════\n"
+                    "• Use markdown **bold** for field labels\n"
                     "• Say 'full coverage' not 'full_coverage'\n"
                     "• Say 'liability only' not 'liability'\n"
-                    "• Be conversational and natural\n"
-                    "• Don't use technical terms like 'batch'\n"
-                    "\n"
-                    "**REQUIRED FIELD CHECKING:**\n"
-                    "Before Batch 2 - check if user provided:\n"
-                    "  ❌ Missing ZIP code → 'I need your ZIP code to provide accurate quotes.'\n"
-                    "  ❌ Missing vehicle count → 'How many vehicles do you need to insure?'\n"
-                    "  ❌ Missing vehicle details → 'What's the year, make, and model of vehicle [N]?'\n"
-                    "  ❌ Missing coverage → 'Would you like liability only or full coverage?'\n"
-                    "\n"
-                    "Before calling tool - check if user provided:\n"
-                    "  ❌ Missing driver count → 'How many drivers will be on the policy?'\n"
-                    "  ❌ Missing driver age → 'What is the age of driver [N]?'\n"
-                    "  ❌ Missing marital status → 'What is the marital status of driver [N]?'\n"
+                    "• Be conversational - don't mention 'batches' or 'steps'\n"
+                    "• Keep it natural and friendly\n"
                 ),
                 inputSchema=_model_schema(QuickQuoteIntake),
                 _meta=quick_quote_meta,

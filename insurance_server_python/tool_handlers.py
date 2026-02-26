@@ -63,17 +63,60 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
 
     payload = QuickQuoteIntake.model_validate(arguments)
 
-    logger.info(f"Quick quote request: zip={payload.zip_code}, drivers={payload.num_drivers}, vehicles={payload.num_vehicles}, coverage={payload.coverage_preference}")
+    # DETAILED LOGGING: Log exactly what fields were provided
+    logger.info("=" * 80)
+    logger.info("QUICK QUOTE TOOL INVOKED")
+    logger.info("=" * 80)
+    logger.info(f"Raw arguments received: {arguments}")
+    logger.info(f"Parsed payload fields:")
+    logger.info(f"  - zip_code: {payload.zip_code}")
+    logger.info(f"  - num_vehicles: {payload.num_vehicles}")
+    logger.info(f"  - vehicles: {payload.vehicles}")
+    logger.info(f"  - coverage_preference: {payload.coverage_preference}")
+    logger.info(f"  - num_drivers: {payload.num_drivers}")
+    logger.info(f"  - drivers: {payload.drivers}")
+    logger.info("=" * 80)
 
-    # EARLY VALIDATION: Check if we only have zip_code
-    # This allows us to validate the location and show phone widget immediately if needed
-    has_only_zip = (
-        payload.num_vehicles is None and
-        payload.vehicles is None and
-        payload.coverage_preference is None and
-        payload.num_drivers is None and
-        payload.drivers is None
-    )
+    # ⛔ STRICT VALIDATION: ALL FIELDS REQUIRED - NO PARTIAL CALLS ALLOWED ⛔
+    # This tool should ONLY be called after the assistant has collected ALL information
+    # from BOTH batches. No early validation, no partial calls.
+
+    import mcp.types as types
+
+    missing_fields = []
+
+    # Check ALL required fields
+    if payload.num_vehicles is None:
+        missing_fields.append("Number of vehicles")
+    if payload.vehicles is None or len(payload.vehicles) == 0:
+        missing_fields.append("Vehicle details (year, make, model)")
+    if payload.coverage_preference is None:
+        missing_fields.append("Coverage preference")
+    if payload.num_drivers is None:
+        missing_fields.append("Number of drivers")
+    if payload.drivers is None or len(payload.drivers) == 0:
+        missing_fields.append("Driver details (age, marital status)")
+
+    # If ANY field is missing, reject the call with clear guidance
+    if missing_fields:
+        logger.error(f"❌ TOOL CALLED TOO EARLY - Missing fields: {', '.join(missing_fields)}")
+        error_message = (
+            "⚠️ This tool requires ALL information from both batches before being called.\n\n"
+            "**Missing information:**\n"
+            + "\n".join(f"• {field}" for field in missing_fields) +
+            "\n\n**Instructions:**\n"
+            "1. First, collect: ZIP code, number of vehicles, vehicle details, and coverage preference\n"
+            "2. Then, collect: number of drivers and driver details (age, marital status)\n"
+            "3. Only after collecting ALL information, call this tool\n\n"
+            "Please collect the missing information before calling this tool again."
+        )
+        return {
+            "content": [types.TextContent(type="text", text=error_message)],
+            "structured_content": {},
+        }
+
+    # ✅ ALL FIELDS PRESENT - Proceed with quote generation
+    logger.info("✅ ALL FIELDS PRESENT - Proceeding with quote generation")
 
     # Look up city and state from zip code
     city_state = _lookup_city_state_from_zip(payload.zip_code)
@@ -89,22 +132,21 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
         lookup_failed = False
         logger.info(f"Resolved location: {city}, {state}")
 
-    # EARLY PHONE-ONLY STATE DETECTION
-    # If user only provided zip code and it's phone-only or lookup failed, return phone widget immediately
-    phone_only_states = ["AK", "HI", "MA", "Alaska", "Hawaii", "Massachusetts"]
-    is_phone_only = (state and state in phone_only_states) or lookup_failed
+    # Check if this is a phone-only state (AK, HI, MA)
+    PHONE_ONLY_STATES = ["AK", "HI", "MA", "Alaska", "Hawaii", "Massachusetts"]
+    is_phone_only = (state and state in PHONE_ONLY_STATES) or lookup_failed
 
-    if has_only_zip and is_phone_only:
-        logger.info(f"Early validation: {state or 'unknown'} is phone-only or lookup failed - showing phone widget without asking for more info")
+    # If phone-only state, show phone widget instead of quote
+    if is_phone_only:
+        logger.info(f"Phone-only state detected: {state or 'unknown'} - showing phone widget")
 
-        import mcp.types as types
-        from .widget_registry import WIDGETS_BY_ID, QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER, _embedded_widget_resource, _tool_meta
+        from .widget_registry import WIDGETS_BY_ID, PHONE_ONLY_WIDGET_IDENTIFIER, _embedded_widget_resource, _tool_meta
 
-        # Get widget metadata
-        quick_quote_widget = WIDGETS_BY_ID[QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER]
-        widget_resource = _embedded_widget_resource(quick_quote_widget)
+        # Get phone-only widget metadata
+        phone_only_widget = WIDGETS_BY_ID[PHONE_ONLY_WIDGET_IDENTIFIER]
+        widget_resource = _embedded_widget_resource(phone_only_widget)
         widget_meta = {
-            **_tool_meta(quick_quote_widget),
+            **_tool_meta(phone_only_widget),
             "openai.com/widget": widget_resource.model_dump(mode="json"),
         }
 
@@ -117,47 +159,16 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
         else:
             message = f"I'd be happy to help you get a quote in {city}, {state}. Since we require a call for quotes in {state}, please contact us to speak with a licensed agent who specializes in {state} insurance and can provide personalized quotes."
 
-        # Return phone widget immediately
+        # Return phone-only widget
         return {
             "structured_content": {
                 "zip_code": payload.zip_code,
                 "city": city,
                 "state": state_abbr,
-                "num_drivers": 1,
-                "num_vehicles": 1,
-                "carriers": [],  # Empty for phone-only
-                "mercury_logo": get_carrier_logo("Mercury Auto Insurance"),
-                "stage": "quick_quote_complete",
                 "lookup_failed": lookup_failed,
             },
             "content": [types.TextContent(type="text", text=message)],
             "meta": widget_meta,
-        }
-
-    # VALIDATION: Check if we have all required fields to generate a quote
-    # If not, we should not proceed (this should not happen if assistant follows instructions)
-    missing_fields = []
-    if payload.num_vehicles is None:
-        missing_fields.append("number of vehicles")
-    if payload.vehicles is None or len(payload.vehicles) == 0:
-        missing_fields.append("vehicle information")
-    if payload.coverage_preference is None:
-        missing_fields.append("coverage preference")
-    if payload.num_drivers is None:
-        missing_fields.append("number of drivers")
-    if payload.drivers is None or len(payload.drivers) == 0:
-        missing_fields.append("driver information")
-
-    if missing_fields:
-        logger.warning(f"Incomplete quote request - missing: {', '.join(missing_fields)}")
-        import mcp.types as types
-        error_message = (
-            f"I need more information to generate your quote. Please provide:\n"
-            f"{'• ' + chr(10) + '• '.join(missing_fields)}"
-        )
-        return {
-            "content": [types.TextContent(type="text", text=error_message)],
-            "structured_content": {},
         }
 
     # Get counts from payload
