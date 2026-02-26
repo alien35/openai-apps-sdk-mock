@@ -59,11 +59,11 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
     """
     from .utils import _lookup_city_state_from_zip
     from .quick_quote_ranges import calculate_enhanced_quote_range
-    from .models import EnhancedQuickQuoteIntake
+    from .models import QuickQuoteIntake
 
-    payload = EnhancedQuickQuoteIntake.model_validate(arguments)
+    payload = QuickQuoteIntake.model_validate(arguments)
 
-    logger.info(f"Enhanced quick quote request: zip={payload.zip_code}, age={payload.primary_driver_age}, marital={payload.primary_driver_marital_status}, coverage={payload.coverage_type}")
+    logger.info(f"Quick quote request: zip={payload.zip_code}, drivers={payload.num_drivers}, vehicles={payload.num_vehicles}, coverage={payload.coverage_preference}")
 
     # Look up city and state from zip code
     city_state = _lookup_city_state_from_zip(payload.zip_code)
@@ -79,44 +79,63 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
         lookup_failed = False
         logger.info(f"Resolved location: {city}, {state}")
 
-    # Count drivers and vehicles
-    num_drivers = 2 if payload.additional_driver else 1
-    num_vehicles = 2 if payload.vehicle_2 else 1
+    # Get counts from payload
+    num_drivers = payload.num_drivers
+    num_vehicles = payload.num_vehicles
 
     if not lookup_failed:
-        logger.info(f"Enhanced quick quote: {num_drivers} drivers, {num_vehicles} vehicles in {city}, {state}")
+        logger.info(f"Quick quote: {num_drivers} drivers, {num_vehicles} vehicles in {city}, {state}")
 
     # Skip quote calculation if lookup failed - we'll show phone-only prompt
     if lookup_failed:
         carriers = []
         message = f"I can help you get a quote for zip code {payload.zip_code}. Please call us for a personalized quote."
     else:
+        # Get primary driver and vehicle info
+        primary_driver = payload.drivers[0]
+        primary_vehicle = payload.vehicles[0]
+
+        # Get additional driver info if present
+        additional_driver_age = payload.drivers[1].age if len(payload.drivers) > 1 else None
+        additional_driver_marital = payload.drivers[1].marital_status if len(payload.drivers) > 1 else None
+
+        # Normalize coverage type (convert liability_only/full_coverage to old format)
+        coverage_type = "full_coverage" if payload.coverage_preference == "full_coverage" else "liability"
+
         # Calculate enhanced ranges based on provided details
         best_min, best_max, worst_min, worst_max = calculate_enhanced_quote_range(
             zip_code=payload.zip_code,
             city=city,
             state=state,
-            primary_driver_age=payload.primary_driver_age,
-            primary_driver_marital_status=payload.primary_driver_marital_status,
-            vehicle_1_year=payload.vehicle_1.year,
-            coverage_type=payload.coverage_type,
+            primary_driver_age=primary_driver.age,
+            primary_driver_marital_status=primary_driver.marital_status,
+            vehicle_1_year=primary_vehicle.year,
+            coverage_type=coverage_type,
             num_drivers=num_drivers,
             num_vehicles=num_vehicles,
-            additional_driver_age=payload.additional_driver.age if payload.additional_driver else None,
-            additional_driver_marital_status=payload.additional_driver.marital_status if payload.additional_driver else None,
+            additional_driver_age=additional_driver_age,
+            additional_driver_marital_status=additional_driver_marital,
         )
 
         # Build message
         message = "Perfect! I've generated your insurance quote estimates.\n\n"
         message += "**Your Profile:**\n"
         message += f"📍 Location: {city}, {state} {payload.zip_code}\n"
-        message += f"🚗 Vehicle: {payload.vehicle_1.year} {payload.vehicle_1.make} {payload.vehicle_1.model}\n"
-        if payload.vehicle_2:
-            message += f"🚗 Vehicle 2: {payload.vehicle_2.year} {payload.vehicle_2.make} {payload.vehicle_2.model}\n"
-        message += f"🛡️ Coverage: {'Full Coverage (Liability + Comp/Coll)' if payload.coverage_type == 'full_coverage' else 'Liability Only'}\n"
-        message += f"👤 Primary Driver: Age {payload.primary_driver_age}, {payload.primary_driver_marital_status.title()}\n"
-        if payload.additional_driver:
-            message += f"👥 Additional Driver: Age {payload.additional_driver.age}, {payload.additional_driver.marital_status.title()}\n"
+
+        # List vehicles
+        for idx, vehicle in enumerate(payload.vehicles, 1):
+            vehicle_label = "Vehicle" if idx == 1 else f"Vehicle {idx}"
+            message += f"🚗 {vehicle_label}: {vehicle.year} {vehicle.make} {vehicle.model}\n"
+
+        # Coverage
+        coverage_display = 'Full Coverage (Liability + Comp/Coll)' if payload.coverage_preference == 'full_coverage' else 'Liability Only'
+        message += f"🛡️ Coverage: {coverage_display}\n"
+
+        # List drivers
+        for idx, driver in enumerate(payload.drivers, 1):
+            driver_label = "Primary Driver" if idx == 1 else f"Driver {idx}"
+            message += f"👤 {driver_label}: Age {driver.age}, {driver.marital_status.title()}\n"
+
         message += "\n\n**Your estimated quotes from 3 carriers are displayed above.**\n\n"
         message += "These are estimates based on your information. Click 'Continue to Personalized Quote' to get a final rate."
 
@@ -142,25 +161,25 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
 
         estimator = InsuranceQuoteEstimator()
 
-        # Prepare vehicle dict
+        # Prepare vehicle dict using primary vehicle
         vehicle_dict = {
-            "year": payload.vehicle_1.year,
-            "make": payload.vehicle_1.make,
-            "model": payload.vehicle_1.model,
+            "year": primary_vehicle.year,
+            "make": primary_vehicle.make,
+            "model": primary_vehicle.model,
         }
 
-        # Determine coverage type
-        coverage_type = "full" if payload.coverage_type == "full_coverage" else "liability"
+        # Determine coverage type for estimation engine
+        coverage_type_for_engine = "full" if payload.coverage_preference == "full_coverage" else "liability"
 
         # Generate estimates
         try:
             estimates = estimator.estimate_quotes(
                 state=normalized or "CA",
                 zip_code=payload.zip_code,
-                age=payload.primary_driver_age,
-                marital_status=payload.primary_driver_marital_status,
+                age=primary_driver.age,
+                marital_status=primary_driver.marital_status,
                 vehicle=vehicle_dict,
-                coverage_type=coverage_type,
+                coverage_type=coverage_type_for_engine,
                 carriers=carrier_names,
             )
 
@@ -169,11 +188,11 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
             from .pricing.risk_score import calculate_risk_score
 
             risk_score = calculate_risk_score(
-                age=payload.primary_driver_age,
-                marital_status=payload.primary_driver_marital_status,
+                age=primary_driver.age,
+                marital_status=primary_driver.marital_status,
                 vehicle_age=2026 - vehicle_dict["year"],
                 zip_code=payload.zip_code,
-                coverage_type=coverage_type,
+                coverage_type=coverage_type_for_engine,
                 accidents=0,
                 tickets=0,
             )
@@ -182,10 +201,10 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
                 explanation_file = log_quick_quote_calculation(
                     state=normalized or "CA",
                     zip_code=payload.zip_code,
-                    age=payload.primary_driver_age,
-                    marital_status=payload.primary_driver_marital_status,
+                    age=primary_driver.age,
+                    marital_status=primary_driver.marital_status,
                     vehicle=vehicle_dict,
-                    coverage_type=coverage_type,
+                    coverage_type=coverage_type_for_engine,
                     baseline=estimates["baseline"],
                     quotes=estimates["quotes"],
                     risk_score=risk_score,
@@ -268,7 +287,7 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
         "zip_code": payload.zip_code,
         "city": city,
         "state": state_abbr,  # Use abbreviation for consistent phone-only state detection
-        "primary_driver_age": payload.primary_driver_age,
+        "primary_driver_age": payload.drivers[0].age if payload.drivers else None,
         "num_drivers": num_drivers,
         "num_vehicles": num_vehicles,
         "server_url": server_base_url,
