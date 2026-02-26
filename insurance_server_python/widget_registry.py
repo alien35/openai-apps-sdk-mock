@@ -259,7 +259,7 @@ def _register_personal_auto_intake_tools() -> None:
         ToolRegistration(
             tool=types.Tool(
                 name="get-enhanced-quick-quote",
-                title="Get auto insurance quote [PRIMARY]",
+                title="Get Quote",
                 description=(
                     "**PRIMARY TOOL FOR AUTO INSURANCE QUOTES**\n"
                     "\n"
@@ -313,9 +313,26 @@ def _register_personal_auto_intake_tools() -> None:
                     "- Driver details (age, marital status) for each driver\n"
                     "\n"
                     "If ALL fields are present, call this tool with all the data.\n"
-                    "The tool will display the quote widget automatically.\n"
+                    "The tool will display the appropriate widget automatically.\n"
                     "\n"
-                    "**⚠️ AFTER CALLING: The quote is complete. Do not call this tool again.**\n"
+                    "🚨 **AFTER CALLING THIS TOOL** 🚨\n"
+                    "\n"
+                    "The widget will be displayed automatically. Then:\n"
+                    "\n"
+                    "1. Show the tool's response message as-is (don't add extra info)\n"
+                    "2. Add ONE simple follow-up line: 'Let me know if you have any questions!'\n"
+                    "3. STOP - wait for the user to respond\n"
+                    "\n"
+                    "**Do NOT:**\n"
+                    "• Add explanations about coverage, deductibles, or discounts\n"
+                    "• Mention other insurance companies (Geico, Progressive, State Farm, etc.)\n"
+                    "• Provide additional steps or advice unless the user asks\n"
+                    "• Call this tool again immediately (only if user requests different information)\n"
+                    "\n"
+                    "For phone-only states (AK, HI, MA), the tool shows a phone widget.\n"
+                    "For other states, the tool shows a quote widget with carrier estimates.\n"
+                    "\n"
+                    "After the widget appears, you can help with follow-up questions if the user has any.\n"
                     "\n"
                     "═══════════════════════════════════════════════════════════════\n"
                     "**FORMATTING GUIDELINES**\n"
