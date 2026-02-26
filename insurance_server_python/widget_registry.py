@@ -222,7 +222,7 @@ def _register_personal_auto_intake_tools() -> None:
         _submit_carrier_estimates,
     )
     from .models import (
-        EnhancedQuickQuoteIntake,
+        QuickQuoteIntake,
         CarrierEstimatesSubmission,
     )
     from .utils import _model_schema
@@ -238,51 +238,95 @@ def _register_personal_auto_intake_tools() -> None:
         "openai.com/widget": _embedded_widget_resource(quick_quote_widget).model_dump(mode="json"),
     }
 
-    # Register ENHANCED quick quote tool (PRIMARY - with detailed driver/vehicle info)
+    # Register quick quote tool (PRIMARY - streamlined crisp questions)
     register_tool(
         ToolRegistration(
             tool=types.Tool(
                 name="get-enhanced-quick-quote",
-                title="Get auto insurance quote with detailed information [PRIMARY]",
+                title="Get auto insurance quote [PRIMARY]",
                 description=(
-                    "**PRIMARY TOOL FOR INSURANCE QUOTES** - Get an accurate auto insurance quote using a TWO-STEP conversation flow: "
-                    "\n\n"
-                    "**CRITICAL: DO NOT ASK ALL QUESTIONS AT ONCE!** Follow this exact flow:\n"
+                    "**PRIMARY TOOL FOR AUTO INSURANCE QUOTES** - Collect quote information in TWO crisp batches.\n"
                     "\n"
-                    "**STEP 1 - ASK VEHICLE QUESTIONS ONLY (ask these 3 questions together, then STOP and WAIT for user response):**\n"
-                    "Say something like 'Let's start with your vehicle information:'\n"
-                    "1. What's the year, make, and model of your vehicle? (don't say 'Vehicle 1')\n"
-                    "2. Do you have a second vehicle to include? If so, what's the year, make, and model?\n"
-                    "3. Are you looking for Liability or Full coverage?\n"
+                    "**⚠️ CRITICAL: TWO-BATCH FLOW - DO NOT ASK ALL QUESTIONS AT ONCE**\n"
                     "\n"
-                    "⚠️ STOP HERE - WAIT FOR USER TO RESPOND WITH VEHICLE INFO BEFORE PROCEEDING\n"
+                    "═══════════════════════════════════════════════════════════════\n"
+                    "**BATCH 1 - BASIC INFORMATION** (Ask these 4 items together)\n"
+                    "═══════════════════════════════════════════════════════════════\n"
                     "\n"
-                    "**STEP 2 - ONLY AFTER USER RESPONDS, ASK DRIVER QUESTIONS (ask these 4 questions together):**\n"
-                    "Say something like 'Great! Now I need some driver details:' or 'Now I'll need some information about the driver(s):'\n"
-                    "4. What is the primary driver's age?\n"
-                    "5. What is their marital status? (single, married, divorced, or widowed)\n"
-                    "6. Will there be an additional driver? If yes, what is their age and marital status?\n"
-                    "7. What is your 5-digit zip code?\n"
+                    "Say exactly:\n"
+                    "'To provide quick insurance estimates and help you compare options, please share:'\n"
                     "\n"
-                    "⚠️ WAIT FOR USER TO RESPOND WITH DRIVER INFO\n"
+                    "Then list with bullet points:\n"
+                    "• **ZIP code**\n"
+                    "• **Number of vehicles**\n"
+                    "• **Year, make, and model** for each vehicle\n"
+                    "• **Coverage preference**: full coverage or liability only\n"
                     "\n"
-                    "**STEP 3 - CALL THIS TOOL ONCE:**\n"
-                    "Only after collecting ALL information from both steps, call this tool with the complete data.\n"
+                    "**⚠️ VALIDATION - Before proceeding to Batch 2:**\n"
+                    "✓ Verify you have ZIP code (5 digits)\n"
+                    "✓ Verify you have number of vehicles (1 or 2)\n"
+                    "✓ Verify you have year/make/model for EACH vehicle\n"
+                    "✓ Verify you have coverage preference\n"
                     "\n"
-                    "**⚠️ CRITICAL: AFTER CALLING THIS TOOL, THE QUOTE IS COMPLETE. DO NOT CALL THIS TOOL AGAIN.**\n"
-                    "The widget will display all carrier quotes. The conversation is done after this tool returns.\n"
+                    "**If ANY field is missing:** Ask specifically for the missing field(s):\n"
+                    "- 'I still need your ZIP code'\n"
+                    "- 'What's the year, make, and model of your second vehicle?'\n"
+                    "- 'Do you want liability only or full coverage?'\n"
                     "\n"
-                    "**LANGUAGE STYLE:**\n"
-                    "• Use natural, conversational language\n"
-                    "• Don't say 'Vehicle 1', 'Vehicle 2', or 'full_coverage'\n"
-                    "• Say 'your vehicle' or 'primary vehicle', not 'Vehicle 1'\n"
-                    "• Say 'Full coverage' (capitalized, with space), not 'full_coverage'\n"
-                    "• Don't use the word 'batch'\n"
-                    "\n\n"
-                    "This is the RECOMMENDED TOOL for providing users with insurance quotes. Only use the basic quick quote if the user "
-                    "explicitly refuses to provide detailed information."
+                    "⛔ **STOP HERE - WAIT FOR USER TO PROVIDE ALL BATCH 1 INFO**\n"
+                    "\n"
+                    "═══════════════════════════════════════════════════════════════\n"
+                    "**BATCH 2 - DRIVER DETAILS** (Ask these 3 items together)\n"
+                    "═══════════════════════════════════════════════════════════════\n"
+                    "\n"
+                    "**ONLY after Batch 1 is complete,** say:\n"
+                    "'Thanks! Now, I just need a few driver details:'\n"
+                    "\n"
+                    "Then list with bullet points:\n"
+                    "• **Number of drivers**\n"
+                    "• **Age** of each driver\n"
+                    "• **Marital status**: single, married, divorced, or widowed\n"
+                    "\n"
+                    "**⚠️ VALIDATION - Before calling this tool:**\n"
+                    "✓ Verify you have number of drivers (1 or 2)\n"
+                    "✓ Verify you have age for EACH driver\n"
+                    "✓ Verify you have marital status for EACH driver\n"
+                    "\n"
+                    "**If ANY field is missing:** Ask specifically:\n"
+                    "- 'How many drivers will be on the policy?'\n"
+                    "- 'What is the age of the second driver?'\n"
+                    "- 'What is your marital status?'\n"
+                    "\n"
+                    "⛔ **WAIT FOR USER TO PROVIDE ALL DRIVER INFO**\n"
+                    "\n"
+                    "═══════════════════════════════════════════════════════════════\n"
+                    "**STEP 3 - CALL THE TOOL**\n"
+                    "═══════════════════════════════════════════════════════════════\n"
+                    "\n"
+                    "Only after collecting ALL information from BOTH batches, call this tool.\n"
+                    "\n"
+                    "**⚠️ AFTER CALLING: The quote is complete. Do not call this tool again.**\n"
+                    "\n"
+                    "**FORMATTING RULES:**\n"
+                    "• Use markdown **bold** for field labels (ZIP code, Number of vehicles, etc.)\n"
+                    "• Say 'full coverage' not 'full_coverage'\n"
+                    "• Say 'liability only' not 'liability'\n"
+                    "• Be conversational and natural\n"
+                    "• Don't use technical terms like 'batch'\n"
+                    "\n"
+                    "**REQUIRED FIELD CHECKING:**\n"
+                    "Before Batch 2 - check if user provided:\n"
+                    "  ❌ Missing ZIP code → 'I need your ZIP code to provide accurate quotes.'\n"
+                    "  ❌ Missing vehicle count → 'How many vehicles do you need to insure?'\n"
+                    "  ❌ Missing vehicle details → 'What's the year, make, and model of vehicle [N]?'\n"
+                    "  ❌ Missing coverage → 'Would you like liability only or full coverage?'\n"
+                    "\n"
+                    "Before calling tool - check if user provided:\n"
+                    "  ❌ Missing driver count → 'How many drivers will be on the policy?'\n"
+                    "  ❌ Missing driver age → 'What is the age of driver [N]?'\n"
+                    "  ❌ Missing marital status → 'What is the marital status of driver [N]?'\n"
                 ),
-                inputSchema=_model_schema(EnhancedQuickQuoteIntake),
+                inputSchema=_model_schema(QuickQuoteIntake),
                 _meta=quick_quote_meta,
             ),
             handler=_get_enhanced_quick_quote,

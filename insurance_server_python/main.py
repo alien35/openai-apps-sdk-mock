@@ -239,16 +239,16 @@ app = mcp.streamable_http_app()
 
 # Health check endpoint
 @app.route("/health", methods=["GET"])
-def health_check():
+def health_check(request: Request):
     """Health check endpoint for container orchestration."""
-    return {"status": "healthy"}
+    return JSONResponse({"status": "healthy"})
 
 
 # Root endpoint
 @app.route("/", methods=["GET"])
-def root():
+def root(request: Request):
     """Root endpoint."""
-    return {"service": "insurance-mcp-server", "status": "running"}
+    return JSONResponse({"service": "insurance-mcp-server", "status": "running"})
 
 
 # OpenAPI spec generation
@@ -437,14 +437,14 @@ def generate_openapi_spec():
 
 # OpenAPI spec endpoint
 @app.route("/openapi.json", methods=["GET"])
-def openapi_spec():
+def openapi_spec(request: Request):
     """Serve OpenAPI specification."""
     return JSONResponse(generate_openapi_spec())
 
 
 # Swagger UI endpoint
 @app.route("/docs", methods=["GET"])
-def swagger_ui():
+def swagger_ui(request: Request):
     """Serve Swagger UI for API documentation."""
     html = """
     <!DOCTYPE html>
@@ -483,7 +483,7 @@ def swagger_ui():
 
 # ReDoc endpoint (alternative documentation UI)
 @app.route("/redoc", methods=["GET"])
-def redoc_ui():
+def redoc_ui(request: Request):
     """Serve ReDoc UI for API documentation."""
     html = """
     <!DOCTYPE html>

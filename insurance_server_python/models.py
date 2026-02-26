@@ -489,8 +489,91 @@ class AdditionalDriverInfo(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
 
+class DriverInfo(BaseModel):
+    """Single driver information for the new streamlined flow."""
+    age: int = Field(
+        ...,
+        alias="Age",
+        ge=16,
+        le=100,
+        description="Driver age (16-100)"
+    )
+    marital_status: Literal["single", "married", "divorced", "widowed"] = Field(
+        ...,
+        alias="Marital Status",
+        description="Marital status of the driver"
+    )
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+
+class QuickQuoteIntake(BaseModel):
+    """New streamlined quote intake matching the crisp question format.
+
+    BATCH 1: ZIP code, number of vehicles, vehicle details, coverage preference
+    BATCH 2: Number of drivers, driver details
+
+    All fields are required. The assistant must collect complete information
+    from Batch 1 before proceeding to Batch 2.
+    """
+    # BATCH 1: Basic Information
+    zip_code: str = Field(
+        ...,
+        alias="ZIP Code",
+        pattern=r'^\d{5}$',
+        description="5-digit ZIP code for the insurance quote"
+    )
+    num_vehicles: Literal[1, 2] = Field(
+        ...,
+        alias="Number of Vehicles",
+        description="Number of vehicles to insure (1 or 2)"
+    )
+    vehicles: List[VehicleInfo] = Field(
+        ...,
+        alias="Vehicles",
+        min_length=1,
+        max_length=2,
+        description="List of vehicle information (year, make, model for each)"
+    )
+    coverage_preference: Literal["liability_only", "full_coverage"] = Field(
+        ...,
+        alias="Coverage Preference",
+        description="Coverage type: 'liability_only' for liability-only or 'full_coverage' for comprehensive coverage"
+    )
+
+    # BATCH 2: Driver Information
+    num_drivers: Literal[1, 2] = Field(
+        ...,
+        alias="Number of Drivers",
+        description="Number of drivers on the policy (1 or 2)"
+    )
+    drivers: List[DriverInfo] = Field(
+        ...,
+        alias="Drivers",
+        min_length=1,
+        max_length=2,
+        description="List of driver information (age and marital status for each)"
+    )
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    _strip_zip = field_validator("zip_code", mode="before")(_strip_string)
+
+    @model_validator(mode="after")
+    def validate_counts(self):
+        """Ensure list lengths match declared counts."""
+        if len(self.vehicles) != self.num_vehicles:
+            raise ValueError(f"Expected {self.num_vehicles} vehicles, got {len(self.vehicles)}")
+        if len(self.drivers) != self.num_drivers:
+            raise ValueError(f"Expected {self.num_drivers} drivers, got {len(self.drivers)}")
+        return self
+
+
+# DEPRECATED: Old model kept for backward compatibility during transition
 class EnhancedQuickQuoteIntake(BaseModel):
-    """Enhanced quick quote with grouped collection: vehicles first, then drivers.
+    """DEPRECATED: Use QuickQuoteIntake instead.
+
+    Enhanced quick quote with grouped collection: vehicles first, then drivers.
 
     FIRST - Vehicle Information:
     - Vehicle 1: Year, Make, Model
