@@ -1,64 +1,84 @@
-"""Quick quote results display widget markup for the Python MCP server - New Card Design."""
+"""Quick quote results display widget markup for the Python MCP server - New Card Design.
 
-QUICK_QUOTE_RESULTS_WIDGET_HTML = """
+IMPORTANT: Images are embedded as base64 data URIs to ensure they work in ChatGPT's
+rendering context where external HTTP requests for images are not supported.
+All image assets should be converted to base64 and embedded directly in the HTML.
+"""
+
+from .widget_assets import CAR_BACKGROUND_BASE64, POWERED_BY_LOGO_BASE64, PHONE_BACKGROUND_BASE64
+
+QUICK_QUOTE_RESULTS_WIDGET_HTML = f"""
 <style>
-  * {
+  * {{
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-  }
+  }}
 
-  body {
+  body {{
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background: #ffffff;
     padding: 0;
     margin: 0;
-  }
+  }}
 
-  .quote-container {
+  .quote-container {{
     max-width: 1400px;
     margin: 0 auto;
     background: white;
     border-radius: 24px;
     overflow: hidden;
     box-shadow: 0 4px 6px rgba(0,0,0,0.07);
-  }
+  }}
 
   /* Header section */
-  .header-section {
+  .header-section {{
     background: white;
     position: relative;
     padding: 0 0 40px 0;
     overflow: hidden;
-  }
+  }}
 
-  .car-illustration {
+  /* Reduce spacing for phone-only mode */
+  .phone-only-mode .header-section {{
+    padding: 0 0 8px 0;
+  }}
+
+  .phone-only-mode .header-branding {{
+    margin-bottom: 8px;
+  }}
+
+  .phone-only-mode .phone-call-section {{
+    padding: 8px 40px 48px;
+  }}
+
+  .car-illustration {{
     width: 100%;
     margin: 0;
     padding: 0;
     line-height: 0;
-  }
+  }}
 
-  .car-illustration img {
+  .car-illustration img {{
     width: 100%;
     height: auto;
     display: block;
-  }
+  }}
 
-  .header-branding {
+  .header-branding {{
     text-align: center;
     padding: 24px 40px 0;
     margin-bottom: 32px;
-  }
+  }}
 
-  .powered-by-logo {
+  .powered-by-logo {{
     max-width: 280px;
     height: auto;
     margin: 0 auto;
     display: block;
-  }
+  }}
 
-  .disclaimer-text {
+  .disclaimer-text {{
     text-align: center;
     font-size: 15px;
     color: #546e7a;
@@ -66,22 +86,22 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     max-width: 800px;
     margin: 0 auto;
     padding: 0 40px;
-  }
+  }}
 
   /* Main content area */
-  .content-area {
+  .content-area {{
     padding: 32px;
-  }
+  }}
 
   /* Quote cards */
-  .quotes-list {
+  .quotes-list {{
     display: flex;
     flex-direction: column;
     gap: 0;
     margin-bottom: 32px;
-  }
+  }}
 
-  .quote-card {
+  .quote-card {{
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -89,68 +109,68 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     padding: 24px 32px;
     border-bottom: 1px solid #e0e0e0;
     transition: background 0.2s ease;
-  }
+  }}
 
-  .quote-card:hover {
+  .quote-card:hover {{
     background: #fafafa;
-  }
+  }}
 
-  .quote-card:last-child {
+  .quote-card:last-child {{
     border-bottom: none;
-  }
+  }}
 
-  .carrier-logo-section {
+  .carrier-logo-section {{
     flex: 0 0 220px;
     display: flex;
     justify-content: flex-start;
     align-items: center;
-  }
+  }}
 
-  .carrier-logo-section img {
+  .carrier-logo-section img {{
     max-width: 200px;
     max-height: 55px;
     height: auto;
-  }
+  }}
 
-  .price-section {
+  .price-section {{
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: space-around;
     gap: 40px;
     min-width: 0;
-  }
+  }}
 
-  .monthly-price, .annual-price {
+  .monthly-price, .annual-price {{
     text-align: center;
     flex: 1;
     min-width: 0;
-  }
+  }}
 
-  .price-value {
+  .price-value {{
     font-size: 32px;
     font-weight: 700;
     color: #1565c0;
     line-height: 1.2;
     margin-bottom: 4px;
-  }
+  }}
 
-  .annual-price .price-value {
+  .annual-price .price-value {{
     color: #1a237e;
-  }
+  }}
 
-  .price-label {
+  .price-label {{
     font-size: 13px;
     color: #78909c;
     font-weight: 500;
-  }
+  }}
 
   /* CTA Button */
-  .cta-section {
-    padding: 0 32px 32px;
-  }
+  .cta-section {{
+    padding: 0 32px 24px;
+  }}
 
-  .cta-button {
+  .cta-button {{
     display: block;
     width: 100%;
     padding: 20px;
@@ -164,240 +184,284 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     transition: background 0.2s ease;
     border: none;
     cursor: pointer;
-  }
+  }}
 
-  .cta-button:hover {
+  .cta-button:hover {{
     background: #0d47a1;
-  }
+  }}
 
-  .cta-button::after {
+  .cta-button::after {{
     content: ' →';
     margin-left: 8px;
-  }
+  }}
+
+  /* Legal Disclosure */
+  .legal-disclosure {{
+    padding: 24px 32px 32px;
+    background: #f8f9fa;
+    border-top: 1px solid #e0e0e0;
+  }}
+
+  .legal-disclosure p {{
+    font-size: 12px;
+    color: #5f6368;
+    line-height: 1.6;
+    margin: 0;
+  }}
+
+  .legal-disclosure strong {{
+    font-weight: 600;
+    color: #3c4043;
+  }}
+
+  /* Hide disclaimer and legal disclosure in phone-only mode */
+  .phone-only-mode .disclaimer-text {{
+    display: none;
+  }}
+
+  .phone-only-mode .legal-disclosure {{
+    display: none;
+  }}
 
   /* Loading skeleton styles */
-  .loading-skeleton {
+  .loading-skeleton {{
     display: block;
-  }
+  }}
 
-  .loading-skeleton.hidden {
+  .loading-skeleton.hidden {{
     display: none;
-  }
+  }}
 
-  .skeleton {
+  .skeleton {{
     background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
     border-radius: 8px;
-  }
+  }}
 
-  @keyframes shimmer {
-    0% {
+  @keyframes shimmer {{{{
+    0% {{{{
       background-position: 200% 0;
-    }
-    100% {
+    }}}}
+    100% {{{{
       background-position: -200% 0;
-    }
-  }
+    }}}}
+  }}}}
 
-  .skeleton-card {
+  .skeleton-card {{
     padding: 24px 32px;
     border-bottom: 1px solid #e0e0e0;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-  }
+  }}
 
-  .skeleton-logo {
+  .skeleton-logo {{
     flex: 0 0 220px;
     width: 180px;
     height: 50px;
-  }
+  }}
 
-  .skeleton-prices {
+  .skeleton-prices {{
     flex: 1;
     display: flex;
     gap: 40px;
     justify-content: space-around;
     align-items: center;
-  }
+  }}
 
-  .skeleton-price {
+  .skeleton-price {{
     width: 140px;
     height: 50px;
-  }
+  }}
 
-  .content-loaded {
+  .content-loaded {{
     display: none;
-  }
+  }}
 
-  .content-loaded.visible {
+  .content-loaded.visible {{
     display: block;
-  }
+  }}
 
-  .phone-call-section {
+  .phone-call-section {{
     display: none;
     padding: 48px 40px;
     text-align: center;
-  }
+  }}
 
-  .phone-call-section.visible {
+  .phone-call-section.visible {{
     display: block;
-  }
+  }}
 
-  .phone-call-icon {
+  .phone-call-icon {{
     font-size: 48px;
     margin-bottom: 20px;
-  }
+  }}
 
-  .phone-call-title {
+  .phone-call-title {{
     font-size: 24px;
     font-weight: 700;
     color: #1f2937;
     margin-bottom: 16px;
-  }
+  }}
 
-  .phone-call-text {
+  .phone-call-text {{
     font-size: 16px;
     color: #666;
     line-height: 1.7;
     max-width: 600px;
     margin: 0 auto 32px;
-  }
+  }}
 
-  .phone-number {
+  .phone-number {{
     font-size: 32px;
     font-weight: 700;
     color: #1565c0;
     margin-bottom: 16px;
-  }
+  }}
 
-  .phone-hours {
+  .phone-hours {{
     font-size: 14px;
     color: #78909c;
-  }
+  }}
 
   /* Tablet and small desktop - make more compact but keep horizontal */
-  @media (max-width: 768px) {
-    .quote-card {
+  @media (max-width: 768px) {{
+    .quote-card {{
       padding: 20px 24px;
-    }
+    }}
 
-    .carrier-logo-section {
+    .carrier-logo-section {{
       flex: 0 0 180px;
-    }
+    }}
 
-    .carrier-logo-section img {
+    .carrier-logo-section img {{
       max-width: 160px;
       max-height: 50px;
-    }
+    }}
 
-    .price-section {
+    .price-section {{
       gap: 24px;
-    }
+    }}
 
-    .price-value {
+    .price-value {{
       font-size: 28px;
-    }
+    }}
 
-    .price-label {
+    .price-label {{
       font-size: 12px;
-    }
+    }}
 
-    .content-area {
+    .content-area {{
       padding: 32px 24px;
-    }
+    }}
 
-    .header-branding {
+    .header-branding {{
       padding: 24px 24px 0;
-    }
+    }}
 
-    .disclaimer-text {
+    .disclaimer-text {{
       padding: 0 24px;
-    }
-  }
+    }}
+
+    .legal-disclosure {{
+      padding: 24px;
+    }}
+
+    .legal-disclosure p {{
+      font-size: 11px;
+    }}
+  }}
 
   /* Very compact - still horizontal down to 475px */
-  @media (max-width: 600px) {
-    .quote-card {
+  @media (max-width: 600px) {{
+    .quote-card {{
       padding: 16px 20px;
-    }
+    }}
 
-    .carrier-logo-section {
+    .carrier-logo-section {{
       flex: 0 0 140px;
-    }
+    }}
 
-    .carrier-logo-section img {
+    .carrier-logo-section img {{
       max-width: 130px;
       max-height: 45px;
-    }
+    }}
 
-    .price-section {
+    .price-section {{
       gap: 16px;
-    }
+    }}
 
-    .price-value {
+    .price-value {{
       font-size: 24px;
-    }
+    }}
 
-    .price-label {
+    .price-label {{
       font-size: 11px;
-    }
+    }}
 
-    .content-area {
+    .content-area {{
       padding: 24px 16px;
-    }
+    }}
 
-    .cta-section {
+    .cta-section {{
       padding: 0 16px 24px;
-    }
+    }}
 
-    .header-branding {
+    .header-branding {{
       padding: 24px 16px 0;
-    }
+    }}
 
-    .disclaimer-text {
+    .disclaimer-text {{
       padding: 0 16px;
-    }
-  }
+    }}
+
+    .legal-disclosure {{
+      padding: 20px 16px 24px;
+    }}
+
+    .legal-disclosure p {{
+      font-size: 10px;
+    }}
+  }}
 
   /* Only stack vertically below 475px */
-  @media (max-width: 474px) {
-    .quote-card {
+  @media (max-width: 474px) {{
+    .quote-card {{
       flex-direction: column;
       padding: 24px 16px;
       gap: 20px;
-    }
+    }}
 
-    .carrier-logo-section {
+    .carrier-logo-section {{
       flex: none;
       width: 100%;
       justify-content: center;
-    }
+    }}
 
-    .carrier-logo-section img {
+    .carrier-logo-section img {{
       max-width: 180px;
       max-height: 60px;
-    }
+    }}
 
-    .price-section {
+    .price-section {{
       flex: none;
       width: 100%;
       gap: 32px;
-    }
+    }}
 
-    .price-value {
+    .price-value {{
       font-size: 28px;
-    }
+    }}
 
-    .price-label {
+    .price-label {{
       font-size: 12px;
-    }
-  }
+    }}
+  }}
 </style>
 
-<div class="quote-container">
+<div class="quote-container" id="quote-container">
   <!-- Loading Skeleton -->
   <div class="loading-skeleton" id="loading-skeleton">
     <div class="header-section">
@@ -441,17 +505,22 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
         <div class="skeleton" style="width: 100%; height: 60px;"></div>
       </div>
     </div>
+
+    <!-- Legal Disclosure (in skeleton) -->
+    <div class="legal-disclosure">
+      <div class="skeleton" style="width: 100%; height: 50px;"></div>
+    </div>
   </div>
 
   <!-- Actual Content (hidden until loaded) -->
   <div class="content-loaded" id="content-loaded">
     <div class="header-section">
       <div class="car-illustration">
-        <img src="/assets/images/car-background.png" alt="Car illustration">
+        <img id="header-image" src="{CAR_BACKGROUND_BASE64}" alt="Car illustration">
       </div>
 
       <div class="header-branding">
-        <img class="powered-by-logo" src="/assets/images/powered-by.png" alt="Mercury Insurance - Powered by AIS">
+        <img class="powered-by-logo" src="{POWERED_BY_LOGO_BASE64}" alt="Mercury Insurance - Powered by AIS">
       </div>
 
       <div class="disclaimer-text" id="disclaimer-text">
@@ -483,11 +552,16 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
         </a>
       </div>
     </div>
+
+    <!-- Legal Disclosure -->
+    <div class="legal-disclosure">
+      <p><strong>Important:</strong> These are estimated price ranges based on limited information and industry averages. Actual quotes from carriers may differ significantly based on your complete driving history (accidents, violations), credit score (where permitted), exact coverage selections and deductibles, discounts you may qualify for (bundling, safety features, etc.), and carrier-specific underwriting criteria. To get an accurate quote, you'll need to contact carriers directly or complete a full application.</p>
+    </div>
   </div>
 </div>
 
 <script>
-(() => {
+(() => {{
   if (typeof document === "undefined") return;
 
   const loadingSkeletonEl = document.getElementById("loading-skeleton");
@@ -496,19 +570,25 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
   const quotesListEl = document.getElementById("quotes-list");
   const phoneCallSectionEl = document.getElementById("phone-call-section");
   const ctaButtonEl = document.getElementById("cta-button");
+  const headerImageEl = document.getElementById("header-image");
+  const quoteContainerEl = document.getElementById("quote-container");
 
-  if (!disclaimerTextEl || !quotesListEl || !loadingSkeletonEl || !contentLoadedEl || !phoneCallSectionEl || !ctaButtonEl) return;
+  if (!disclaimerTextEl || !quotesListEl || !loadingSkeletonEl || !contentLoadedEl || !phoneCallSectionEl || !ctaButtonEl || !headerImageEl || !quoteContainerEl) return;
 
-  function formatCurrency(value) {
+  // Image constants for header switching
+  const CAR_BACKGROUND = "{CAR_BACKGROUND_BASE64}";
+  const PHONE_BACKGROUND = "{PHONE_BACKGROUND_BASE64}";
+
+  function formatCurrency(value) {{
     if (!value) return "--";
-    return `$${value.toLocaleString()}`;
-  }
+    return `$${{value.toLocaleString()}}`;
+  }}
 
-  function updateWidget(data) {
-    if (!data) {
+  function updateWidget(data) {{
+    if (!data) {{
       console.log("Quick quote widget: No data for widget");
       return;
-    }
+    }}
 
     console.log("Quick quote widget: Received data:", data);
 
@@ -526,49 +606,56 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     // For phone-only states, ALWAYS force empty carriers
     let carriers = [];
 
-    if (!isPhoneOnlyState) {
+    if (!isPhoneOnlyState) {{
       carriers = data.carriers || [];
 
       // If no carriers provided, use hard-coded fallback
-      if (carriers.length === 0) {
+      if (carriers.length === 0) {{
         console.warn("Quick quote widget: No carriers in data, using fallback");
         carriers = [
-          { name: "Geico", annual_cost: 3100, monthly_cost: 258 },
-          { name: "Progressive Insurance", annual_cost: 3600, monthly_cost: 300 },
-          { name: "Safeco Insurance", annual_cost: 3800, monthly_cost: 317 }
+          {{ name: "Geico", annual_cost: 3100, monthly_cost: 258 }},
+          {{ name: "Progressive Insurance", annual_cost: 3600, monthly_cost: 300 }},
+          {{ name: "Safeco Insurance", annual_cost: 3800, monthly_cost: 317 }}
         ];
-      }
-    } else {
-      console.log(`Quick quote widget: ${state || 'unknown location'} is a phone-only state/lookup failed - forcing empty carriers and call prompt`);
-    }
+      }}
+    }} else {{
+      console.log(`Quick quote widget: ${{state || 'unknown location'}} is a phone-only state/lookup failed - forcing empty carriers and call prompt`);
+    }}
 
     console.log("Quick quote widget: Carriers:", carriers);
     console.log("Quick quote widget: City/State:", city, state);
     console.log("Quick quote widget: Drivers/Vehicles:", numDrivers, numVehicles);
 
-    const driverText = numDrivers === 1 ? "a solo driver" : `${numDrivers} drivers`;
-    const vehicleText = numVehicles === 1 ? "one vehicle" : `${numVehicles} vehicles`;
-    const locationText = city ? `the ${city} area` : `zip code ${zipCode}`;
+    const driverText = numDrivers === 1 ? "a solo driver" : `${{numDrivers}} drivers`;
+    const vehicleText = numVehicles === 1 ? "one vehicle" : `${{numVehicles}} vehicles`;
+    const locationText = city ? `the ${{city}} area` : `zip code ${{zipCode}}`;
 
     // Update disclaimer text with actual data
-    disclaimerTextEl.textContent = `The estimates shown below are assuming you're in ${locationText} as ${driverText} and own ${vehicleText}. Final rates may differ.`;
+    disclaimerTextEl.textContent = `The estimates shown below are assuming you're in ${{locationText}} as ${{driverText}} and own ${{vehicleText}}. Final rates may differ.`;
 
     // Handle phone-only states differently
-    if (isPhoneOnlyState) {
-      console.log(`Quick quote widget: ${state || 'unknown location'} is a phone-only state/lookup failed - showing call prompt`);
+    if (isPhoneOnlyState) {{
+      console.log(`Quick quote widget: ${{state || 'unknown location'}} is a phone-only state/lookup failed - showing call prompt`);
+
+      // Add phone-only mode class to container (hides disclaimer and legal text, reduces spacing)
+      quoteContainerEl.classList.add("phone-only-mode");
+
+      // Switch header image to phone background
+      headerImageEl.src = PHONE_BACKGROUND;
+      headerImageEl.alt = "Phone illustration";
 
       // Hide quotes list
       quotesListEl.style.display = "none";
 
       // Personalize phone call text
       const phoneCallTextEl = document.getElementById("phone-call-text");
-      if (phoneCallTextEl) {
-        if (lookupFailed) {
-          phoneCallTextEl.textContent = `We're ready to help you get the best insurance rates for zip code ${zipCode}. Our licensed agents can provide personalized quotes and answer any questions you have.`;
-        } else {
-          phoneCallTextEl.textContent = `We're ready to help you get the best insurance rates in the ${city} area. Our licensed agents specialize in ${state} insurance and can provide personalized quotes and answer any questions you have.`;
-        }
-      }
+      if (phoneCallTextEl) {{
+        if (lookupFailed) {{
+          phoneCallTextEl.textContent = `We're ready to help you get the best insurance rates for zip code ${{zipCode}}. Our licensed agents can provide personalized quotes and answer any questions you have.`;
+        }} else {{
+          phoneCallTextEl.textContent = `We're ready to help you get the best insurance rates in the ${{city}} area. Our licensed agents specialize in ${{state}} insurance and can provide personalized quotes and answer any questions you have.`;
+        }}
+      }}
 
       // Show phone call section
       phoneCallSectionEl.classList.add("visible");
@@ -577,105 +664,110 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
       ctaButtonEl.href = "tel:+18887724247";
       ctaButtonEl.textContent = "Call Now";
 
-    } else {
+    }} else {{
       // Normal flow - show quotes
+      quoteContainerEl.classList.remove("phone-only-mode");
       quotesListEl.style.display = "";
       phoneCallSectionEl.classList.remove("visible");
 
+      // Reset header image to car background
+      headerImageEl.src = CAR_BACKGROUND;
+      headerImageEl.alt = "Car illustration";
+
       // Reset CTA button
-      ctaButtonEl.href = `https://aisinsurance.com/?zip=${zipCode}`;
+      ctaButtonEl.href = `https://aisinsurance.com/?zip=${{zipCode}}`;
       ctaButtonEl.textContent = "Get personalized quote";
-    }
+    }}
 
     // Populate quotes list (only if not phone-only state)
-    if (!isPhoneOnlyState && carriers.length > 0) {
+    if (!isPhoneOnlyState && carriers.length > 0) {{
       quotesListEl.innerHTML = ""; // Clear existing content
 
-      carriers.forEach((carrier) => {
+      carriers.forEach((carrier) => {{
         const card = document.createElement("div");
         card.className = "quote-card";
 
         const logoSrc = carrier.logo || "";
 
         // Log detailed information to console
-        console.log(`Quick quote widget: ${carrier.name} details:`);
-        if (carrier.confidence) {
-          console.log(`  Confidence: ${carrier.confidence}`);
-        }
-        if (carrier.range_monthly_low && carrier.range_monthly_high) {
-          console.log(`  Range: ${formatCurrency(carrier.range_monthly_low)} - ${formatCurrency(carrier.range_monthly_high)}/month`);
-        }
-        if (carrier.explanations && carrier.explanations.length > 0) {
+        console.log(`Quick quote widget: ${{carrier.name}} details:`);
+        if (carrier.confidence) {{
+          console.log(`  Confidence: ${{carrier.confidence}}`);
+        }}
+        if (carrier.range_monthly_low && carrier.range_monthly_high) {{
+          console.log(`  Range: ${{formatCurrency(carrier.range_monthly_low)}} - ${{formatCurrency(carrier.range_monthly_high)}}/month`);
+        }}
+        if (carrier.explanations && carrier.explanations.length > 0) {{
           console.log(`  Pricing factors:`);
-          carrier.explanations.forEach(exp => console.log(`    • ${exp}`));
-        }
+          carrier.explanations.forEach(exp => console.log(`    • ${{exp}}`));
+        }}
 
         card.innerHTML = `
           <div class="carrier-logo-section">
-            ${logoSrc ? `<img src="${logoSrc}" alt="${carrier.name}">` : `<div style="font-weight: 600; font-size: 18px;">${carrier.name}</div>`}
+            ${{logoSrc ? `<img src="${{logoSrc}}" alt="${{carrier.name}}">` : `<div style="font-weight: 600; font-size: 18px;">${{carrier.name}}</div>`}}
           </div>
           <div class="price-section">
             <div class="monthly-price">
-              <div class="price-value">${formatCurrency(carrier.monthly_cost)}/mo</div>
+              <div class="price-value">${{formatCurrency(carrier.monthly_cost)}}/mo</div>
               <div class="price-label">Avg. Price</div>
             </div>
             <div class="annual-price">
-              <div class="price-value">${formatCurrency(carrier.annual_cost)}</div>
+              <div class="price-value">${{formatCurrency(carrier.annual_cost)}}</div>
               <div class="price-label">Est. Annual Cost</div>
             </div>
           </div>
         `;
 
         quotesListEl.appendChild(card);
-      });
+      }});
 
-      console.log(`Quick quote widget: Populated ${carriers.length} carriers`);
-    } else if (!isPhoneOnlyState) {
+      console.log(`Quick quote widget: Populated ${{carriers.length}} carriers`);
+    }} else if (!isPhoneOnlyState) {{
       console.error("Quick quote widget: No carriers available to display!");
-    }
+    }}
 
     // Hide loading skeleton and show content
     loadingSkeletonEl.classList.add("hidden");
     contentLoadedEl.classList.add("visible");
-  }
+  }}
 
-  function hydrate(globals) {
+  function hydrate(globals) {{
     console.log("Quick quote widget: Hydrating widget");
-    console.log("Quick quote widget: globals keys:", Object.keys(globals || {}));
+    console.log("Quick quote widget: globals keys:", Object.keys(globals || {{}}));
 
-    if (!globals || typeof globals !== "object") {
+    if (!globals || typeof globals !== "object") {{
       console.warn("Quick quote widget: No valid globals object");
       return;
-    }
+    }}
 
     const toolOutput = globals.toolOutput || globals.tool_output || globals.structuredContent || globals.structured_content;
     console.log("Quick quote widget: toolOutput", toolOutput);
 
-    if (toolOutput) {
-      if (toolOutput.carriers) {
-        console.log(`Quick quote widget: Found ${toolOutput.carriers.length} carriers in toolOutput`);
-        toolOutput.carriers.forEach((c, i) => {
-          console.log(`  Carrier ${i+1}: ${c.name} - $${c.annual_cost}/$${c.monthly_cost}`);
-        });
-      } else {
+    if (toolOutput) {{
+      if (toolOutput.carriers) {{
+        console.log(`Quick quote widget: Found ${{toolOutput.carriers.length}} carriers in toolOutput`);
+        toolOutput.carriers.forEach((c, i) => {{
+          console.log(`  Carrier ${{i+1}}: ${{c.name}} - $${{c.annual_cost}}/$${{c.monthly_cost}}`);
+        }});
+      }} else {{
         console.warn("Quick quote widget: NO CARRIERS in toolOutput!", toolOutput);
-      }
+      }}
       updateWidget(toolOutput);
-    } else {
+    }} else {{
       console.error("Quick quote widget: No toolOutput found. globals keys:", Object.keys(globals));
-    }
-  }
+    }}
+  }}
 
   // Initial hydration
-  const initialGlobals = typeof window !== "undefined" && window.openai ? window.openai : {};
+  const initialGlobals = typeof window !== "undefined" && window.openai ? window.openai : {{}};
   hydrate(initialGlobals);
 
   // Listen for updates
-  window.addEventListener("openai:set_globals", (event) => {
+  window.addEventListener("openai:set_globals", (event) => {{
     const detail = event.detail;
     if (!detail || !detail.globals) return;
     hydrate(detail.globals);
-  });
-})();
+  }});
+}})();
 </script>
 """.strip()

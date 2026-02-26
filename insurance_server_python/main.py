@@ -606,7 +606,7 @@ async def preview_widget(request: Request):
     </head>
     <body>
         <div class="preview-container">
-            <h1>Quick Quote Widget - Live Preview</h1>
+            <h1>Quick Quote Widget - Live Preview (Normal State)</h1>
             {QUICK_QUOTE_RESULTS_WIDGET_HTML}
         </div>
 
@@ -645,6 +645,75 @@ async def preview_widget(request: Request):
             // Trigger hydration after a brief delay
             setTimeout(() => {{
                 console.log('Triggering widget hydration with data:', window.openai.toolOutput);
+                const event = new CustomEvent('openai:set_globals', {{
+                    detail: {{
+                        globals: window.openai
+                    }}
+                }});
+                window.dispatchEvent(event);
+            }}, 100);
+        </script>
+    </body>
+    </html>
+    """
+
+    return HTMLResponse(html)
+
+
+@app.route("/preview-phone", methods=["GET"])
+async def preview_phone_widget(request: Request):
+    """Serve a preview of the phone-only state widget."""
+    from starlette.responses import HTMLResponse
+    from .quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
+
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Quick Quote Widget - Phone-Only State Preview</title>
+        <style>
+            body {{
+                margin: 0;
+                padding: 20px;
+                background: #f5f5f5;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }}
+            .preview-container {{
+                max-width: 1400px;
+                margin: 0 auto;
+            }}
+            h1 {{
+                text-align: center;
+                margin-bottom: 30px;
+                color: #333;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="preview-container">
+            <h1>Quick Quote Widget - Phone-Only State (Alaska)</h1>
+            {QUICK_QUOTE_RESULTS_WIDGET_HTML}
+        </div>
+
+        <script>
+            // Set up the OpenAI globals object with phone-only state (Alaska)
+            window.openai = {{
+                toolOutput: {{
+                    carriers: [],  // Empty carriers array for phone-only states
+                    zip_code: "99501",
+                    city: "Anchorage",
+                    state: "AK",
+                    num_drivers: 1,
+                    num_vehicles: 1,
+                    lookup_failed: false
+                }}
+            }};
+
+            // Trigger hydration after a brief delay
+            setTimeout(() => {{
+                console.log('Triggering phone-only widget hydration with data:', window.openai.toolOutput);
                 const event = new CustomEvent('openai:set_globals', {{
                     detail: {{
                         globals: window.openai

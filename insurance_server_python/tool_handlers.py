@@ -65,6 +65,16 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
 
     logger.info(f"Quick quote request: zip={payload.zip_code}, drivers={payload.num_drivers}, vehicles={payload.num_vehicles}, coverage={payload.coverage_preference}")
 
+    # EARLY VALIDATION: Check if we only have zip_code
+    # This allows us to validate the location and show phone widget immediately if needed
+    has_only_zip = (
+        payload.num_vehicles is None and
+        payload.vehicles is None and
+        payload.coverage_preference is None and
+        payload.num_drivers is None and
+        payload.drivers is None
+    )
+
     # Look up city and state from zip code
     city_state = _lookup_city_state_from_zip(payload.zip_code)
 
@@ -79,6 +89,77 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
         lookup_failed = False
         logger.info(f"Resolved location: {city}, {state}")
 
+    # EARLY PHONE-ONLY STATE DETECTION
+    # If user only provided zip code and it's phone-only or lookup failed, return phone widget immediately
+    phone_only_states = ["AK", "HI", "MA", "Alaska", "Hawaii", "Massachusetts"]
+    is_phone_only = (state and state in phone_only_states) or lookup_failed
+
+    if has_only_zip and is_phone_only:
+        logger.info(f"Early validation: {state or 'unknown'} is phone-only or lookup failed - showing phone widget without asking for more info")
+
+        import mcp.types as types
+        from .widget_registry import WIDGETS_BY_ID, QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER, _embedded_widget_resource, _tool_meta
+
+        # Get widget metadata
+        quick_quote_widget = WIDGETS_BY_ID[QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER]
+        widget_resource = _embedded_widget_resource(quick_quote_widget)
+        widget_meta = {
+            **_tool_meta(quick_quote_widget),
+            "openai.com/widget": widget_resource.model_dump(mode="json"),
+        }
+
+        # Normalize state to abbreviation
+        state_abbr = state_abbreviation(state) if state else None
+
+        # Create message
+        if lookup_failed:
+            message = f"I'd be happy to help you get a quote for zip code {payload.zip_code}. Please give us a call to speak with a licensed agent who can provide personalized quotes and help you find the best coverage."
+        else:
+            message = f"I'd be happy to help you get a quote in {city}, {state}. Since we require a call for quotes in {state}, please contact us to speak with a licensed agent who specializes in {state} insurance and can provide personalized quotes."
+
+        # Return phone widget immediately
+        return {
+            "structured_content": {
+                "zip_code": payload.zip_code,
+                "city": city,
+                "state": state_abbr,
+                "num_drivers": 1,
+                "num_vehicles": 1,
+                "carriers": [],  # Empty for phone-only
+                "mercury_logo": get_carrier_logo("Mercury Auto Insurance"),
+                "stage": "quick_quote_complete",
+                "lookup_failed": lookup_failed,
+            },
+            "content": [types.TextContent(type="text", text=message)],
+            "meta": widget_meta,
+        }
+
+    # VALIDATION: Check if we have all required fields to generate a quote
+    # If not, we should not proceed (this should not happen if assistant follows instructions)
+    missing_fields = []
+    if payload.num_vehicles is None:
+        missing_fields.append("number of vehicles")
+    if payload.vehicles is None or len(payload.vehicles) == 0:
+        missing_fields.append("vehicle information")
+    if payload.coverage_preference is None:
+        missing_fields.append("coverage preference")
+    if payload.num_drivers is None:
+        missing_fields.append("number of drivers")
+    if payload.drivers is None or len(payload.drivers) == 0:
+        missing_fields.append("driver information")
+
+    if missing_fields:
+        logger.warning(f"Incomplete quote request - missing: {', '.join(missing_fields)}")
+        import mcp.types as types
+        error_message = (
+            f"I need more information to generate your quote. Please provide:\n"
+            f"{'• ' + chr(10) + '• '.join(missing_fields)}"
+        )
+        return {
+            "content": [types.TextContent(type="text", text=error_message)],
+            "structured_content": {},
+        }
+
     # Get counts from payload
     num_drivers = payload.num_drivers
     num_vehicles = payload.num_vehicles
@@ -89,7 +170,8 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
     # Skip quote calculation if lookup failed - we'll show phone-only prompt
     if lookup_failed:
         carriers = []
-        message = f"I can help you get a quote for zip code {payload.zip_code}. Please call us for a personalized quote."
+        message = f"I can help you get a quote for zip code {payload.zip_code}. Please call us for a personalized quote.\n\n"
+        message += "Our licensed agents can provide personalized quotes and answer any questions you have about coverage options, deductibles, and discounts."
     else:
         # Get primary driver and vehicle info
         primary_driver = payload.drivers[0]
@@ -137,7 +219,8 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
             message += f"👤 {driver_label}: Age {driver.age}, {driver.marital_status.title()}\n"
 
         message += "\n\n**Your estimated quotes from 3 carriers are displayed above.**\n\n"
-        message += "These are estimates based on your information. Click 'Continue to Personalized Quote' to get a final rate."
+        message += "These are estimates based on your information. Click 'Get personalized quote' to get a final rate.\n\n"
+        message += "You can review the carrier options, compare pricing, and select the one that fits your needs best. If you'd like help understanding the differences between coverage or adjusting deductibles to lower your premium, just let me know!"
 
         import mcp.types as types
         from .widget_registry import WIDGETS_BY_ID, QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER, _embedded_widget_resource, _tool_meta
@@ -373,7 +456,9 @@ async def _submit_carrier_estimates(arguments: Mapping[str, Any]) -> ToolInvocat
     # Build success message
     message = (
         f"Perfect! I've compiled insurance quotes from {len(carriers_with_logos)} carriers "
-        f"for your profile in {city}, {state}. Here are your estimated rates:"
+        f"for your profile in {city}, {state}. Here are your estimated rates:\n\n"
+        f"You can review the carrier options, compare pricing, and select the one that fits your needs best. "
+        f"If you'd like help understanding the differences between coverage or adjusting deductibles to lower your premium, just let me know!"
     )
 
     return {
