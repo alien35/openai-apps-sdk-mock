@@ -732,29 +732,41 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = f"""
   }}
 
   function hydrate(globals) {{
-    console.log("Quick quote widget: Hydrating widget");
-    console.log("Quick quote widget: globals keys:", Object.keys(globals || {{}}));
-
     if (!globals || typeof globals !== "object") {{
-      console.warn("Quick quote widget: No valid globals object");
       return;
     }}
 
-    const toolOutput = globals.toolOutput || globals.tool_output || globals.structuredContent || globals.structured_content;
-    console.log("Quick quote widget: toolOutput", toolOutput);
+    // Try multiple ways to access the data
+    let data = null;
 
-    if (toolOutput) {{
-      if (toolOutput.carriers) {{
-        console.log(`Quick quote widget: Found ${{toolOutput.carriers.length}} carriers in toolOutput`);
-        toolOutput.carriers.forEach((c, i) => {{
-          console.log(`  Carrier ${{i+1}}: ${{c.name}} - $${{c.annual_cost}}/$${{c.monthly_cost}}`);
-        }});
-      }} else {{
-        console.warn("Quick quote widget: NO CARRIERS in toolOutput!", toolOutput);
+    // Method 1: Direct access
+    try {{
+      data = globals.toolOutput || globals.tool_output || globals.structuredContent || globals.structured_content;
+    }} catch (e) {{
+      console.log("Quick quote widget: Error accessing toolOutput directly:", e);
+    }}
+
+    // Method 2: Check toolResponseMetadata
+    if (!data && globals.toolResponseMetadata) {{
+      try {{
+        data = globals.toolResponseMetadata.structuredContent || globals.toolResponseMetadata.structured_content;
+      }} catch (e) {{
+        console.log("Quick quote widget: Error accessing toolResponseMetadata:", e);
       }}
-      updateWidget(toolOutput);
-    }} else {{
-      console.error("Quick quote widget: No toolOutput found. globals keys:", Object.keys(globals));
+    }}
+
+    // Method 3: Check widget object
+    if (!data && globals.widget) {{
+      try {{
+        data = globals.widget.structuredContent || globals.widget.structured_content;
+      }} catch (e) {{
+        console.log("Quick quote widget: Error accessing widget:", e);
+      }}
+    }}
+
+    if (data && typeof data === 'object') {{
+      console.log("Quick quote widget: Found data, updating widget");
+      updateWidget(data);
     }}
   }}
 

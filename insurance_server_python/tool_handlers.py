@@ -153,11 +153,11 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
         # Normalize state to abbreviation
         state_abbr = state_abbreviation(state) if state else None
 
-        # Create message
+        # Create concise message directing them to call
         if lookup_failed:
-            message = f"I'd be happy to help you get a quote for zip code {payload.zip_code}. Please give us a call to speak with a licensed agent who can provide personalized quotes and help you find the best coverage."
+            message = f"Thanks! I've submitted your details for a quote. Please call the number above to complete your quote with a licensed agent.\n\nLet me know if you have any questions!"
         else:
-            message = f"I'd be happy to help you get a quote in {city}, {state}. Since we require a call for quotes in {state}, please contact us to speak with a licensed agent who specializes in {state} insurance and can provide personalized quotes."
+            message = f"Thanks! I've submitted your details for a quote in {city}, {state}. Please call the number above to get your personalized quote from a licensed agent.\n\nLet me know if you have any questions!"
 
         # Return phone-only widget
         return {
@@ -230,8 +230,8 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
             message += f"👤 {driver_label}: Age {driver.age}, {driver.marital_status.title()}\n"
 
         message += "\n\n**Your estimated quotes from 3 carriers are displayed above.**\n\n"
-        message += "These are estimates based on your information. Click 'Get personalized quote' to get a final rate.\n\n"
-        message += "You can review the carrier options, compare pricing, and select the one that fits your needs best. If you'd like help understanding the differences between coverage or adjusting deductibles to lower your premium, just let me know!"
+        message += "These are estimates based on your information. Click 'Get personalized quote' on any carrier above to get a final rate and complete your purchase.\n\n"
+        message += "Let me know if you have any questions!"
 
         import mcp.types as types
         from .widget_registry import WIDGETS_BY_ID, QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER, _embedded_widget_resource, _tool_meta

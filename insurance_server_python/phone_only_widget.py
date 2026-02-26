@@ -319,21 +319,40 @@ PHONE_ONLY_WIDGET_HTML = f"""
   }}
 
   function hydrate(globals) {{
-    console.log("Phone-only widget: Hydrating widget");
-    console.log("Phone-only widget: globals keys:", Object.keys(globals || {{}}));
-
     if (!globals || typeof globals !== "object") {{
-      console.warn("Phone-only widget: No valid globals object");
       return;
     }}
 
-    const toolOutput = globals.toolOutput || globals.tool_output || globals.structuredContent || globals.structured_content;
-    console.log("Phone-only widget: toolOutput", toolOutput);
+    // Try multiple ways to access the data
+    let data = null;
 
-    if (toolOutput) {{
-      updateWidget(toolOutput);
-    }} else {{
-      console.error("Phone-only widget: No toolOutput found. globals keys:", Object.keys(globals));
+    // Method 1: Direct access
+    try {{
+      data = globals.toolOutput || globals.tool_output || globals.structuredContent || globals.structured_content;
+    }} catch (e) {{
+      // Silently continue
+    }}
+
+    // Method 2: Check toolResponseMetadata
+    if (!data && globals.toolResponseMetadata) {{
+      try {{
+        data = globals.toolResponseMetadata.structuredContent || globals.toolResponseMetadata.structured_content;
+      }} catch (e) {{
+        // Silently continue
+      }}
+    }}
+
+    // Method 3: Check widget object
+    if (!data && globals.widget) {{
+      try {{
+        data = globals.widget.structuredContent || globals.widget.structured_content;
+      }} catch (e) {{
+        // Silently continue
+      }}
+    }}
+
+    if (data && typeof data === 'object') {{
+      updateWidget(data);
     }}
   }}
 
