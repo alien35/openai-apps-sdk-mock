@@ -24,61 +24,38 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     box-shadow: 0 4px 6px rgba(0,0,0,0.07);
   }
 
-  /* Header with wavy background */
+  /* Header section */
   .header-section {
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    background: white;
     position: relative;
-    padding: 60px 40px 80px;
+    padding: 0 0 40px 0;
     overflow: hidden;
   }
 
-  .header-section::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 100px;
-    background: white;
-    clip-path: ellipse(70% 50% at 50% 100%);
-  }
-
   .car-illustration {
-    text-align: center;
-    margin-bottom: 40px;
-    position: relative;
-    z-index: 1;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    line-height: 0;
   }
 
   .car-illustration img {
-    max-width: 200px;
+    width: 100%;
     height: auto;
-    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));
+    display: block;
   }
 
   .header-branding {
     text-align: center;
-    position: relative;
-    z-index: 1;
+    padding: 24px 40px 0;
     margin-bottom: 32px;
   }
 
-  .mercury-logo-main {
+  .powered-by-logo {
     max-width: 280px;
     height: auto;
-    margin: 0 auto 12px;
-  }
-
-  .powered-by-text {
-    font-size: 14px;
-    color: #546e7a;
-    font-weight: 500;
-    letter-spacing: 0.5px;
-  }
-
-  .powered-by-text .ais {
-    color: #1565c0;
-    font-weight: 600;
+    margin: 0 auto;
+    display: block;
   }
 
   .disclaimer-text {
@@ -88,8 +65,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
     line-height: 1.6;
     max-width: 800px;
     margin: 0 auto;
-    position: relative;
-    z-index: 1;
+    padding: 0 40px;
   }
 
   /* Main content area */
@@ -333,8 +309,12 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
       padding: 32px 24px;
     }
 
-    .header-section {
-      padding: 40px 24px 60px;
+    .header-branding {
+      padding: 24px 24px 0;
+    }
+
+    .disclaimer-text {
+      padding: 0 24px;
     }
   }
 
@@ -373,8 +353,12 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
       padding: 0 16px 24px;
     }
 
-    .header-section {
-      padding: 32px 16px 48px;
+    .header-branding {
+      padding: 24px 16px 0;
+    }
+
+    .disclaimer-text {
+      padding: 0 16px;
     }
   }
 
@@ -418,11 +402,10 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
   <div class="loading-skeleton" id="loading-skeleton">
     <div class="header-section">
       <div class="car-illustration">
-        <div class="skeleton" style="width: 180px; height: 100px; margin: 0 auto;"></div>
+        <div class="skeleton" style="width: 100%; height: 180px;"></div>
       </div>
       <div class="header-branding">
-        <div class="skeleton" style="width: 250px; height: 50px; margin: 0 auto 12px;"></div>
-        <div class="skeleton" style="width: 150px; height: 16px; margin: 0 auto;"></div>
+        <div class="skeleton" style="width: 250px; height: 50px; margin: 0 auto;"></div>
       </div>
       <div class="disclaimer-text">
         <div class="skeleton" style="width: 80%; height: 20px; margin: 0 auto;"></div>
@@ -464,14 +447,11 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
   <div class="content-loaded" id="content-loaded">
     <div class="header-section">
       <div class="car-illustration">
-        <img src="https://placeholder-car-image.com/car.png" alt="Car illustration" onerror="this.style.display='none'">
+        <img src="/assets/images/car-background.png" alt="Car illustration">
       </div>
 
       <div class="header-branding">
-        <img class="mercury-logo-main" id="mercury-logo-main" src="" alt="Mercury Insurance">
-        <div class="powered-by-text">
-          POWERED BY <span class="ais">AIS</span>
-        </div>
+        <img class="powered-by-logo" src="/assets/images/powered-by.png" alt="Mercury Insurance - Powered by AIS">
       </div>
 
       <div class="disclaimer-text" id="disclaimer-text">
@@ -513,7 +493,6 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
   const loadingSkeletonEl = document.getElementById("loading-skeleton");
   const contentLoadedEl = document.getElementById("content-loaded");
   const disclaimerTextEl = document.getElementById("disclaimer-text");
-  const mercuryLogoMainEl = document.getElementById("mercury-logo-main");
   const quotesListEl = document.getElementById("quotes-list");
   const phoneCallSectionEl = document.getElementById("phone-call-section");
   const ctaButtonEl = document.getElementById("cta-button");
@@ -573,12 +552,6 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = """
 
     // Update disclaimer text with actual data
     disclaimerTextEl.textContent = `The estimates shown below are assuming you're in ${locationText} as ${driverText} and own ${vehicleText}. Final rates may differ.`;
-
-    // Always use Mercury logo in header
-    if (data.mercury_logo) {
-      mercuryLogoMainEl.src = data.mercury_logo;
-      mercuryLogoMainEl.alt = "Mercury Auto Insurance";
-    }
 
     // Handle phone-only states differently
     if (isPhoneOnlyState) {

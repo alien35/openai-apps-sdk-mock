@@ -560,6 +560,105 @@ async def serve_image(request: Request):
         headers={"Access-Control-Allow-Origin": "*"}
     )
 
+
+@app.route("/test-widget", methods=["GET"])
+async def test_widget(request: Request):
+    """Serve the quick quote widget HTML for testing."""
+    from starlette.responses import HTMLResponse
+    from .quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
+
+    return HTMLResponse(
+        QUICK_QUOTE_RESULTS_WIDGET_HTML,
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
+
+
+@app.route("/preview", methods=["GET"])
+async def preview_widget(request: Request):
+    """Serve a comprehensive widget preview page with embedded data."""
+    from starlette.responses import HTMLResponse
+    from .quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
+
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Quick Quote Widget - Live Preview</title>
+        <style>
+            body {{
+                margin: 0;
+                padding: 20px;
+                background: #f5f5f5;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }}
+            .preview-container {{
+                max-width: 1400px;
+                margin: 0 auto;
+            }}
+            h1 {{
+                text-align: center;
+                margin-bottom: 30px;
+                color: #333;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="preview-container">
+            <h1>Quick Quote Widget - Live Preview</h1>
+            {QUICK_QUOTE_RESULTS_WIDGET_HTML}
+        </div>
+
+        <script>
+            // Set up the OpenAI globals object with sample data
+            window.openai = {{
+                toolOutput: {{
+                    carriers: [
+                        {{
+                            name: "Geico",
+                            logo: "/assets/images/mercury-logo.png",
+                            annual_cost: 3100,
+                            monthly_cost: 258
+                        }},
+                        {{
+                            name: "Progressive Insurance",
+                            logo: "/assets/images/progressive.png",
+                            annual_cost: 3600,
+                            monthly_cost: 300
+                        }},
+                        {{
+                            name: "Safeco Insurance",
+                            logo: "/assets/images/orion.png",
+                            annual_cost: 3800,
+                            monthly_cost: 317
+                        }}
+                    ],
+                    zip_code: "92821",
+                    city: "Brea",
+                    state: "CA",
+                    num_drivers: 1,
+                    num_vehicles: 1
+                }}
+            }};
+
+            // Trigger hydration after a brief delay
+            setTimeout(() => {{
+                console.log('Triggering widget hydration with data:', window.openai.toolOutput);
+                const event = new CustomEvent('openai:set_globals', {{
+                    detail: {{
+                        globals: window.openai
+                    }}
+                }});
+                window.dispatchEvent(event);
+            }}, 100);
+        </script>
+    </body>
+    </html>
+    """
+
+    return HTMLResponse(html)
+
 # Add CORS middleware
 try:
     from starlette.middleware.cors import CORSMiddleware
