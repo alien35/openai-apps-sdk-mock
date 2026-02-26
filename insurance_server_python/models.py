@@ -513,45 +513,41 @@ class QuickQuoteIntake(BaseModel):
     BATCH 1: ZIP code, number of vehicles, vehicle details, coverage preference
     BATCH 2: Number of drivers, driver details
 
-    All fields are required. The assistant must collect complete information
-    from Batch 1 before proceeding to Batch 2.
+    ZIP code is always required for early validation. Other fields can be provided incrementally.
+    The tool will validate the ZIP code first and show phone-only widget if applicable.
     """
     # BATCH 1: Basic Information
     zip_code: str = Field(
         ...,
         alias="ZIP Code",
         pattern=r'^\d{5}$',
-        description="5-digit ZIP code for the insurance quote"
+        description="5-digit ZIP code for the insurance quote (always required)"
     )
-    num_vehicles: Literal[1, 2] = Field(
-        ...,
+    num_vehicles: Optional[Literal[1, 2]] = Field(
+        None,
         alias="Number of Vehicles",
         description="Number of vehicles to insure (1 or 2)"
     )
-    vehicles: List[VehicleInfo] = Field(
-        ...,
+    vehicles: Optional[List[VehicleInfo]] = Field(
+        None,
         alias="Vehicles",
-        min_length=1,
-        max_length=2,
         description="List of vehicle information (year, make, model for each)"
     )
-    coverage_preference: Literal["liability_only", "full_coverage"] = Field(
-        ...,
+    coverage_preference: Optional[Literal["liability_only", "full_coverage"]] = Field(
+        None,
         alias="Coverage Preference",
         description="Coverage type: 'liability_only' for liability-only or 'full_coverage' for comprehensive coverage"
     )
 
     # BATCH 2: Driver Information
-    num_drivers: Literal[1, 2] = Field(
-        ...,
+    num_drivers: Optional[Literal[1, 2]] = Field(
+        None,
         alias="Number of Drivers",
         description="Number of drivers on the policy (1 or 2)"
     )
-    drivers: List[DriverInfo] = Field(
-        ...,
+    drivers: Optional[List[DriverInfo]] = Field(
+        None,
         alias="Drivers",
-        min_length=1,
-        max_length=2,
         description="List of driver information (age and marital status for each)"
     )
 
@@ -561,11 +557,13 @@ class QuickQuoteIntake(BaseModel):
 
     @model_validator(mode="after")
     def validate_counts(self):
-        """Ensure list lengths match declared counts."""
-        if len(self.vehicles) != self.num_vehicles:
-            raise ValueError(f"Expected {self.num_vehicles} vehicles, got {len(self.vehicles)}")
-        if len(self.drivers) != self.num_drivers:
-            raise ValueError(f"Expected {self.num_drivers} drivers, got {len(self.drivers)}")
+        """Ensure list lengths match declared counts (only when fields are provided)."""
+        if self.num_vehicles is not None and self.vehicles is not None:
+            if len(self.vehicles) != self.num_vehicles:
+                raise ValueError(f"Expected {self.num_vehicles} vehicles, got {len(self.vehicles)}")
+        if self.num_drivers is not None and self.drivers is not None:
+            if len(self.drivers) != self.num_drivers:
+                raise ValueError(f"Expected {self.num_drivers} drivers, got {len(self.drivers)}")
         return self
 
 
