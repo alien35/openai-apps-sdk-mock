@@ -19,7 +19,7 @@ TOLERANCE LEVELS:
 """
 
 import unittest
-from typing import Dict, List, Tuple
+from typing import Dict, List
 from insurance_server_python.pricing.estimator import InsuranceQuoteEstimator
 
 

@@ -136,10 +136,10 @@ async def test_minimum_quick_quote():
     # Save payload for debugging
     with open("/tmp/test_quick_quote_payload.json", "w") as f:
         json.dump(payload, f, indent=2)
-    print(f"✅ Payload saved to /tmp/test_quick_quote_payload.json for debugging")
+    print("✅ Payload saved to /tmp/test_quick_quote_payload.json for debugging")
 
     # Print payload summary
-    print(f"✅ Payload built successfully")
+    print("✅ Payload built successfully")
     print(f"   - Customer: {customer['FirstName']} {customer['LastName']}")
     print(f"   - Drivers: {len(drivers)}")
     print(f"   - Vehicles: {len(vehicles)} (VIN: {vehicles[0]['Vin']})")
@@ -169,15 +169,15 @@ async def test_minimum_quick_quote():
         transaction_id = parsed_response.get("transactionId")
 
         if not transaction_id:
-            print(f"❌ No transaction ID in response")
+            print("❌ No transaction ID in response")
             print(f"   Response: {parsed_response}")
             return False
 
-        print(f"✅ Rate request successful!")
+        print("✅ Rate request successful!")
         print(f"   Transaction ID: {transaction_id}")
 
         # Retrieve results
-        print(f"\n📊 Retrieving rate results...")
+        print("\n📊 Retrieving rate results...")
 
         async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
             results_response = await client.get(
@@ -197,15 +197,15 @@ async def test_minimum_quick_quote():
         carrier_results = results.get("carrierResults") or results.get("CarrierResults") or []
 
         if not carrier_results:
-            print(f"⚠️  No carrier results returned")
+            print("⚠️  No carrier results returned")
             print(f"   Response keys: {list(results.keys())}")
             return False
 
-        print(f"✅ Rate results retrieved successfully!")
+        print("✅ Rate results retrieved successfully!")
         print(f"   Number of carrier quotes: {len(carrier_results)}")
 
         # Display results summary
-        print(f"\n" + "=" * 60)
+        print("\n" + "=" * 60)
         print("QUOTE RESULTS")
         print("=" * 60)
 
@@ -229,11 +229,11 @@ async def test_minimum_quick_quote():
                     else:
                         print(f"   - {product_name}: {status}")
             else:
-                print(f"   No products available")
+                print("   No products available")
 
             # Show errors if any
             if errors:
-                print(f"   Errors:")
+                print("   Errors:")
                 for error in errors:
                     error_text = error.get("Text") or error.get("text", "Unknown error")
                     print(f"     - {error_text}")

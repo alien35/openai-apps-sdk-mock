@@ -5,7 +5,7 @@ This ties together all the factors, risk scoring, and carrier-specific calculati
 """
 
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 
 from .config import (
     STATE_BASE_FULL_COVERAGE_ANNUAL,

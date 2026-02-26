@@ -75,7 +75,7 @@ async def test_placeholder_quick_quote():
             assert "BEST CASE" in message, "Message missing best case"
             assert "WORST CASE" in message, "Message missing worst case"
 
-            print(f"   ✅ PASSED")
+            print("   ✅ PASSED")
             print(f"      - City: {sc['city']}, {sc['state']}")
             print(f"      - Best case: ${best['min']:,} - ${best['max']:,} / 6 months")
             print(f"      - Worst case: ${worst['min']:,} - ${worst['max']:,} / 6 months")

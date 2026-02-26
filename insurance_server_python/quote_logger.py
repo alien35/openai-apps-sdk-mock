@@ -5,10 +5,9 @@ Writes detailed breakdowns of how insurance quotes are calculated to markdown fi
 """
 
 import logging
-import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +51,7 @@ def log_quick_quote_calculation(
     filepath = QUOTE_EXPLANATIONS_DIR / filename
 
     with open(filepath, "w") as f:
-        f.write(f"# Quick Quote Calculation Breakdown\n\n")
+        f.write("# Quick Quote Calculation Breakdown\n\n")
         f.write(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
 
         # Summary Table at the top
@@ -80,7 +79,7 @@ def log_quick_quote_calculation(
 
         # Optional inputs
         if optional_inputs:
-            f.write(f"\n**Additional Inputs:**\n")
+            f.write("\n**Additional Inputs:**\n")
             for key, value in optional_inputs.items():
                 f.write(f"- **{key}:** {value}\n")
 
@@ -95,9 +94,9 @@ def log_quick_quote_calculation(
             state,
             STATE_BASE_FULL_COVERAGE_ANNUAL["DEFAULT"]
         )
-        f.write(f"### 1. State Base Rate\n\n")
+        f.write("### 1. State Base Rate\n\n")
         f.write(f"- **Base Annual Premium for {state}:** ${base_annual:,}\n")
-        f.write(f"- This is the average full coverage rate for the state\n\n")
+        f.write("- This is the average full coverage rate for the state\n\n")
 
         # Step 2: Calculate multipliers
         from insurance_server_python.pricing.factors import (
@@ -120,7 +119,7 @@ def log_quick_quote_calculation(
         zip_desc = get_zip_description(zip_mult)
         coverage_mult, coverage_exp = calculate_coverage_factor(coverage_type)
 
-        f.write(f"### 2. Risk Factors\n\n")
+        f.write("### 2. Risk Factors\n\n")
         f.write(f"#### Age Factor: **{age_mult:.2f}x**\n")
         f.write(f"- {age_exp}\n\n")
 
@@ -137,28 +136,28 @@ def log_quick_quote_calculation(
         f.write(f"- {coverage_exp}\n\n")
 
         # Step 3: Baseline Calculation
-        f.write(f"### 3. Baseline Premium Calculation\n\n")
-        f.write(f"```\n")
-        f.write(f"Baseline Annual = Base Rate × Age × Marital × Vehicle × ZIP × Coverage\n")
+        f.write("### 3. Baseline Premium Calculation\n\n")
+        f.write("```\n")
+        f.write("Baseline Annual = Base Rate × Age × Marital × Vehicle × ZIP × Coverage\n")
         f.write(f"                = ${base_annual:,} × {age_mult:.2f} × {marital_mult:.2f} × {vehicle_mult:.2f} × {zip_mult:.2f} × {coverage_mult:.2f}\n")
         f.write(f"                = ${baseline['annual']:,}\n")
-        f.write(f"```\n\n")
+        f.write("```\n\n")
         f.write(f"**Baseline Monthly:** ${baseline['monthly']:,}\n\n")
 
         # Step 4: Risk Score
-        f.write(f"### 4. Overall Risk Score\n\n")
+        f.write("### 4. Overall Risk Score\n\n")
         f.write(f"- **Risk Score:** {risk_score:.3f} (scale: 0.0 = lowest risk, 1.0 = highest risk)\n")
-        f.write(f"- This score is used to interpolate carrier-specific multipliers\n")
-        f.write(f"- Lower risk profiles get better rates from each carrier\n\n")
+        f.write("- This score is used to interpolate carrier-specific multipliers\n")
+        f.write("- Lower risk profiles get better rates from each carrier\n\n")
 
         # Step 5: Confidence Band
-        f.write(f"### 5. Confidence Band\n\n")
+        f.write("### 5. Confidence Band\n\n")
         f.write(f"- **Confidence Level:** {baseline['confidence']}\n")
         f.write(f"- **Band:** ±{baseline['band']*100:.0f}%\n")
-        f.write(f"- Based on completeness of provided information\n\n")
+        f.write("- Based on completeness of provided information\n\n")
 
         # Step 6: Carrier Quotes
-        f.write(f"### 6. Carrier-Specific Quotes\n\n")
+        f.write("### 6. Carrier-Specific Quotes\n\n")
 
         from insurance_server_python.pricing.config import CARRIER_BASE_MULTIPLIERS, CARRIER_STATE_ADJUSTMENTS
 
@@ -174,24 +173,24 @@ def log_quick_quote_calculation(
             # Calculate actual multiplier used
             carrier_mult = low_mult + (high_mult - low_mult) * risk_score + state_adj
 
-            f.write(f"**Carrier Multiplier Calculation:**\n")
-            f.write(f"```\n")
+            f.write("**Carrier Multiplier Calculation:**\n")
+            f.write("```\n")
             f.write(f"Base Range: {low_mult:.2f}x to {high_mult:.2f}x\n")
             f.write(f"Risk Interpolation: {low_mult:.2f} + ({high_mult:.2f} - {low_mult:.2f}) × {risk_score:.3f} = {low_mult + (high_mult - low_mult) * risk_score:.3f}x\n")
             if state_adj != 0.0:
                 f.write(f"State Adjustment ({state}): {state_adj:+.3f}x\n")
             f.write(f"Final Multiplier: {carrier_mult:.3f}x\n")
-            f.write(f"```\n\n")
+            f.write("```\n\n")
 
-            f.write(f"**Premium Calculation:**\n")
-            f.write(f"```\n")
-            f.write(f"Carrier Annual = Baseline × Carrier Multiplier\n")
+            f.write("**Premium Calculation:**\n")
+            f.write("```\n")
+            f.write("Carrier Annual = Baseline × Carrier Multiplier\n")
             f.write(f"               = ${baseline['annual']:,} × {carrier_mult:.3f}\n")
             f.write(f"               = ${quote['annual']:,}\n")
             f.write(f"Carrier Monthly = ${quote['monthly']:,}\n")
-            f.write(f"```\n\n")
+            f.write("```\n\n")
 
-            f.write(f"**Estimated Range:**\n")
+            f.write("**Estimated Range:**\n")
             f.write(f"- Monthly: ${quote['range_monthly'][0]:,} - ${quote['range_monthly'][1]:,}\n")
             f.write(f"- Annual: ${quote['range_annual'][0]:,} - ${quote['range_annual'][1]:,}\n\n")
 
@@ -203,7 +202,7 @@ def log_quick_quote_calculation(
         f.write("All calculations are estimates based on typical market rates and risk factors. ")
         f.write("Actual rates from carriers may vary based on additional underwriting criteria.\n\n")
         f.write(f"**Price Spread:** ${quotes[-1]['monthly'] - quotes[0]['monthly']:,}/month ")
-        f.write(f"(difference between highest and lowest quote)\n")
+        f.write("(difference between highest and lowest quote)\n")
 
     logger.info(f"Quote explanation written to: {filepath}")
     return str(filepath)
@@ -233,7 +232,7 @@ def log_full_rate_calculation(
     filepath = QUOTE_EXPLANATIONS_DIR / filename
 
     with open(filepath, "w") as f:
-        f.write(f"# Full Rating API Calculation Breakdown\n\n")
+        f.write("# Full Rating API Calculation Breakdown\n\n")
         f.write(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write(f"**Quote Identifier:** `{identifier}`\n\n")
 

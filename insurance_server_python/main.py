@@ -424,10 +424,6 @@ def generate_openapi_spec():
                 "description": "Health check and service status endpoints"
             },
             {
-                "name": "Configuration",
-                "description": "Configuration endpoints for wizard and fields"
-            },
-            {
                 "name": "Quotes",
                 "description": "Insurance quote and carrier information"
             },
@@ -508,24 +504,6 @@ def redoc_ui():
     """
     from starlette.responses import HTMLResponse
     return HTMLResponse(html)
-
-
-# Initialize schema parser on startup
-@app.on_event("startup")
-async def startup_event():
-    """Initialize schema parser and fetch contracts on server startup."""
-    from .schema_parser import initialize_schema_parser
-
-    api_key = os.getenv("PERSONAL_AUTO_RATE_API_KEY")
-    if api_key:
-        try:
-            await initialize_schema_parser(api_key, states=["CA"])
-            logger.info("Schema parser initialized successfully")
-        except Exception as e:
-            logger.warning(f"Failed to initialize schema parser: {e}")
-            logger.warning("Server will continue without schema-based minimal fields")
-    else:
-        logger.warning("PERSONAL_AUTO_RATE_API_KEY not set, schema parser not initialized")
 
 
 @app.route("/api/quick-quote-carriers", methods=["GET"])

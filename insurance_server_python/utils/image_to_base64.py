@@ -83,7 +83,7 @@ if __name__ == "__main__":
     try:
         code = generate_python_constant(image_path, constant_name)
         print(code)
-        print(f"\n# Add this to insurance_server_python/carrier_logos.py")
+        print("\n# Add this to insurance_server_python/carrier_logos.py")
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

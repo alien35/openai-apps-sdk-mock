@@ -1,7 +1,6 @@
 """Test for the updated _get_quick_quote handler."""
 
 import asyncio
-import os
 from dotenv import load_dotenv
 
 # Load environment
@@ -32,26 +31,26 @@ async def test_quick_quote_handler():
         # Check structured content
         if "structured_content" in result:
             sc = result["structured_content"]
-            print(f"\nStructured Content:")
+            print("\nStructured Content:")
             print(f"  - Zip Code: {sc.get('zip_code')}")
             print(f"  - City: {sc.get('city')}")
             print(f"  - State: {sc.get('state')}")
             print(f"  - Number of Drivers: {sc.get('number_of_drivers')}")
 
             if sc.get("best_case_results"):
-                print(f"  - Best Case: ✅ Got results")
+                print("  - Best Case: ✅ Got results")
             else:
-                print(f"  - Best Case: ⚠️  No results")
+                print("  - Best Case: ⚠️  No results")
 
             if sc.get("worst_case_results"):
-                print(f"  - Worst Case: ✅ Got results")
+                print("  - Worst Case: ✅ Got results")
             else:
-                print(f"  - Worst Case: ⚠️  No results")
+                print("  - Worst Case: ⚠️  No results")
 
         # Check content
         if "content" in result and result["content"]:
             content_text = result["content"][0].text if hasattr(result["content"][0], 'text') else str(result["content"][0])
-            print(f"\nResponse Preview:")
+            print("\nResponse Preview:")
             print(content_text[:300] + "..." if len(content_text) > 300 else content_text)
 
         print("\n" + "=" * 60)

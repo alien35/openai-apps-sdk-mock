@@ -6,9 +6,7 @@ from typing import Any, Dict, Optional, Tuple
 import mcp.types as types
 
 from .insurance_state_widget import INSURANCE_STATE_WIDGET_HTML
-from .insurance_rate_results_widget import INSURANCE_RATE_RESULTS_WIDGET_HTML
 from .quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
-from .insurance_wizard_widget_html import INSURANCE_WIZARD_WIDGET_HTML
 from .constants import MIME_TYPE
 from .models import ToolHandler
 
@@ -50,12 +48,8 @@ def register_tool(registration: ToolRegistration) -> None:
 # Widget identifiers and URIs
 INSURANCE_STATE_WIDGET_IDENTIFIER = "insurance-state-selector"
 INSURANCE_STATE_WIDGET_TEMPLATE_URI = "ui://widget/insurance-state.html"
-INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER = "insurance-rate-results"
-INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI = "ui://widget/insurance-rate-results.html"
 QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER = "quick-quote-results"
 QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI = "ui://widget/quick-quote-results.html"
-INSURANCE_WIZARD_WIDGET_IDENTIFIER = "insurance-wizard"
-INSURANCE_WIZARD_WIDGET_TEMPLATE_URI = "ui://widget/insurance-wizard.html"
 
 # Input schema for insurance state selector
 INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
@@ -87,19 +81,6 @@ DEFAULT_WIDGETS: Tuple[WidgetDefinition, ...] = (
 
 ADDITIONAL_WIDGETS: Tuple[WidgetDefinition, ...] = (
     WidgetDefinition(
-        identifier=INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER,
-        title="Review personal auto rate results",
-        template_uri=INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI,
-        invoking="Retrieving personal auto rate results",
-        invoked="Displayed personal auto rate results",
-        html=INSURANCE_RATE_RESULTS_WIDGET_HTML,
-        response_text="Here are the carrier premiums returned for this quote.",
-        input_schema=None,
-        tool_description=(
-            "Summarizes carrier premiums, payment plans, and shared coverages for a personal auto quote."
-        ),
-    ),
-    WidgetDefinition(
         identifier=QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER,
         title="Display quick quote estimate",
         template_uri=QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI,
@@ -110,20 +91,6 @@ ADDITIONAL_WIDGETS: Tuple[WidgetDefinition, ...] = (
         input_schema=None,
         tool_description=(
             "Displays instant premium range estimates for auto insurance with visual cards showing best and worst case scenarios."
-        ),
-    ),
-    WidgetDefinition(
-        identifier=INSURANCE_WIZARD_WIDGET_IDENTIFIER,
-        title="Complete insurance application wizard",
-        template_uri=INSURANCE_WIZARD_WIDGET_TEMPLATE_URI,
-        invoking="Loading insurance application wizard",
-        invoked="Displayed insurance application wizard",
-        html=INSURANCE_WIZARD_WIDGET_HTML,
-        response_text="Please complete the insurance application wizard to get your detailed quote.",
-        input_schema=None,
-        tool_description=(
-            "Displays a multi-step wizard interface for collecting complete insurance application details. "
-            "Guides users through 5 steps: Policy Setup, Customer Info, Vehicle Details, Driver Info, and Review & Submit."
         ),
     ),
 )
@@ -154,20 +121,6 @@ if INSURANCE_STATE_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
     )
     raise RuntimeError(msg)
 
-if INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER not in WIDGETS_BY_ID:
-    msg = (
-        "Personal auto rate results widget must be registered; "
-        f"expected identifier '{INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER}' in widgets"
-    )
-    raise RuntimeError(msg)
-
-if INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
-    msg = (
-        "Personal auto rate results widget must expose the correct template URI; "
-        f"expected '{INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI}' in widgets"
-    )
-    raise RuntimeError(msg)
-
 if QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER not in WIDGETS_BY_ID:
     msg = (
         "Quick quote results widget must be registered; "
@@ -179,20 +132,6 @@ if QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
     msg = (
         "Quick quote results widget must expose the correct template URI; "
         f"expected '{QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI}' in widgets"
-    )
-    raise RuntimeError(msg)
-
-if INSURANCE_WIZARD_WIDGET_IDENTIFIER not in WIDGETS_BY_ID:
-    msg = (
-        "Insurance wizard widget must be registered; "
-        f"expected identifier '{INSURANCE_WIZARD_WIDGET_IDENTIFIER}' in widgets"
-    )
-    raise RuntimeError(msg)
-
-if INSURANCE_WIZARD_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
-    msg = (
-        "Insurance wizard widget must expose the correct template URI; "
-        f"expected '{INSURANCE_WIZARD_WIDGET_TEMPLATE_URI}' in widgets"
     )
     raise RuntimeError(msg)
 
@@ -279,30 +218,14 @@ def _register_default_tools() -> None:
 def _register_personal_auto_intake_tools() -> None:
     """Register personal auto insurance intake tools."""
     from .tool_handlers import (
-        _get_quick_quote,
         _get_enhanced_quick_quote,
         _submit_carrier_estimates,
-        _get_quick_quote_adaptive,
-        _collect_personal_auto_customer,
-        _collect_personal_auto_drivers,
-        _collect_personal_auto_vehicles,
-        _request_personal_auto_rate,
-        _retrieve_personal_auto_rate_results,
-        _start_wizard_flow,
-        _submit_wizard_form,
     )
     from .models import (
-        QuickQuoteIntake,
         EnhancedQuickQuoteIntake,
         CarrierEstimatesSubmission,
-        CumulativeCustomerIntake,
-        CumulativeDriverIntake,
-        CumulativeVehicleIntake,
-        PersonalAutoRateRequest,
-        PersonalAutoRateResultsRequest,
     )
     from .utils import _model_schema
-    from .constants import AIS_POLICY_COVERAGE_SUMMARY
 
     # Register quick quote tool (Initial step)
     quick_quote_widget = WIDGETS_BY_ID[QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER]
@@ -415,259 +338,6 @@ def _register_personal_auto_intake_tools() -> None:
             handler=_submit_carrier_estimates,
             default_response_text="Compiled carrier estimates for your profile.",
             default_meta=quick_quote_default_meta,
-        )
-    )
-
-    # Register BASIC quick quote tool (fallback - minimal info only)
-    register_tool(
-        ToolRegistration(
-            tool=types.Tool(
-                name="get-quick-quote",
-                title="Get basic auto insurance range (fallback)",
-                description=(
-                    "**FALLBACK TOOL** - Get a very rough quote range with minimal information (just zip code and number of drivers). "
-                    "Returns broad placeholder premium ranges based only on location. "
-                    "\n\n"
-                    "⚠️ **Use enhanced-quick-quote instead for better accuracy!** Only use this tool if:\n"
-                    "• User explicitly refuses to provide vehicle/driver details\n"
-                    "• User wants the absolute fastest estimate with zero details\n"
-                    "\n\n"
-                    "The ranges are very wide and generic. After showing results, strongly encourage users to provide "
-                    "actual details for a more accurate quote using get-enhanced-quick-quote."
-                ),
-                inputSchema=_model_schema(QuickQuoteIntake),
-                _meta=quick_quote_meta,
-            ),
-            handler=_get_quick_quote,
-            default_response_text="Generated rough quote range estimate. Consider using enhanced quote for better accuracy.",
-            default_meta=quick_quote_default_meta,
-        )
-    )
-
-    # Register ADAPTIVE quick quote tool (POC)
-    register_tool(
-        ToolRegistration(
-            tool=types.Tool(
-                name="get-quick-quote-adaptive",
-                title="Get quick quote with adaptive field collection",
-                description=(
-                    "PROOF OF CONCEPT: Adaptive quick quote that uses configuration-driven field collection. "
-                    "This tool can collect fields in any order based on the active flow configuration. "
-                    "Supports multiple flow versions (v1: minimal, v2: with email, v3: with credit check). "
-                    "Fields are validated against a centralized registry and collected progressively. "
-                    "The tool will prompt for missing required fields dynamically."
-                ),
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "ZipCode": {"type": "string", "description": "5-digit zip code"},
-                        "NumberOfDrivers": {"type": "integer", "description": "Number of drivers (1-10)"},
-                        "EmailAddress": {"type": "string", "description": "Email address (optional)"},
-                        "FirstName": {"type": "string", "description": "First name (for credit check flows)"},
-                        "LastName": {"type": "string", "description": "Last name (for credit check flows)"},
-                        "DateOfBirth": {"type": "string", "description": "Date of birth YYYY-MM-DD (for credit check flows)"},
-                        "session_id": {"type": "string", "description": "Session ID for state tracking"},
-                    },
-                    "additionalProperties": False,
-                },
-            ),
-            handler=_get_quick_quote_adaptive,
-            default_response_text="Processing adaptive quick quote.",
-        )
-    )
-
-    # Register customer collection tool (Batch 1)
-    register_tool(
-        ToolRegistration(
-            tool=types.Tool(
-                name="collect-personal-auto-customer",
-                title="Collect personal auto customer information",
-                description=(
-                    "Collect and validate customer information for a personal auto quote. "
-                    "This is Batch 1 of the conversational flow. Captures: name, address, "
-                    "months at residence, and prior insurance status. "
-                    "Returns validation status showing which required fields are still missing."
-                ),
-                inputSchema=_model_schema(CumulativeCustomerIntake),
-            ),
-            handler=_collect_personal_auto_customer,
-            default_response_text="Captured customer information.",
-        )
-    )
-
-    # Register driver collection tool (Batch 2)
-    register_tool(
-        ToolRegistration(
-            tool=types.Tool(
-                name="collect-personal-auto-drivers",
-                title="Collect personal auto driver information",
-                description=(
-                    "Collect and validate driver information for a personal auto quote. "
-                    "This is Batch 2 of the conversational flow. Captures: driver name, DOB, "
-                    "gender, marital status, license info, and residency details. "
-                    "Can also append missing customer fields from Batch 1 (forward-appending). "
-                    "Returns validation status showing which required fields are still missing."
-                ),
-                inputSchema=_model_schema(CumulativeDriverIntake),
-            ),
-            handler=_collect_personal_auto_drivers,
-            default_response_text="Captured driver information.",
-        )
-    )
-
-    # Register vehicle collection tool (Batch 3)
-    register_tool(
-        ToolRegistration(
-            tool=types.Tool(
-                name="collect-personal-auto-vehicles",
-                title="Collect personal auto vehicle information",
-                description=(
-                    "Collect and validate vehicle information for a personal auto quote. "
-                    "This is Batch 3 of the conversational flow. Captures: VIN, year, make, model, "
-                    "usage details, and coverage preferences. "
-                    "Can also append missing customer or driver fields from earlier batches (forward-appending). "
-                    "Returns validation status showing which required fields are still missing."
-                ),
-                inputSchema=_model_schema(CumulativeVehicleIntake),
-            ),
-            handler=_collect_personal_auto_vehicles,
-            default_response_text="Captured vehicle information.",
-        )
-    )
-
-    rate_results_widget = WIDGETS_BY_ID[INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER]
-    rate_results_meta = {
-        **_tool_meta(rate_results_widget),
-        "openai/widgetAccessible": True,
-    }
-    rate_results_default_meta = {
-        **rate_results_meta,
-        "openai.com/widget": _embedded_widget_resource(rate_results_widget).model_dump(mode="json"),
-    }
-
-    rate_tool_description = (
-        "Submit a fully populated personal auto quote request to the rating API and return the carrier response. "
-        "Call this tool when the user provides complete rate request details (including customer, drivers, vehicles) "
-        "or when the insurance widget sends you a structured rate request payload. "
-        f"Coverage limits must match AIS enumerations ({AIS_POLICY_COVERAGE_SUMMARY}). "
-        "The response will include a quote identifier that should be used for retrieving or comparing results."
-    )
-
-    rate_tool_meta = {
-        "openai/widgetAccessible": True,
-        "openai/resultCanProduceWidget": True,
-        "openai.com/widget": _embedded_widget_resource(rate_results_widget).model_dump(
-            mode="json"
-        ),
-        "annotations": {
-            "destructiveHint": False,
-            "openWorldHint": False,
-            "readOnlyHint": False,
-        },
-    }
-
-    register_tool(
-        ToolRegistration(
-            tool=types.Tool(
-                name="request-personal-auto-rate",
-                title="Request personal auto rate",
-                description=rate_tool_description,
-                inputSchema=_model_schema(PersonalAutoRateRequest),
-                _meta=rate_tool_meta,
-            ),
-            handler=_request_personal_auto_rate,
-            default_response_text="Submitted personal auto rating request.",
-        )
-    )
-
-    register_tool(
-        ToolRegistration(
-            tool=types.Tool(
-                name="retrieve-personal-auto-rate-results",
-                title="Retrieve personal auto rate results",
-                description=(
-                    "Fetch carrier rate results for an existing personal auto quote using its identifier. "
-                    "Use the quote identifier (Identifier field) from previous rate requests in this conversation. "
-                    "When the user asks to 'compare quotes', 'show results', or 'get the latest quote', "
-                    "use the most recent quote identifier from the conversation history."
-                ),
-                inputSchema=_model_schema(PersonalAutoRateResultsRequest),
-                _meta=rate_results_meta,
-            ),
-            handler=_retrieve_personal_auto_rate_results,
-            default_response_text="Retrieved personal auto rate results.",
-            default_meta=rate_results_default_meta,
-        )
-    )
-
-    # Register wizard flow tools
-    wizard_widget = WIDGETS_BY_ID[INSURANCE_WIZARD_WIDGET_IDENTIFIER]
-    wizard_meta = {
-        **_tool_meta(wizard_widget),
-        "openai/widgetAccessible": True,
-    }
-    wizard_default_meta = {
-        **wizard_meta,
-        "openai.com/widget": _embedded_widget_resource(wizard_widget).model_dump(mode="json"),
-    }
-
-    register_tool(
-        ToolRegistration(
-            tool=types.Tool(
-                name="start-insurance-wizard",
-                title="Start insurance application wizard",
-                description=(
-                    "Launch the multi-step insurance application wizard after presenting a quick quote. "
-                    "This wizard guides users through 5 steps to collect complete policy, customer, vehicle, and driver information. "
-                    "The wizard is fully config-driven and provides a structured form experience. "
-                    "Use this tool when the user wants to proceed with a detailed quote after seeing quick quote results."
-                ),
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "zip_code": {
-                            "type": "string",
-                            "description": "Pre-fill zip code from quick quote"
-                        },
-                        "number_of_drivers": {
-                            "type": "integer",
-                            "description": "Pre-fill number of drivers from quick quote"
-                        }
-                    },
-                    "additionalProperties": False,
-                },
-                _meta=wizard_meta,
-            ),
-            handler=_start_wizard_flow,
-            default_response_text="Started insurance application wizard.",
-            default_meta=wizard_default_meta,
-        )
-    )
-
-    register_tool(
-        ToolRegistration(
-            tool=types.Tool(
-                name="submit-wizard-form",
-                title="Submit completed wizard form",
-                description=(
-                    "Process a completed wizard form submission and request personal auto rate. "
-                    "This tool receives all collected data from the wizard and submits it to the rating API. "
-                    "The wizard frontend will call this tool automatically when the user completes all steps and clicks submit."
-                ),
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "form_data": {
-                            "type": "object",
-                            "description": "Complete form data collected from wizard steps"
-                        }
-                    },
-                    "required": ["form_data"],
-                    "additionalProperties": False,
-                },
-            ),
-            handler=_submit_wizard_form,
-            default_response_text="Submitted wizard form for rating.",
         )
     )
 
