@@ -261,13 +261,13 @@ def format_quote_range_message(
 
     message += "Based on typical rates in your area:\n\n"
 
-    message += f"**BEST CASE SCENARIO**\n"
-    message += f"(Experienced driver, clean record, reliable vehicle)\n"
+    message += "**BEST CASE SCENARIO**\n"
+    message += "(Experienced driver, clean record, reliable vehicle)\n"
     message += f"💰 **${best_min:,} - ${best_max:,}** per 6 months\n"
     message += f"   ≈ ${int(best_min/6):,} - ${int(best_max/6):,} per month\n\n"
 
-    message += f"**WORST CASE SCENARIO**\n"
-    message += f"(New driver, newer vehicle, limited history)\n"
+    message += "**WORST CASE SCENARIO**\n"
+    message += "(New driver, newer vehicle, limited history)\n"
     message += f"💰 **${worst_min:,} - ${worst_max:,}** per 6 months\n"
     message += f"   ≈ ${int(worst_min/6):,} - ${int(worst_max/6):,} per month\n\n"
 

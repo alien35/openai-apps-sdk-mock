@@ -13,7 +13,6 @@ from typing import (
     TypedDict,
 )
 from pydantic import (
-    AliasChoices,
     BaseModel,
     ConfigDict,
     Field,
@@ -467,91 +466,6 @@ class PersonalAutoQuoteOptionsInput(BaseModel):
     _strip_term = field_validator("term", mode="before")(_strip_string)
     _strip_payment = field_validator("payment_method", mode="before")(_strip_string)
     _strip_policy_type = field_validator("policy_type", mode="before")(_strip_string)
-
-
-class PersonalAutoRateRequest(BaseModel):
-    identifier: str = Field(..., alias="Identifier")
-    effective_date: str = Field(..., alias="EffectiveDate")
-    customer_declined_credit: Optional[bool] = Field(
-        default=None, alias="CustomerDeclinedCredit"
-    )
-    bump_limits: Optional[str] = Field(default=None, alias="BumpLimits")
-    term: Optional[str] = Field(default=None, alias="Term")
-    payment_method: Optional[str] = Field(default=None, alias="PaymentMethod")
-    policy_type: Optional[str] = Field(default=None, alias="PolicyType")
-    customer: CustomerProfileInput = Field(..., alias="Customer")
-    policy_coverages: PolicyCoveragesInput = Field(
-        default_factory=PolicyCoveragesInput, alias="PolicyCoverages"
-    )
-    rated_drivers: List[RatedDriverInput] = Field(..., alias="RatedDrivers")
-    vehicles: List[VehicleInput] = Field(..., alias="Vehicles")
-
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
-
-    _strip_identifier = field_validator("identifier", mode="before")(_strip_string)
-    _strip_effective = field_validator("effective_date", mode="before")(_strip_string)
-    _strip_bump = field_validator("bump_limits", mode="before")(_strip_string)
-    _strip_term = field_validator("term", mode="before")(_strip_string)
-    _strip_payment = field_validator("payment_method", mode="before")(_strip_string)
-    _strip_policy_type = field_validator("policy_type", mode="before")(_strip_string)
-
-
-class PersonalAutoRateResultsRequest(BaseModel):
-    identifier: str = Field(
-        ...,
-        alias="Identifier",
-        validation_alias=AliasChoices("Identifier", "Id"),
-    )
-
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
-
-    _strip_identifier = field_validator("identifier", mode="before")(_strip_string)
-
-
-# Cumulative intake models for conversational batch collection
-# These use flexible JSON schemas that allow partial/incomplete data
-class CumulativeCustomerIntake(BaseModel):
-    """Cumulative intake for customer information batch."""
-    customer: Optional[Dict[str, Any]] = Field(default=None, alias="Customer")
-
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
-
-
-class CumulativeDriverIntake(BaseModel):
-    """Cumulative intake for driver information batch (can append customer fields)."""
-    customer: Optional[Dict[str, Any]] = Field(default=None, alias="Customer")
-    rated_drivers: Optional[List[Dict[str, Any]]] = Field(default=None, alias="RatedDrivers")
-
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
-
-
-class CumulativeVehicleIntake(BaseModel):
-    """Cumulative intake for vehicle information batch (can append customer/driver fields)."""
-    customer: Optional[Dict[str, Any]] = Field(default=None, alias="Customer")
-    rated_drivers: Optional[List[Dict[str, Any]]] = Field(default=None, alias="RatedDrivers")
-    vehicles: Optional[List[Dict[str, Any]]] = Field(default=None, alias="Vehicles")
-
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
-
-
-class QuickQuoteIntake(BaseModel):
-    """Quick quote intake for initial quote range (just zip code and number of drivers)."""
-    zip_code: str = Field(
-        ...,
-        alias="ZipCode",
-        description="5-digit zip code for the insurance quote"
-    )
-    number_of_drivers: int = Field(
-        ...,
-        alias="NumberOfDrivers",
-        ge=1,
-        le=10,
-        description="Number of drivers (1-10)"
-    )
-
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
-
-    _strip_zip = field_validator("zip_code", mode="before")(_strip_string)
 
 
 class VehicleInfo(BaseModel):

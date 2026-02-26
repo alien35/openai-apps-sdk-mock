@@ -14,7 +14,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from insurance_server_python.collection_engine import (
-    create_collection_engine,
     CollectionStatus,
     CollectionEngine,
 )
@@ -187,7 +186,7 @@ def test_review_with_multiple_corrections():
         "NumberOfDrivers": 4,
     })
 
-    print(f"✓ After corrections:")
+    print("✓ After corrections:")
     print(f"  • ZipCode: 94103 → {state.collected_fields['ZipCode']}")
     print(f"  • NumberOfDrivers: 2 → {state.collected_fields['NumberOfDrivers']}")
 

@@ -260,7 +260,6 @@ class TestToolHandlerIntegration:
     async def test_enhanced_quick_quote_normalizes_state(self):
         """Tool handler should normalize state to abbreviation."""
         from insurance_server_python.tool_handlers import _get_enhanced_quick_quote
-        from insurance_server_python.models import EnhancedQuickQuoteIntake, VehicleInfo
 
         # Mock the zip lookup to return Massachusetts
         with patch("insurance_server_python.tool_handlers._lookup_city_state_from_zip") as mock_lookup:
