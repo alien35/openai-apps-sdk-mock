@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Quote Widget Preview</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .preview-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="preview-container">
+        <h1>Quick Quote Widget Preview</h1>
+        <div id="widget-container"></div>
+    </div>
+
+    <script>
+        // Set up the OpenAI globals object BEFORE loading the widget
+        window.openai = {
+            toolOutput: {
+                carriers: [
+                    {
+                        name: "Geico",
+                        logo: "/assets/images/mercury-logo.png",
+                        annual_cost: 3100,
+                        monthly_cost: 258
+                    },
+                    {
+                        name: "Progressive Insurance",
+                        logo: "/assets/images/progressive.png",
+                        annual_cost: 3600,
+                        monthly_cost: 300
+                    },
+                    {
+                        name: "Safeco Insurance",
+                        logo: "/assets/images/orion.png",
+                        annual_cost: 3800,
+                        monthly_cost: 317
+                    }
+                ],
+                zip_code: "92821",
+                city: "Brea",
+                state: "CA",
+                num_drivers: 1,
+                num_vehicles: 1
+            }
+        };
+
+        // Load the widget HTML
+        fetch('/test-widget')
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('widget-container').innerHTML = html;
+
+                // Give the widget a moment to initialize, then trigger hydration
+                setTimeout(() => {
+                    // Dispatch the event that the widget is listening for
+                    const event = new CustomEvent('openai:set_globals', {
+                        detail: {
+                            globals: window.openai
+                        }
+                    });
+                    window.dispatchEvent(event);
+                    console.log('Widget hydration triggered with data:', window.openai);
+                }, 100);
+            })
+            .catch(error => {
+                console.error('Error loading widget:', error);
+                document.getElementById('widget-container').innerHTML =
+                    '<p style="color: red;">Error loading widget. Make sure the server is running on port 8000.</p>';
+            });
+    </script>
+</body>
+</html>
