@@ -12,6 +12,24 @@ from .constants import MIME_TYPE
 from .models import ToolHandler
 
 
+# ============================================================================
+# BASE URL CONFIGURATION - Change this for testing/deployment
+# ============================================================================
+# For local/ngrok testing, set to your ngrok URL:
+# BASE_URL = "https://08e6-2601-985-4101-d2b0-53c-2a7-2aa4-cabf.ngrok-free.app"
+# For staging:
+# BASE_URL = "https://stg-api.mercuryinsurance.com"
+# For production:
+# BASE_URL = "https://api.mercuryinsurance.com"
+
+BASE_URL = "https://08e6-2601-985-4101-d2b0-53c-2a7-2aa4-cabf.ngrok-free.app"
+
+# Derived URLs
+WIDGET_BASE_URL = f"{BASE_URL}/assets/images"
+API_DOMAINS = [BASE_URL]  # Domains widgets can connect to
+# ============================================================================
+
+
 @dataclass(frozen=True)
 class WidgetDefinition:
     """Definition of a UI widget with its metadata."""
@@ -48,11 +66,11 @@ def register_tool(registration: ToolRegistration) -> None:
 
 # Widget identifiers and URIs
 INSURANCE_STATE_WIDGET_IDENTIFIER = "insurance-state-selector"
-INSURANCE_STATE_WIDGET_TEMPLATE_URI = "https://stg-api.mercuryinsurance.com/assets/images/insurance-state.html"
+INSURANCE_STATE_WIDGET_TEMPLATE_URI = f"{WIDGET_BASE_URL}/insurance-state.html"
 QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER = "quick-quote-results"
-QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI = "https://stg-api.mercuryinsurance.com/assets/images/quick-quote-results.html"
+QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI = f"{WIDGET_BASE_URL}/quick-quote-results.html"
 PHONE_ONLY_WIDGET_IDENTIFIER = "phone-only"
-PHONE_ONLY_WIDGET_TEMPLATE_URI = "https://stg-api.mercuryinsurance.com/assets/images/phone-only.html"
+PHONE_ONLY_WIDGET_TEMPLATE_URI = f"{WIDGET_BASE_URL}/phone-only.html"
 
 # Input schema for insurance state selector
 INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
@@ -170,6 +188,13 @@ def _tool_meta(widget: WidgetDefinition) -> Dict[str, Any]:
             "destructiveHint": False,
             "openWorldHint": False,
             "readOnlyHint": True,
+        },
+        "ui": {
+            "domain": WIDGET_BASE_URL,
+            "prefersBorder": False,
+            "csp": {
+                "connectDomains": API_DOMAINS,
+            },
         }
     }
 
