@@ -57,9 +57,56 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
     Returns more accurate rate estimates based on provided driver age, vehicle details,
     coverage type, and optional additional driver information.
     """
+    import uuid
     from .utils import _lookup_city_state_from_zip
     from .quick_quote_ranges import calculate_enhanced_quote_range
     from .models import QuickQuoteIntake
+    from .duplicate_detection import is_duplicate_call, get_duplicate_info
+    from .structured_logging import (
+        log_tool_call,
+        log_duplicate_call,
+        log_quote_request,
+        log_batch_incomplete,
+        log_phone_only_state,
+        log_quote_generated,
+        log_carrier_estimation,
+    )
+    import mcp.types as types
+
+    # Generate unique call ID for tracking this invocation
+    call_id = str(uuid.uuid4())[:8]
+    logger.info("🎯 CALL START [%s] ========================================", call_id)
+    logger.info("Tool: get-enhanced-quick-quote")
+    logger.info("Call ID: %s", call_id)
+    logger.info("Arguments: %s", arguments)
+
+    # Check for duplicate calls
+    if is_duplicate_call("get-enhanced-quick-quote", dict(arguments)):
+        dup_info = get_duplicate_info("get-enhanced-quick-quote", dict(arguments))
+        seconds_ago = int(dup_info["seconds_ago"]) if dup_info else 0
+
+        logger.warning(
+            f"🔄 DUPLICATE CALL DETECTED - Same quote request was made {seconds_ago} seconds ago. "
+            f"Rejecting to prevent repeated widget generation."
+        )
+
+        # Log duplicate call event
+        log_duplicate_call(
+            tool_name="get-enhanced-quick-quote",
+            seconds_since_last=seconds_ago,
+        )
+
+        return {
+            "content": [types.TextContent(
+                type="text",
+                text=(
+                    f"⚠️ I already generated this quote {seconds_ago} seconds ago. "
+                    f"The quote widget should be displayed above. "
+                    f"If you need a different quote, please provide different information (different ZIP code, vehicles, drivers, etc.)."
+                )
+            )],
+            "structured_content": {},
+        }
 
     payload = QuickQuoteIntake.model_validate(arguments)
 
@@ -76,6 +123,28 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
     logger.info(f"  - num_drivers: {payload.num_drivers}")
     logger.info(f"  - drivers: {payload.drivers}")
     logger.info("=" * 80)
+
+    # Structured logging: Log quote request
+    log_quote_request(
+        zip_code=payload.zip_code,
+        num_vehicles=payload.num_vehicles,
+        num_drivers=payload.num_drivers,
+        coverage_preference=payload.coverage_preference,
+    )
+
+    # Log tool call
+    has_all = (
+        payload.num_vehicles is not None and
+        payload.vehicles and
+        payload.coverage_preference is not None and
+        payload.num_drivers is not None and
+        payload.drivers
+    )
+    log_tool_call(
+        tool_name="get-enhanced-quick-quote",
+        has_all_fields=has_all,
+        zip_code=payload.zip_code,
+    )
 
     # ⛔ STRICT VALIDATION: ALL FIELDS REQUIRED - NO PARTIAL CALLS ALLOWED ⛔
     # This tool should ONLY be called after the assistant has collected ALL information
@@ -100,6 +169,27 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
     # If ANY field is missing, reject the call with clear guidance
     if missing_fields:
         logger.error(f"❌ TOOL CALLED TOO EARLY - Missing fields: {', '.join(missing_fields)}")
+
+        # Determine which batch is incomplete
+        batch1_fields = ["Number of vehicles", "Vehicle details (year, make, model)", "Coverage preference"]
+        batch2_fields = ["Number of drivers", "Driver details (age, marital status)"]
+
+        batch1_missing = [f for f in missing_fields if f in batch1_fields]
+        batch2_missing = [f for f in missing_fields if f in batch2_fields]
+
+        if batch1_missing:
+            log_batch_incomplete(
+                batch_name="batch_1",
+                missing_fields=batch1_missing,
+                zip_code=payload.zip_code,
+            )
+        if batch2_missing:
+            log_batch_incomplete(
+                batch_name="batch_2",
+                missing_fields=batch2_missing,
+                zip_code=payload.zip_code,
+            )
+
         error_message = (
             "⚠️ This tool requires ALL information from both batches before being called.\n\n"
             "**Missing information:**\n"
@@ -140,6 +230,13 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
     if is_phone_only:
         logger.info(f"Phone-only state detected: {state or 'unknown'} - showing phone widget")
 
+        # Log phone-only state event
+        log_phone_only_state(
+            zip_code=payload.zip_code,
+            state=state or "unknown",
+            lookup_failed=lookup_failed,
+        )
+
         from .widget_registry import WIDGETS_BY_ID, PHONE_ONLY_WIDGET_IDENTIFIER, _embedded_widget_resource, _tool_meta
 
         # Get phone-only widget metadata
@@ -153,6 +250,10 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
         # Normalize state to abbreviation
         state_abbr = state_abbreviation(state) if state else None
 
+        # Get CTA URL configuration
+        from .url_config import get_cta_params_json
+        cta_config = get_cta_params_json()
+
         # Create concise message directing them to call
         if lookup_failed:
             message = f"Thanks! I've submitted your details for a quote. Please call the number above to complete your quote with a licensed agent.\n\nLet me know if you have any questions!"
@@ -162,10 +263,13 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
         # Return phone-only widget
         return {
             "structured_content": {
+                "success": True,  # Clear success indicator
+                "phone_only": True,  # Explicit flag for phone-only state
                 "zip_code": payload.zip_code,
                 "city": city,
                 "state": state_abbr,
                 "lookup_failed": lookup_failed,
+                "cta_config": cta_config,  # CTA URL configuration
             },
             "content": [types.TextContent(type="text", text=message)],
             "meta": widget_meta,
@@ -277,6 +381,15 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
                 carriers=carrier_names,
             )
 
+            # Log carrier estimation
+            log_carrier_estimation(
+                zip_code=payload.zip_code,
+                state=normalized or "CA",
+                num_carriers=len(estimates["quotes"]),
+                baseline_annual=estimates["baseline"]["annual"],
+                confidence=estimates["quotes"][0]["confidence"] if estimates["quotes"] else "unknown",
+            )
+
             # Log detailed calculation breakdown to file
             from .quote_logger import log_quick_quote_calculation
             from .pricing.risk_score import calculate_risk_score
@@ -376,8 +489,14 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
     # Normalize state to abbreviation for consistent frontend handling
     state_abbr = state_abbreviation(state) if state else None
 
+    # Get CTA URL configuration
+    from .url_config import get_cta_params_json
+    cta_config = get_cta_params_json()
+
     # Build structured content
     structured_content = {
+        "success": True,  # Clear success indicator
+        "quote_generated": True,  # Explicit flag that quote was generated
         "zip_code": payload.zip_code,
         "city": city,
         "state": state_abbr,  # Use abbreviation for consistent phone-only state detection
@@ -389,9 +508,10 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
         "mercury_logo": get_carrier_logo("Mercury Auto Insurance"),  # Always show Mercury in header
         "stage": "quick_quote_complete",
         "lookup_failed": lookup_failed,  # Flag to indicate failed zip lookup
+        "cta_config": cta_config,  # CTA URL configuration for building personalized links
     }
 
-    logger.info("=== RETURNING STRUCTURED CONTENT ===")
+    logger.info("=== RETURNING STRUCTURED CONTENT [%s] ===", call_id)
     if lookup_failed:
         logger.info(f"Lookup failed for zip {payload.zip_code} - showing phone-only prompt")
     else:
@@ -401,12 +521,79 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
         logger.info(f"  Carrier {i+1}: {carrier['name']} - ${carrier['annual_cost']}/year")
     logger.info("=== END STRUCTURED CONTENT ===")
 
-    # Return the widget with carrier data
-    return {
+    # Log successful quote generation
+    log_quote_generated(
+        zip_code=payload.zip_code,
+        state=state_abbr,
+        num_carriers=len(carriers),
+        num_vehicles=num_vehicles,
+        num_drivers=num_drivers,
+        coverage_type=payload.coverage_preference,
+        city=city,
+        lookup_failed=lookup_failed,
+    )
+
+    # Build the response
+    response = {
         "structured_content": structured_content,
         "content": [types.TextContent(type="text", text=message)],
         "meta": widget_meta,
     }
+
+    # DETAILED RESPONSE INSPECTION
+    logger.info("╔" + "═" * 78 + "╗")
+    logger.info("║ 📤 RESPONSE INSPECTION [%s]", call_id.ljust(65) + "║")
+    logger.info("╠" + "═" * 78 + "╣")
+
+    # Content inspection
+    logger.info("║ Content Array:")
+    logger.info("║   - Length: %d", len(response["content"]))
+    for idx, content_item in enumerate(response["content"]):
+        logger.info("║   - Item %d: type=%s", idx, content_item.type)
+        if hasattr(content_item, 'text'):
+            text_preview = content_item.text[:100].replace('\n', ' ') if content_item.text else "None"
+            logger.info("║     Text preview: %s...", text_preview)
+
+    # Structured content inspection
+    logger.info("║")
+    logger.info("║ Structured Content:")
+    logger.info("║   - Keys: %s", list(structured_content.keys()))
+    logger.info("║   - success: %s", structured_content.get('success'))
+    logger.info("║   - quote_generated: %s", structured_content.get('quote_generated'))
+    logger.info("║   - stage: %s", structured_content.get('stage'))
+    logger.info("║   - Number of carriers: %d", len(structured_content.get('carriers', [])))
+
+    # Carrier details
+    if structured_content.get('carriers'):
+        logger.info("║   - Carrier details:")
+        for i, carrier in enumerate(structured_content['carriers']):
+            logger.info("║     [%d] %s: $%d/year ($%d/month)",
+                       i+1, carrier.get('name'), carrier.get('annual_cost', 0), carrier.get('monthly_cost', 0))
+
+    # Meta inspection
+    logger.info("║")
+    logger.info("║ Meta:")
+    logger.info("║   - Keys: %s", list(widget_meta.keys()))
+    if "openai/outputTemplate" in widget_meta:
+        template = widget_meta["openai/outputTemplate"]
+        if isinstance(template, dict):
+            logger.info("║   - outputTemplate type: %s", template.get('type'))
+            logger.info("║   - outputTemplate uri: %s", template.get('uri'))
+        else:
+            logger.info("║   - outputTemplate: %s", template)
+    if "openai.com/widget" in widget_meta:
+        widget_info = widget_meta["openai.com/widget"]
+        if isinstance(widget_info, dict):
+            logger.info("║   - widget type: %s", widget_info.get('type'))
+            logger.info("║   - widget embedded: %s", 'embedded' in widget_info)
+        else:
+            logger.info("║   - widget: %s", widget_info)
+
+    logger.info("╚" + "═" * 78 + "╝")
+    logger.info("🏁 CALL END [%s] ==========================================", call_id)
+
+    # Return the widget with carrier data
+    return response
 
 
 
@@ -472,6 +659,10 @@ async def _submit_carrier_estimates(arguments: Mapping[str, Any]) -> ToolInvocat
         f"If you'd like help understanding the differences between coverage or adjusting deductibles to lower your premium, just let me know!"
     )
 
+    # Get CTA URL configuration
+    from .url_config import get_cta_params_json
+    cta_config = get_cta_params_json()
+
     return {
         "structured_content": {
             "zip_code": payload.zip_code,
@@ -481,6 +672,7 @@ async def _submit_carrier_estimates(arguments: Mapping[str, Any]) -> ToolInvocat
             "carriers": carriers_with_logos,
             "mercury_logo": get_carrier_logo("Mercury Auto Insurance"),  # Always show Mercury in header
             "stage": "carrier_estimates_complete",
+            "cta_config": cta_config,  # CTA URL configuration
         },
         "content": [types.TextContent(type="text", text=message)],
     }
