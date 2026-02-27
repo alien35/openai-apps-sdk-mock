@@ -237,13 +237,24 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
             lookup_failed=lookup_failed,
         )
 
-        from .widget_registry import WIDGETS_BY_ID, PHONE_ONLY_WIDGET_IDENTIFIER, _embedded_widget_resource, _tool_meta
+        from .widget_registry import WIDGETS_BY_ID, PHONE_ONLY_WIDGET_IDENTIFIER, _embedded_widget_resource
 
         # Get phone-only widget metadata
         phone_only_widget = WIDGETS_BY_ID[PHONE_ONLY_WIDGET_IDENTIFIER]
         widget_resource = _embedded_widget_resource(phone_only_widget)
+
+        # Build metadata - don't include openai/outputTemplate since we're embedding the widget
+        # Including both causes ChatGPT to render the widget twice
         widget_meta = {
-            **_tool_meta(phone_only_widget),
+            "openai/toolInvocation/invoking": phone_only_widget.invoking,
+            "openai/toolInvocation/invoked": phone_only_widget.invoked,
+            "openai/widgetAccessible": True,
+            "openai/resultCanProduceWidget": True,
+            "annotations": {
+                "destructiveHint": False,
+                "openWorldHint": False,
+                "readOnlyHint": True,
+            },
             "openai.com/widget": widget_resource.model_dump(mode="json"),
         }
 
@@ -338,7 +349,7 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
         message += "Let me know if you have any questions!"
 
         import mcp.types as types
-        from .widget_registry import WIDGETS_BY_ID, QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER, _embedded_widget_resource, _tool_meta
+        from .widget_registry import WIDGETS_BY_ID, QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER, _embedded_widget_resource
         from .carrier_mapping import get_carriers_for_state
 
         # Get server base URL from environment
@@ -473,7 +484,7 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
 
     # (End of if/else block - common code for both paths follows)
     import mcp.types as types
-    from .widget_registry import WIDGETS_BY_ID, QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER, _embedded_widget_resource, _tool_meta
+    from .widget_registry import WIDGETS_BY_ID, QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER, _embedded_widget_resource
 
     # Get server base URL from environment
     server_base_url = os.getenv("SERVER_BASE_URL", "http://localhost:8000")
@@ -481,8 +492,19 @@ async def _get_enhanced_quick_quote(arguments: Mapping[str, Any]) -> ToolInvocat
     # Get widget metadata
     quick_quote_widget = WIDGETS_BY_ID[QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER]
     widget_resource = _embedded_widget_resource(quick_quote_widget)
+
+    # Build metadata - don't include openai/outputTemplate since we're embedding the widget
+    # Including both causes ChatGPT to render the widget twice
     widget_meta = {
-        **_tool_meta(quick_quote_widget),
+        "openai/toolInvocation/invoking": quick_quote_widget.invoking,
+        "openai/toolInvocation/invoked": quick_quote_widget.invoked,
+        "openai/widgetAccessible": True,
+        "openai/resultCanProduceWidget": True,
+        "annotations": {
+            "destructiveHint": False,
+            "openWorldHint": False,
+            "readOnlyHint": True,
+        },
         "openai.com/widget": widget_resource.model_dump(mode="json"),
     }
 
