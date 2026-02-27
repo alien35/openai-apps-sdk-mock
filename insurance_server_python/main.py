@@ -545,18 +545,42 @@ async def get_quick_quote_carriers(request: Request):
 
 @app.route("/assets/images/{filename}", methods=["GET"])
 async def serve_image(request: Request):
-    """Serve static images from assets/images directory."""
+    """Serve static images and widget HTML from assets/images directory."""
     from pathlib import Path
-    from starlette.responses import FileResponse
+    from starlette.responses import FileResponse, HTMLResponse
 
     filename = request.path_params["filename"]
-    image_path = Path(__file__).parent / "assets" / "images" / filename
+    file_path = Path(__file__).parent / "assets" / "images" / filename
 
-    if not image_path.exists():
-        return JSONResponse({"error": "Image not found"}, status_code=404)
+    if not file_path.exists():
+        return JSONResponse({"error": "File not found"}, status_code=404)
 
+    # Serve HTML files with CSP headers for ChatGPT compatibility
+    if filename.endswith('.html'):
+        with open(file_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+
+        return HTMLResponse(
+            html_content,
+            headers={
+                "Content-Security-Policy": (
+                    "default-src 'none'; "
+                    "script-src 'self' 'unsafe-inline'; "
+                    "style-src 'self' 'unsafe-inline'; "
+                    "img-src 'self' data:; "
+                    "font-src 'self'; "
+                    "connect-src 'self' https://stg-api.mercuryinsurance.com https://api.mercuryinsurance.com; "
+                    "frame-ancestors https://chatgpt.com https://chat.openai.com;"
+                ),
+                "Access-Control-Allow-Origin": "https://chatgpt.com",
+                "X-Content-Type-Options": "nosniff",
+                "Cache-Control": "public, max-age=3600",
+            }
+        )
+
+    # Serve images normally
     return FileResponse(
-        image_path,
+        file_path,
         headers={"Access-Control-Allow-Origin": "*"}
     )
 
@@ -727,6 +751,7 @@ async def preview_phone_widget(request: Request):
     """
 
     return HTMLResponse(html)
+
 
 # Add CORS middleware
 try:
