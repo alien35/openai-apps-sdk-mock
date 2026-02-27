@@ -478,5 +478,5 @@ DEFAULT_CARRIER_INFORMATION: Dict[str, Any] = {
 # Patterns
 ZIP_CODE_NORMALIZATION_PATTERN = re.compile(r"\D")
 
-# MIME type
-MIME_TYPE = "text/html+skybridge"
+# MIME type for MCP Apps
+MIME_TYPE = "text/html;profile=mcp-app"

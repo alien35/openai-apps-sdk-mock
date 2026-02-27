@@ -548,6 +548,7 @@ async def serve_image(request: Request):
     """Serve static images and widget HTML from assets/images directory."""
     from pathlib import Path
     from starlette.responses import FileResponse, HTMLResponse
+    from .widget_registry import BASE_URL
 
     filename = request.path_params["filename"]
     file_path = Path(__file__).parent / "assets" / "images" / filename
@@ -564,13 +565,13 @@ async def serve_image(request: Request):
             html_content,
             headers={
                 "Content-Security-Policy": (
-                    "default-src 'none'; "
-                    "script-src 'self' 'unsafe-inline'; "
-                    "style-src 'self' 'unsafe-inline'; "
-                    "img-src 'self' data:; "
-                    "font-src 'self'; "
-                    "connect-src 'self' https://stg-api.mercuryinsurance.com https://api.mercuryinsurance.com; "
-                    "frame-ancestors https://chatgpt.com https://chat.openai.com;"
+                    f"default-src 'none'; "
+                    f"script-src 'self' 'unsafe-inline'; "
+                    f"style-src 'self' 'unsafe-inline'; "
+                    f"img-src 'self' data:; "
+                    f"font-src 'self'; "
+                    f"connect-src 'self' {BASE_URL}; "
+                    f"frame-ancestors https://chatgpt.com https://chat.openai.com;"
                 ),
                 "Access-Control-Allow-Origin": "https://chatgpt.com",
                 "X-Content-Type-Options": "nosniff",
