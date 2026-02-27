@@ -547,7 +547,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = f"""
       </div>
 
       <div class="cta-section">
-        <a class="cta-button" id="cta-button" href="https://tst.aisinsurance.com?sid=chatgptapp&refid3=mercuryais&zip=90210" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button" id="cta-button" href="https://tst.aisinsurance.com/auto-quote?refid5=chatgptapp&zip=90210" target="_blank" rel="noopener noreferrer">
           Get personalized quote
         </a>
       </div>
@@ -587,11 +587,17 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = f"""
   // Function to build CTA URL with all parameters
   function buildCtaUrl(zipCode, ctaConfig) {{
     const config = ctaConfig || {{}};
-    const baseUrl = config.base_url || "https://tst.aisinsurance.com";
-    const sid = config.sid || "chatgptapp";
-    const refid3 = config.refid3 || "mercuryais";
+    const baseUrl = config.base_url || "https://tst.aisinsurance.com/auto-quote";
+    const params = config.params || {{ refid5: "chatgptapp" }};
 
-    return `${{baseUrl}}?sid=${{sid}}&refid3=${{refid3}}&zip=${{zipCode}}`;
+    // Build query string from params
+    const queryParams = [];
+    for (const [key, value] of Object.entries(params)) {{
+      queryParams.push(`${{key}}=${{value}}`);
+    }}
+    queryParams.push(`zip=${{zipCode}}`);
+
+    return `${{baseUrl}}?${{queryParams.join("&")}}`;
   }}
 
   function updateWidget(data) {{
