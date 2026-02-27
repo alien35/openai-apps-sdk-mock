@@ -13,15 +13,16 @@ def test_get_cta_url_default():
     """Test default CTA URL generation."""
     url = get_cta_url("90210")
     assert url.startswith("https://")
-    assert "sid=chatgptapp" in url
-    assert "refid3=mercuryais" in url
+    assert "refid5=chatgptapp" in url
     assert "zip=90210" in url
+    assert "/auto-quote?" in url
 
 
 def test_get_cta_url_with_carrier():
-    """Test CTA URL with carrier parameter."""
-    url = get_cta_url("90210", carrier_name="Geico")
-    assert "carrier=Geico" in url
+    """Test CTA URL does not include carrier parameter."""
+    url = get_cta_url("90210")
+    # Carrier parameter is not included in URL
+    assert "carrier=" not in url
     assert "zip=90210" in url
 
 
@@ -37,10 +38,8 @@ def test_get_cta_params_json():
     params = get_cta_params_json()
     assert "base_url" in params
     assert "params" in params
-    assert "sid" in params["params"]
-    assert "refid3" in params["params"]
-    assert params["params"]["sid"] == "chatgptapp"
-    assert params["params"]["refid3"] == "mercuryais"
+    assert "refid5" in params["params"]
+    assert params["params"]["refid5"] == "chatgptapp"
 
 
 def test_url_format():
@@ -53,7 +52,7 @@ def test_url_format():
     # Parameters should be separated by &
     query_string = url.split("?")[1]
     params = query_string.split("&")
-    assert len(params) >= 3  # At least sid, refid3, zip
+    assert len(params) >= 2  # At least refid5, zip
 
     # Each parameter should have key=value format
     for param in params:
@@ -81,8 +80,7 @@ def test_zip_code_variations():
 def test_default_params_present():
     """Test that default parameters are always present."""
     url = get_cta_url("90210")
-    assert "sid=chatgptapp" in url
-    assert "refid3=mercuryais" in url
+    assert "refid5=chatgptapp" in url
 
 
 def test_cta_base_url_defined():
@@ -94,19 +92,17 @@ def test_cta_base_url_defined():
 
 def test_cta_params_defined():
     """Test that CTA parameters are defined."""
-    assert "sid" in CTA_PARAMS
-    assert "refid3" in CTA_PARAMS
-    assert CTA_PARAMS["sid"]  # Not empty
-    assert CTA_PARAMS["refid3"]  # Not empty
+    assert "refid5" in CTA_PARAMS
+    assert CTA_PARAMS["refid5"]  # Not empty
 
 
-def test_carrier_in_middle_of_params():
-    """Test that carrier parameter is inserted before zip."""
-    url = get_cta_url("90210", carrier_name="Progressive")
+def test_zip_at_end():
+    """Test that zip parameter is at the end of URL."""
+    url = get_cta_url("90210")
     # Ensure zip is at the end
     assert url.endswith("zip=90210")
-    # Ensure carrier is present
-    assert "carrier=Progressive" in url
+    # Ensure no carrier in URL
+    assert "carrier=" not in url
 
 
 def test_multiple_zip_codes():

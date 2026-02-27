@@ -6,21 +6,18 @@ making them easy to update and configure.
 To change the CTA URL, simply edit the values below and restart the server.
 """
 
-from typing import Optional
-
 # ============================================================================
 # CONFIGURATION - Edit these values as needed
 # ============================================================================
 
 # Base URL where users will be redirected to complete their quote
 # Change this to switch between test and production
-CTA_BASE_URL = "https://tst.aisinsurance.com"
+CTA_BASE_URL = "https://tst.aisinsurance.com/auto-quote"
 
 # Query parameters that will be appended to the URL
 # These are used for tracking and attribution
 CTA_PARAMS = {
-    "sid": "chatgptapp",
-    "refid3": "mercuryais",
+    "refid5": "chatgptapp",
 }
 
 # ============================================================================
@@ -28,22 +25,18 @@ CTA_PARAMS = {
 # ============================================================================
 
 
-def get_cta_url(zip_code: str, carrier_name: Optional[str] = None) -> str:
+def get_cta_url(zip_code: str) -> str:
     """Build the complete CTA URL with all required parameters.
 
     Args:
         zip_code: The user's ZIP code to pre-fill
-        carrier_name: Optional carrier name for tracking
 
     Returns:
         Complete URL with all query parameters
 
     Example:
         >>> get_cta_url("90210")
-        'https://tst.aisinsurance.com?sid=chatgptapp&refid3=mercuryais&zip=90210'
-
-        >>> get_cta_url("90210", carrier_name="Geico")
-        'https://tst.aisinsurance.com?sid=chatgptapp&refid3=mercuryais&carrier=Geico&zip=90210'
+        'https://tst.aisinsurance.com/auto-quote?refid5=chatgptapp&zip=90210'
     """
     # Build query parameters
     params = []
@@ -51,10 +44,6 @@ def get_cta_url(zip_code: str, carrier_name: Optional[str] = None) -> str:
     # Add default parameters
     for key, value in CTA_PARAMS.items():
         params.append(f"{key}={value}")
-
-    # Add carrier if provided
-    if carrier_name:
-        params.append(f"carrier={carrier_name}")
 
     # Add zip code (required)
     params.append(f"zip={zip_code}")
