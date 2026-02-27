@@ -48,11 +48,11 @@ def register_tool(registration: ToolRegistration) -> None:
 
 # Widget identifiers and URIs
 INSURANCE_STATE_WIDGET_IDENTIFIER = "insurance-state-selector"
-INSURANCE_STATE_WIDGET_TEMPLATE_URI = "ui://widget/insurance-state.html"
+INSURANCE_STATE_WIDGET_TEMPLATE_URI = "https://stg-api.mercuryinsurance.com/assets/images/insurance-state.html"
 QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER = "quick-quote-results"
-QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI = "ui://widget/quick-quote-results.html"
+QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI = "https://stg-api.mercuryinsurance.com/assets/images/quick-quote-results.html"
 PHONE_ONLY_WIDGET_IDENTIFIER = "phone-only"
-PHONE_ONLY_WIDGET_TEMPLATE_URI = "ui://widget/phone-only.html"
+PHONE_ONLY_WIDGET_TEMPLATE_URI = "https://stg-api.mercuryinsurance.com/assets/images/phone-only.html"
 
 # Input schema for insurance state selector
 INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
