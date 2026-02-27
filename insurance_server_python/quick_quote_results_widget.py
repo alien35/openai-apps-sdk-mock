@@ -156,7 +156,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = f"""
   }}
 
   .annual-price .price-value {{
-    color: #1a237e;
+    color: #2c3e50;
   }}
 
   .price-label {{
@@ -174,7 +174,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = f"""
     display: block;
     width: 100%;
     padding: 20px;
-    background: #1565c0;
+    background: #e67e22;
     color: white;
     text-decoration: none;
     border-radius: 8px;
@@ -187,7 +187,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = f"""
   }}
 
   .cta-button:hover {{
-    background: #0d47a1;
+    background: #d35400;
   }}
 
   .cta-button::after {{
@@ -547,7 +547,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = f"""
       </div>
 
       <div class="cta-section">
-        <a class="cta-button" id="cta-button" href="https://aisinsurance.com/?zip=90210" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button" id="cta-button" href="https://tst.aisinsurance.com?sid=chatgptapp&refid3=mercuryais&zip=90210" target="_blank" rel="noopener noreferrer">
           Get personalized quote
         </a>
       </div>
@@ -584,6 +584,16 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = f"""
     return `$${{value.toLocaleString()}}`;
   }}
 
+  // Function to build CTA URL with all parameters
+  function buildCtaUrl(zipCode, ctaConfig) {{
+    const config = ctaConfig || {{}};
+    const baseUrl = config.base_url || "https://tst.aisinsurance.com";
+    const sid = config.sid || "chatgptapp";
+    const refid3 = config.refid3 || "mercuryais";
+
+    return `${{baseUrl}}?sid=${{sid}}&refid3=${{refid3}}&zip=${{zipCode}}`;
+  }}
+
   function updateWidget(data) {{
     if (!data) {{
       console.log("Quick quote widget: No data for widget");
@@ -598,6 +608,7 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = f"""
     const numDrivers = data.num_drivers || 1;
     const numVehicles = data.num_vehicles || 1;
     const lookupFailed = data.lookup_failed || false;
+    const ctaConfig = data.cta_config || {{}};
 
     // Check if this is a phone-only state (AK, HI, MA) OR if lookup failed
     const phoneOnlyStates = ["AK", "HI", "MA", "Alaska", "Hawaii", "Massachusetts"];
@@ -674,8 +685,8 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = f"""
       headerImageEl.src = CAR_BACKGROUND;
       headerImageEl.alt = "Car illustration";
 
-      // Reset CTA button
-      ctaButtonEl.href = `https://aisinsurance.com/?zip=${{zipCode}}`;
+      // Reset CTA button with configured URL
+      ctaButtonEl.href = buildCtaUrl(zipCode, ctaConfig);
       ctaButtonEl.textContent = "Get personalized quote";
     }}
 
@@ -731,17 +742,53 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = f"""
     contentLoadedEl.classList.add("visible");
   }}
 
+  // Track hydration calls
+  let hydrationCount = 0;
+  const hydrationTimestamps = [];
+
   function hydrate(globals) {{
+    hydrationCount++;
+    const timestamp = new Date().toISOString();
+    hydrationTimestamps.push(timestamp);
+
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("🔄 WIDGET HYDRATION CALL #" + hydrationCount);
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("Timestamp:", timestamp);
+    console.log("Previous hydration calls:", hydrationTimestamps.length - 1);
+
+    if (hydrationTimestamps.length > 1) {{
+      const lastTimestamp = new Date(hydrationTimestamps[hydrationTimestamps.length - 2]);
+      const currentTimestamp = new Date(timestamp);
+      const timeDiff = (currentTimestamp - lastTimestamp) / 1000;
+      console.log("⚠️  Time since last hydration:", timeDiff.toFixed(2), "seconds");
+
+      if (timeDiff < 5) {{
+        console.warn("⚠️⚠️⚠️ RAPID HYDRATION DETECTED - Less than 5 seconds since last call!");
+      }}
+    }}
+
+    console.log("Globals object:", globals);
+    console.log("Globals type:", typeof globals);
+    console.log("Globals keys:", globals ? Object.keys(globals) : "null");
+
     if (!globals || typeof globals !== "object") {{
+      console.warn("❌ Invalid globals object - skipping hydration");
+      console.log("═══════════════════════════════════════════════════════════");
       return;
     }}
 
     // Try multiple ways to access the data
     let data = null;
+    let dataSource = "none";
 
     // Method 1: Direct access
     try {{
       data = globals.toolOutput || globals.tool_output || globals.structuredContent || globals.structured_content;
+      if (data) {{
+        dataSource = "direct";
+        console.log("✅ Data found via direct access");
+      }}
     }} catch (e) {{
       console.log("Quick quote widget: Error accessing toolOutput directly:", e);
     }}
@@ -750,6 +797,10 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = f"""
     if (!data && globals.toolResponseMetadata) {{
       try {{
         data = globals.toolResponseMetadata.structuredContent || globals.toolResponseMetadata.structured_content;
+        if (data) {{
+          dataSource = "toolResponseMetadata";
+          console.log("✅ Data found via toolResponseMetadata");
+        }}
       }} catch (e) {{
         console.log("Quick quote widget: Error accessing toolResponseMetadata:", e);
       }}
@@ -759,25 +810,56 @@ QUICK_QUOTE_RESULTS_WIDGET_HTML = f"""
     if (!data && globals.widget) {{
       try {{
         data = globals.widget.structuredContent || globals.widget.structured_content;
+        if (data) {{
+          dataSource = "widget";
+          console.log("✅ Data found via widget object");
+        }}
       }} catch (e) {{
         console.log("Quick quote widget: Error accessing widget:", e);
       }}
     }}
 
     if (data && typeof data === 'object') {{
-      console.log("Quick quote widget: Found data, updating widget");
+      console.log("✅ Data found via:", dataSource);
+      console.log("Data keys:", Object.keys(data));
+      console.log("Number of carriers:", data.carriers ? data.carriers.length : 0);
+      console.log("State:", data.state);
+      console.log("City:", data.city);
+      console.log("ZIP:", data.zip_code);
+      console.log("🎨 Calling updateWidget...");
       updateWidget(data);
+      console.log("✅ updateWidget completed");
+    }} else {{
+      console.warn("❌ No valid data found in globals object");
     }}
+
+    console.log("═══════════════════════════════════════════════════════════");
   }}
 
   // Initial hydration
+  console.log("🚀 Widget script loaded - Performing initial hydration");
   const initialGlobals = typeof window !== "undefined" && window.openai ? window.openai : {{}};
+  console.log("Initial globals available:", !!window.openai);
   hydrate(initialGlobals);
 
   // Listen for updates
+  console.log("📡 Setting up event listener for openai:set_globals");
+  let eventCount = 0;
   window.addEventListener("openai:set_globals", (event) => {{
+    eventCount++;
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("📨 EVENT RECEIVED: openai:set_globals #" + eventCount);
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("Event:", event);
+    console.log("Event detail:", event.detail);
+
     const detail = event.detail;
-    if (!detail || !detail.globals) return;
+    if (!detail || !detail.globals) {{
+      console.warn("❌ Event detail or globals missing");
+      return;
+    }}
+
+    console.log("✅ Valid event received, calling hydrate");
     hydrate(detail.globals);
   }});
 }})();
