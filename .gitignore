@@ -34,3 +34,7 @@ __pycache__/
 *.egg-info/
 .venv/
 
+
+# Quote explanation files (auto-generated)
+insurance_server_python/quote_explanations/*.md
+!insurance_server_python/quote_explanations/README.md

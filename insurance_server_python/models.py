@@ -6,13 +6,13 @@ from typing import (
     Callable,
     Dict,
     List,
+    Literal,
     Mapping,
     Optional,
     Sequence,
     TypedDict,
 )
 from pydantic import (
-    AliasChoices,
     BaseModel,
     ConfigDict,
     Field,
@@ -468,43 +468,201 @@ class PersonalAutoQuoteOptionsInput(BaseModel):
     _strip_policy_type = field_validator("policy_type", mode="before")(_strip_string)
 
 
-class PersonalAutoRateRequest(BaseModel):
-    identifier: str = Field(..., alias="Identifier")
-    effective_date: str = Field(..., alias="EffectiveDate")
-    customer_declined_credit: Optional[bool] = Field(
-        default=None, alias="CustomerDeclinedCredit"
-    )
-    bump_limits: Optional[str] = Field(default=None, alias="BumpLimits")
-    term: Optional[str] = Field(default=None, alias="Term")
-    payment_method: Optional[str] = Field(default=None, alias="PaymentMethod")
-    policy_type: Optional[str] = Field(default=None, alias="PolicyType")
-    customer: CustomerProfileInput = Field(..., alias="Customer")
-    policy_coverages: PolicyCoveragesInput = Field(
-        default_factory=PolicyCoveragesInput, alias="PolicyCoverages"
-    )
-    rated_drivers: List[RatedDriverInput] = Field(..., alias="RatedDrivers")
-    vehicles: List[VehicleInput] = Field(..., alias="Vehicles")
+class VehicleInfo(BaseModel):
+    """Vehicle information for enhanced quick quote."""
+    year: int = Field(..., alias="Year", ge=1900, le=2030, description="Vehicle year (1900-2030)")
+    make: str = Field(..., alias="Make", min_length=1, description="Vehicle make (e.g., Toyota, Honda)")
+    model: str = Field(..., alias="Model", min_length=1, description="Vehicle model (e.g., Camry, Accord)")
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
-    _strip_identifier = field_validator("identifier", mode="before")(_strip_string)
-    _strip_effective = field_validator("effective_date", mode="before")(_strip_string)
-    _strip_bump = field_validator("bump_limits", mode="before")(_strip_string)
-    _strip_term = field_validator("term", mode="before")(_strip_string)
-    _strip_payment = field_validator("payment_method", mode="before")(_strip_string)
-    _strip_policy_type = field_validator("policy_type", mode="before")(_strip_string)
 
-
-class PersonalAutoRateResultsRequest(BaseModel):
-    identifier: str = Field(
+class AdditionalDriverInfo(BaseModel):
+    """Additional driver information for enhanced quick quote."""
+    age: int = Field(..., alias="Age", ge=16, le=100, description="Driver age (16-100)")
+    marital_status: Literal["single", "married", "divorced", "widowed"] = Field(
         ...,
-        alias="Identifier",
-        validation_alias=AliasChoices("Identifier", "Id"),
+        alias="Marital Status",
+        description="Marital status of the additional driver"
     )
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
-    _strip_identifier = field_validator("identifier", mode="before")(_strip_string)
+
+class DriverInfo(BaseModel):
+    """Single driver information for the new streamlined flow."""
+    age: int = Field(
+        ...,
+        alias="Age",
+        ge=16,
+        le=100,
+        description="Driver age (16-100)"
+    )
+    marital_status: Literal["single", "married", "divorced", "widowed"] = Field(
+        ...,
+        alias="Marital Status",
+        description="Marital status of the driver"
+    )
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+
+class QuickQuoteIntake(BaseModel):
+    """New streamlined quote intake matching the crisp question format.
+
+    BATCH 1: ZIP code, number of vehicles, vehicle details, coverage preference
+    BATCH 2: Number of drivers, driver details
+
+    ZIP code is always required for early validation. Other fields can be provided incrementally.
+    The tool will validate the ZIP code first and show phone-only widget if applicable.
+    """
+    # BATCH 1: Basic Information
+    zip_code: str = Field(
+        ...,
+        alias="ZIP Code",
+        pattern=r'^\d{5}$',
+        description="5-digit ZIP code for the insurance quote (always required)"
+    )
+    num_vehicles: Optional[Literal[1, 2]] = Field(
+        None,
+        alias="Number of Vehicles",
+        description="Number of vehicles to insure (1 or 2)"
+    )
+    vehicles: Optional[List[VehicleInfo]] = Field(
+        None,
+        alias="Vehicles",
+        description="List of vehicle information (year, make, model for each)"
+    )
+    coverage_preference: Optional[Literal["liability_only", "full_coverage"]] = Field(
+        None,
+        alias="Coverage Preference",
+        description="Coverage type: 'liability_only' for liability-only or 'full_coverage' for comprehensive coverage"
+    )
+
+    # BATCH 2: Driver Information
+    num_drivers: Optional[Literal[1, 2]] = Field(
+        None,
+        alias="Number of Drivers",
+        description="Number of drivers on the policy (1 or 2)"
+    )
+    drivers: Optional[List[DriverInfo]] = Field(
+        None,
+        alias="Drivers",
+        description="List of driver information (age and marital status for each)"
+    )
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    _strip_zip = field_validator("zip_code", mode="before")(_strip_string)
+
+    @model_validator(mode="after")
+    def validate_counts(self):
+        """Ensure list lengths match declared counts (only when fields are provided)."""
+        if self.num_vehicles is not None and self.vehicles is not None:
+            if len(self.vehicles) != self.num_vehicles:
+                raise ValueError(f"Expected {self.num_vehicles} vehicles, got {len(self.vehicles)}")
+        if self.num_drivers is not None and self.drivers is not None:
+            if len(self.drivers) != self.num_drivers:
+                raise ValueError(f"Expected {self.num_drivers} drivers, got {len(self.drivers)}")
+        return self
+
+
+# DEPRECATED: Old model kept for backward compatibility during transition
+class EnhancedQuickQuoteIntake(BaseModel):
+    """DEPRECATED: Use QuickQuoteIntake instead.
+
+    Enhanced quick quote with grouped collection: vehicles first, then drivers.
+
+    FIRST - Vehicle Information:
+    - Vehicle 1: Year, Make, Model
+    - Vehicle 2 (optional): Year, Make, Model
+    - Coverage Type
+
+    THEN - Driver Information:
+    - Primary Driver: Age, Marital Status
+    - Additional Driver (optional): Age, Marital Status
+    - Zip Code
+    """
+    # BATCH 1: Vehicle Information
+    vehicle_1: VehicleInfo = Field(
+        ...,
+        alias="Vehicle",
+        description="Primary vehicle information (year, make, model)"
+    )
+    vehicle_2: Optional[VehicleInfo] = Field(
+        default=None,
+        alias="Second Vehicle",
+        description="Second vehicle information (optional)"
+    )
+    coverage_type: Literal["liability", "full_coverage"] = Field(
+        ...,
+        alias="Coverage",
+        description="Coverage type: 'liability' for liability-only or 'full_coverage' for liability + comprehensive/collision"
+    )
+
+    # BATCH 2: Driver Information
+    primary_driver_age: int = Field(
+        ...,
+        alias="Age",
+        ge=16,
+        le=100,
+        description="Age of the primary driver (16-100)"
+    )
+    primary_driver_marital_status: Literal["single", "married", "divorced", "widowed"] = Field(
+        ...,
+        alias="Marital Status",
+        description="Marital status of the primary driver"
+    )
+    additional_driver: Optional[AdditionalDriverInfo] = Field(
+        default=None,
+        alias="Additional Driver",
+        description="Additional driver information (optional)"
+    )
+    zip_code: str = Field(
+        ...,
+        alias="Zip Code",
+        description="5-digit zip code for the insurance quote"
+    )
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    _strip_zip = field_validator("zip_code", mode="before")(_strip_string)
+
+
+class CarrierEstimate(BaseModel):
+    """Individual carrier cost estimate generated by ChatGPT."""
+    name: str = Field(..., alias="Carrier Name", description="Name of the insurance carrier")
+    annual_cost: int = Field(..., alias="Annual Cost", ge=0, description="Estimated annual cost in dollars")
+    monthly_cost: int = Field(..., alias="Monthly Cost", ge=0, description="Estimated monthly cost in dollars")
+    notes: str = Field(..., alias="Notes", description="Brief notes about this carrier's value proposition")
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+
+class CarrierEstimatesSubmission(BaseModel):
+    """ChatGPT-generated carrier estimates along with profile reference data."""
+    # Profile reference (to link back to the original quote request)
+    zip_code: str = Field(..., alias="Zip Code", description="5-digit zip code from the quote request")
+    primary_driver_age: int = Field(..., alias="Age", ge=16, le=100, description="Primary driver age")
+
+    # Carrier estimates (must include Mercury Insurance)
+    carriers: List[CarrierEstimate] = Field(
+        ...,
+        alias="Carriers",
+        min_length=3,
+        max_length=10,
+        description="List of carrier estimates (3-10 carriers). Must include Mercury Insurance."
+    )
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    @model_validator(mode="after")
+    def validate_mercury_included(self):
+        """Ensure Mercury Insurance is included in carriers."""
+        carrier_names = [c.name.lower() for c in self.carriers]
+        if not any("mercury" in name for name in carrier_names):
+            raise ValueError("Carriers list must include Mercury Insurance")
+        return self
 
 
 # TypedDicts for tool handling

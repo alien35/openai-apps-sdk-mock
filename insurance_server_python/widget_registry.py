@@ -6,9 +6,28 @@ from typing import Any, Dict, Optional, Tuple
 import mcp.types as types
 
 from .insurance_state_widget import INSURANCE_STATE_WIDGET_HTML
-from .insurance_rate_results_widget import INSURANCE_RATE_RESULTS_WIDGET_HTML
+from .quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
+from .phone_only_widget import PHONE_ONLY_WIDGET_HTML
 from .constants import MIME_TYPE
 from .models import ToolHandler
+
+
+# ============================================================================
+# BASE URL CONFIGURATION - Change this for testing/deployment
+# ============================================================================
+# For local/ngrok testing, set to your ngrok URL:
+# BASE_URL = "https://08e6-2601-985-4101-d2b0-53c-2a7-2aa4-cabf.ngrok-free.app"
+# For staging:
+# BASE_URL = "https://stg-api.mercuryinsurance.com"
+# For production:
+# BASE_URL = "https://api.mercuryinsurance.com"
+
+BASE_URL = "https://08e6-2601-985-4101-d2b0-53c-2a7-2aa4-cabf.ngrok-free.app"
+
+# Derived URLs
+WIDGET_BASE_URL = f"{BASE_URL}/assets/images"
+API_DOMAINS = [BASE_URL]  # Domains widgets can connect to
+# ============================================================================
 
 
 @dataclass(frozen=True)
@@ -47,9 +66,11 @@ def register_tool(registration: ToolRegistration) -> None:
 
 # Widget identifiers and URIs
 INSURANCE_STATE_WIDGET_IDENTIFIER = "insurance-state-selector"
-INSURANCE_STATE_WIDGET_TEMPLATE_URI = "ui://widget/insurance-state.html"
-INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER = "insurance-rate-results"
-INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI = "ui://widget/insurance-rate-results.html"
+INSURANCE_STATE_WIDGET_TEMPLATE_URI = f"{WIDGET_BASE_URL}/insurance-state.html"
+QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER = "quick-quote-results"
+QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI = f"{WIDGET_BASE_URL}/quick-quote-results.html"
+PHONE_ONLY_WIDGET_IDENTIFIER = "phone-only"
+PHONE_ONLY_WIDGET_TEMPLATE_URI = f"{WIDGET_BASE_URL}/phone-only.html"
 
 # Input schema for insurance state selector
 INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
@@ -81,16 +102,29 @@ DEFAULT_WIDGETS: Tuple[WidgetDefinition, ...] = (
 
 ADDITIONAL_WIDGETS: Tuple[WidgetDefinition, ...] = (
     WidgetDefinition(
-        identifier=INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER,
-        title="Review personal auto rate results",
-        template_uri=INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI,
-        invoking="Retrieving personal auto rate results",
-        invoked="Displayed personal auto rate results",
-        html=INSURANCE_RATE_RESULTS_WIDGET_HTML,
-        response_text="Here are the carrier premiums returned for this quote.",
+        identifier=QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER,
+        title="Display quick quote estimate",
+        template_uri=QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI,
+        invoking="Generating quick quote estimate",
+        invoked="Displayed quick quote estimate",
+        html=QUICK_QUOTE_RESULTS_WIDGET_HTML,
+        response_text="Here's your quick quote estimate based on your location and driver count.",
         input_schema=None,
         tool_description=(
-            "Summarizes carrier premiums, payment plans, and shared coverages for a personal auto quote."
+            "Displays instant premium range estimates for auto insurance with visual cards showing best and worst case scenarios."
+        ),
+    ),
+    WidgetDefinition(
+        identifier=PHONE_ONLY_WIDGET_IDENTIFIER,
+        title="Phone-only state message",
+        template_uri=PHONE_ONLY_WIDGET_TEMPLATE_URI,
+        invoking="Checking if phone-only state",
+        invoked="Phone-only state detected",
+        html=PHONE_ONLY_WIDGET_HTML,
+        response_text="This state requires a phone call for quotes.",
+        input_schema=None,
+        tool_description=(
+            "Displays a phone call prompt for states that require speaking with a licensed agent (AK, HI, MA)."
         ),
     ),
 )
@@ -121,17 +155,17 @@ if INSURANCE_STATE_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
     )
     raise RuntimeError(msg)
 
-if INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER not in WIDGETS_BY_ID:
+if QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER not in WIDGETS_BY_ID:
     msg = (
-        "Personal auto rate results widget must be registered; "
-        f"expected identifier '{INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER}' in widgets"
+        "Quick quote results widget must be registered; "
+        f"expected identifier '{QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER}' in widgets"
     )
     raise RuntimeError(msg)
 
-if INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
+if QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI not in WIDGETS_BY_URI:
     msg = (
-        "Personal auto rate results widget must expose the correct template URI; "
-        f"expected '{INSURANCE_RATE_RESULTS_WIDGET_TEMPLATE_URI}' in widgets"
+        "Quick quote results widget must expose the correct template URI; "
+        f"expected '{QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI}' in widgets"
     )
     raise RuntimeError(msg)
 
@@ -154,6 +188,13 @@ def _tool_meta(widget: WidgetDefinition) -> Dict[str, Any]:
             "destructiveHint": False,
             "openWorldHint": False,
             "readOnlyHint": True,
+        },
+        "ui": {
+            "domain": WIDGET_BASE_URL,
+            "prefersBorder": False,
+            "csp": {
+                "connectDomains": API_DOMAINS,
+            },
         }
     }
 
@@ -218,103 +259,148 @@ def _register_default_tools() -> None:
 def _register_personal_auto_intake_tools() -> None:
     """Register personal auto insurance intake tools."""
     from .tool_handlers import (
-        _collect_personal_auto_customer,
-        _request_personal_auto_rate,
-        _retrieve_personal_auto_rate_results,
+        _get_enhanced_quick_quote,
+        _submit_carrier_estimates,
     )
     from .models import (
-        PersonalAutoCustomerIntake,
-        PersonalAutoRateRequest,
-        PersonalAutoRateResultsRequest,
+        QuickQuoteIntake,
+        CarrierEstimatesSubmission,
     )
     from .utils import _model_schema
-    from .constants import AIS_POLICY_COVERAGE_SUMMARY
 
+    # Register quick quote tool (Initial step)
+    quick_quote_widget = WIDGETS_BY_ID[QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER]
+    quick_quote_meta = {
+        **_tool_meta(quick_quote_widget),
+        "openai/widgetAccessible": True,
+    }
+    quick_quote_default_meta = {
+        **quick_quote_meta,
+        "openai.com/widget": _embedded_widget_resource(quick_quote_widget).model_dump(mode="json"),
+    }
+
+    # Register quick quote tool (PRIMARY - streamlined crisp questions)
     register_tool(
         ToolRegistration(
             tool=types.Tool(
-                name="collect-personal-auto-customer",
-                title="Collect personal auto customer profile",
+                name="get-enhanced-quick-quote",
+                title="Get Quote",
                 description=(
-                    "Validate and capture the customer's personal information, "
-                    "including prior insurance status and any reason for a lapse, "
-                    "for a personal auto quote."
+                    "Primary tool for generating auto insurance quotes with interactive results display.\n"
+                    "\n"
+                    "**How This Tool Works:**\n"
+                    "This tool needs complete information to generate accurate quotes. The recommended "
+                    "approach is to collect all required fields before calling the tool.\n"
+                    "\n"
+                    "**Step 1: Collect Vehicle Information**\n"
+                    "Start by asking: \"To provide insurance estimates, please share:\"\n"
+                    "• ZIP code\n"
+                    "• Number of vehicles (1 or 2)\n"
+                    "• Year, make, and model for each vehicle\n"
+                    "• Coverage preference (full coverage or liability only)\n"
+                    "\n"
+                    "Wait for the user's response. If any information is missing, ask for the specific fields needed.\n"
+                    "\n"
+                    "**Step 2: Collect Driver Information**\n"
+                    "Once you have vehicle details, continue with: \"Thanks! Now I need a few driver details:\"\n"
+                    "• Number of drivers (1 or 2)\n"
+                    "• Age of each driver\n"
+                    "• Marital status (single, married, divorced, or widowed)\n"
+                    "\n"
+                    "Wait for the user's response. If any information is missing, ask for the specific fields needed.\n"
+                    "\n"
+                    "**Step 3: Generate Quote**\n"
+                    "When you have all required information:\n"
+                    "- ZIP code\n"
+                    "- Number of vehicles and their details (year, make, model)\n"
+                    "- Coverage preference\n"
+                    "- Number of drivers and their details (age, marital status)\n"
+                    "\n"
+                    "Call this tool with the complete data. The tool will automatically display an interactive "
+                    "widget with quote results.\n"
+                    "\n"
+                    "**After the Tool Runs:**\n"
+                    "The widget displays automatically with the quote results. A simple follow-up like "
+                    "\"Let me know if you have any questions!\" works well. The widget provides all the details, "
+                    "so additional explanation of coverage options or pricing isn't typically necessary unless "
+                    "the user specifically asks.\n"
+                    "\n"
+                    "**Note on Retries:**\n"
+                    "If the widget doesn't appear immediately, this is usually a display timing issue rather "
+                    "than a tool failure. The quote has been generated successfully. Avoid calling the tool "
+                    "again with the same data, as duplicate requests are filtered.\n"
+                    "\n"
+                    "**Special Cases:**\n"
+                    "For phone-only states (AK, HI, MA), the tool displays a widget with contact information "
+                    "instead of quotes, as these states require speaking with a licensed agent.\n"
+                    "\n"
+                    "**Formatting Tips:**\n"
+                    "• Use markdown **bold** for field labels\n"
+                    "• Say 'full coverage' rather than 'full_coverage'\n"
+                    "• Say 'liability only' rather than 'liability'\n"
+                    "• Keep the conversation natural and friendly\n"
                 ),
-                inputSchema=_model_schema(PersonalAutoCustomerIntake),
+                inputSchema=_model_schema(QuickQuoteIntake),
+                _meta=quick_quote_meta,
             ),
-            handler=_collect_personal_auto_customer,
-            default_response_text=(
-                "Captured customer profile information, including prior insurance details."
-            ),
+            handler=_get_enhanced_quick_quote,
+            default_response_text="Generated personalized quote range based on your specific details.",
+            default_meta=quick_quote_default_meta,
         )
     )
 
-    rate_results_widget = WIDGETS_BY_ID[INSURANCE_RATE_RESULTS_WIDGET_IDENTIFIER]
-    rate_results_meta = {
-        **_tool_meta(rate_results_widget),
-        "openai/widgetAccessible": True,
-    }
-    rate_results_default_meta = {
-        **rate_results_meta,
-        "openai.com/widget": _embedded_widget_resource(rate_results_widget).model_dump(mode="json"),
-    }
-
-    rate_tool_description = (
-        "Submit a fully populated personal auto quote request to the rating API and return the carrier response. "
-        "Call this tool when the user provides complete rate request details (including customer, drivers, vehicles) "
-        "or when the insurance widget sends you a structured rate request payload. "
-        f"Coverage limits must match AIS enumerations ({AIS_POLICY_COVERAGE_SUMMARY}). "
-        "The response will include a quote identifier that should be used for retrieving or comparing results."
-    )
-
-    rate_tool_meta = {
-        "openai/widgetAccessible": True,
-        "openai/resultCanProduceWidget": True,
-        "openai.com/widget": _embedded_widget_resource(rate_results_widget).model_dump(
-            mode="json"
-        ),
-        "annotations": {
-            "destructiveHint": False,
-            "openWorldHint": False,
-            "readOnlyHint": False,
-        },
-    }
-
+    # Register carrier estimates submission tool (Step 2 of enhanced quote flow)
     register_tool(
         ToolRegistration(
             tool=types.Tool(
-                name="request-personal-auto-rate",
-                title="Request personal auto rate",
-                description=rate_tool_description,
-                inputSchema=_model_schema(PersonalAutoRateRequest),
-                _meta=rate_tool_meta,
-            ),
-            handler=_request_personal_auto_rate,
-            default_response_text="Submitted personal auto rating request.",
-        )
-    )
-
-    register_tool(
-        ToolRegistration(
-            tool=types.Tool(
-                name="retrieve-personal-auto-rate-results",
-                title="Retrieve personal auto rate results",
+                name="submit-carrier-estimates",
+                title="Submit ChatGPT-generated carrier cost estimates",
                 description=(
-                    "Fetch carrier rate results for an existing personal auto quote using its identifier. "
-                    "Use the quote identifier (Identifier field) from previous rate requests in this conversation. "
-                    "When the user asks to 'compare quotes', 'show results', or 'get the latest quote', "
-                    "use the most recent quote identifier from the conversation history."
+                    "Submits carrier-specific cost estimates to display in an interactive widget.\n"
+                    "\n"
+                    "**When to Use:**\n"
+                    "This tool is designed as a follow-up to 'get-enhanced-quick-quote'. After collecting "
+                    "the user's profile information, you may receive instructions to generate carrier estimates "
+                    "using this tool.\n"
+                    "\n"
+                    "**How It Works:**\n"
+                    "The tool displays estimates in a widget format rather than as text. Generate 3-5 carrier "
+                    "estimates based on:\n"
+                    "- User's location, age, vehicle, and coverage type\n"
+                    "- The rate range estimate provided\n"
+                    "- Typical market positioning of carriers\n"
+                    "\n"
+                    "**Carrier Selection:**\n"
+                    "Include Mercury Insurance among the carriers shown, along with others such as "
+                    "Aspire, Progressive, Anchor General Insurance, Orion Indemnity, State Farm, or Geico.\n"
+                    "\n"
+                    "**For Each Carrier Provide:**\n"
+                    "- Carrier Name\n"
+                    "- Annual Cost (integer, in dollars)\n"
+                    "- Monthly Cost (integer, calculated as annual/12)\n"
+                    "- Notes (brief value proposition like 'Strong digital tools' or 'Best for multiple cars')\n"
+                    "\n"
+                    "**Pricing Guidance:**\n"
+                    "Vary the costs realistically to reflect different carrier pricing. Include the user's "
+                    "zip code and age from their profile.\n"
+                    "\n"
+                    "**Example carrier estimates:**\n"
+                    "- Mercury Insurance: $3,200/year ($267/month) - 'Strong digital tools & mobile app'\n"
+                    "- Aspire: $3,360/year ($280/month) - 'Savings for multiple cars'\n"
+                    "- Progressive: $4,064/year ($339/month) - 'Best balance of cost & claims'\n"
+                    "\n"
+                    "The tool displays results in an interactive widget that shows all carrier options."
                 ),
-                inputSchema=_model_schema(PersonalAutoRateResultsRequest),
-                _meta=rate_results_meta,
+                inputSchema=_model_schema(CarrierEstimatesSubmission),
+                _meta=quick_quote_meta,
             ),
-            handler=_retrieve_personal_auto_rate_results,
-            default_response_text="Retrieved personal auto rate results.",
-            default_meta=rate_results_default_meta,
+            handler=_submit_carrier_estimates,
+            default_response_text="Compiled carrier estimates for your profile.",
+            default_meta=quick_quote_default_meta,
         )
     )
 
 
 # Initialize the registry
-_register_default_tools()
+# _register_default_tools()  # DISABLED - insurance state selector form not used in simplified flow
 _register_personal_auto_intake_tools()

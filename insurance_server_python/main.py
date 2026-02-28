@@ -7,7 +7,6 @@ reusable resource so the ChatGPT client can render it inline."""
 from __future__ import annotations
 
 import inspect
-import json
 import logging
 import os
 from copy import deepcopy
@@ -192,7 +191,7 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
     meta = handler_payload.get("meta") or registration.default_meta
 
     # Log what we're sending for key tools
-    if req.params.name in ["request-personal-auto-rate", "retrieve-personal-auto-rate-results"]:
+    if req.params.name in ["request-personal-auto-rate", "retrieve-personal-auto-rate-results", "get-enhanced-quick-quote"]:
         logger.info("=== TOOL HANDLER SENDING RESPONSE FOR %s ===", req.params.name)
         logger.info("Content array length: %s", len(content))
         for idx, item in enumerate(content):
@@ -202,6 +201,17 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
             if hasattr(item, 'annotations') and item.annotations:
                 logger.info("Content[%s] annotations: %s", idx, item.annotations.model_dump(mode="json"))
         logger.info("Structured content keys: %s", list(structured_content.keys()))
+
+        # Log carriers if present
+        if "carriers" in structured_content:
+            carriers = structured_content["carriers"]
+            logger.info("!!! CARRIERS IN STRUCTURED_CONTENT: %s", len(carriers))
+            for i, carrier in enumerate(carriers):
+                logger.info("  Carrier %s: %s - $%s/year ($%s/month)",
+                           i+1, carrier.get('name'), carrier.get('annual_cost'), carrier.get('monthly_cost'))
+        else:
+            logger.warning("!!! NO CARRIERS IN STRUCTURED_CONTENT !!!")
+
         if "rate_results" in structured_content:
             rate_results = structured_content["rate_results"]
             logger.info("rate_results type: %s", type(rate_results))
@@ -227,78 +237,522 @@ mcp._mcp_server.request_handlers[types.ReadResourceRequest] = _handle_read_resou
 app = mcp.streamable_http_app()
 
 
-async def _legacy_call_tool_route(request: Request) -> JSONResponse:
-    """Handle legacy ``callTool`` HTTP requests.
+# Health check endpoint
+@app.route("/health", methods=["GET"])
+def health_check(request: Request):
+    """Health check endpoint for container orchestration."""
+    return JSONResponse({"status": "healthy"})
 
-    Older MCP HTTP clients (including early Apps SDK builds) issue JSON-RPC
-    requests using the pre-2024-10 method name ``callTool`` and expect a JSON
-    response body rather than an SSE stream. The FastMCP transport now requires
-    the newer ``tools/call`` method literal and enforces ``text/event-stream``
-    negotiation, which causes the legacy clients to fail before the tool handler
-    runs. This adapter normalizes those requests so the rest of the server can
-    reuse the canonical handler logic.
+
+# Root endpoint
+@app.route("/", methods=["GET"])
+def root(request: Request):
+    """Root endpoint."""
+    return JSONResponse({"service": "insurance-mcp-server", "status": "running"})
+
+
+# OpenAPI spec generation
+def generate_openapi_spec():
+    """Generate OpenAPI 3.0 specification for the API."""
+    return {
+        "openapi": "3.0.0",
+        "info": {
+            "title": "Insurance MCP Server API",
+            "version": "1.0.0",
+            "description": "Insurance quoting and data collection API with MCP integration",
+            "contact": {
+                "name": "API Support",
+                "url": "https://github.com/anthropics/openai-apps-sdk-examples"
+            }
+        },
+        "servers": [
+            {
+                "url": "http://localhost:8000",
+                "description": "Local development server"
+            }
+        ],
+        "paths": {
+            "/": {
+                "get": {
+                    "summary": "Root endpoint",
+                    "description": "Returns service information and status",
+                    "tags": ["Health"],
+                    "responses": {
+                        "200": {
+                            "description": "Service information",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "service": {"type": "string", "example": "insurance-mcp-server"},
+                                            "status": {"type": "string", "example": "running"}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "/health": {
+                "get": {
+                    "summary": "Health check",
+                    "description": "Health check endpoint for container orchestration",
+                    "tags": ["Health"],
+                    "responses": {
+                        "200": {
+                            "description": "Service is healthy",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {"type": "string", "example": "healthy"}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "/api/quick-quote-carriers": {
+                "get": {
+                    "summary": "Get carrier estimates",
+                    "description": "Returns carrier estimates for quick quote widget based on state",
+                    "tags": ["Quotes"],
+                    "parameters": [
+                        {
+                            "name": "state",
+                            "in": "query",
+                            "description": "State code (e.g., CA, TX, NY)",
+                            "schema": {
+                                "type": "string",
+                                "default": "CA"
+                            }
+                        },
+                        {
+                            "name": "zip_code",
+                            "in": "query",
+                            "description": "ZIP code",
+                            "schema": {
+                                "type": "string",
+                                "default": "90210"
+                            }
+                        },
+                        {
+                            "name": "city",
+                            "in": "query",
+                            "description": "City name",
+                            "schema": {
+                                "type": "string",
+                                "default": "Beverly Hills"
+                            }
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Carrier estimates",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "carriers": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {"type": "string"},
+                                                        "logo": {"type": "string"},
+                                                        "annual_cost": {"type": "integer"},
+                                                        "monthly_cost": {"type": "integer"},
+                                                        "notes": {"type": "string"}
+                                                    }
+                                                }
+                                            },
+                                            "zip_code": {"type": "string"},
+                                            "city": {"type": "string"},
+                                            "state": {"type": "string"}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "/assets/images/{filename}": {
+                "get": {
+                    "summary": "Serve static images",
+                    "description": "Serves static images from assets/images directory",
+                    "tags": ["Assets"],
+                    "parameters": [
+                        {
+                            "name": "filename",
+                            "in": "path",
+                            "required": True,
+                            "description": "Image filename",
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Image file",
+                            "content": {
+                                "image/*": {
+                                    "schema": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                }
+                            }
+                        },
+                        "404": {
+                            "description": "Image not found"
+                        }
+                    }
+                }
+            }
+        },
+        "tags": [
+            {
+                "name": "Health",
+                "description": "Health check and service status endpoints"
+            },
+            {
+                "name": "Quotes",
+                "description": "Insurance quote and carrier information"
+            },
+            {
+                "name": "Assets",
+                "description": "Static asset serving"
+            }
+        ]
+    }
+
+
+# OpenAPI spec endpoint
+@app.route("/openapi.json", methods=["GET"])
+def openapi_spec(request: Request):
+    """Serve OpenAPI specification."""
+    return JSONResponse(generate_openapi_spec())
+
+
+# Swagger UI endpoint
+@app.route("/docs", methods=["GET"])
+def swagger_ui(request: Request):
+    """Serve Swagger UI for API documentation."""
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Insurance MCP API - Swagger UI</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.10.5/swagger-ui.css">
+        <style>
+            body { margin: 0; padding: 0; }
+        </style>
+    </head>
+    <body>
+        <div id="swagger-ui"></div>
+        <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.10.5/swagger-ui-bundle.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.10.5/swagger-ui-standalone-preset.js"></script>
+        <script>
+            window.onload = function() {
+                SwaggerUIBundle({
+                    url: "/openapi.json",
+                    dom_id: '#swagger-ui',
+                    presets: [
+                        SwaggerUIBundle.presets.apis,
+                        SwaggerUIStandalonePreset
+                    ],
+                    layout: "BaseLayout",
+                    deepLinking: true
+                });
+            };
+        </script>
+    </body>
+    </html>
+    """
+    from starlette.responses import HTMLResponse
+    return HTMLResponse(html)
+
+
+# ReDoc endpoint (alternative documentation UI)
+@app.route("/redoc", methods=["GET"])
+def redoc_ui(request: Request):
+    """Serve ReDoc UI for API documentation."""
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Insurance MCP API - ReDoc</title>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body { margin: 0; padding: 0; }
+        </style>
+    </head>
+    <body>
+        <redoc spec-url="/openapi.json"></redoc>
+        <script src="https://cdn.jsdelivr.net/npm/redoc@2.1.3/bundles/redoc.standalone.js"></script>
+    </body>
+    </html>
+    """
+    from starlette.responses import HTMLResponse
+    return HTMLResponse(html)
+
+
+@app.route("/api/quick-quote-carriers", methods=["GET"])
+async def get_quick_quote_carriers(request: Request):
+    """Serve carrier estimates for quick quote widget based on state."""
+    from .carrier_logos import get_carrier_logo
+    from .carrier_mapping import get_carriers_for_state
+
+    # Get state from query params (default to California)
+    state = request.query_params.get("state", "CA")
+
+    # Get state-specific carriers
+    carrier_names = get_carriers_for_state(state)
+
+    # Build carrier list with logos and sample pricing
+    carriers = []
+    base_prices = [3200, 3600, 4000]  # Sample pricing tiers
+
+    for i, carrier_name in enumerate(carrier_names):
+        annual_cost = base_prices[i] if i < len(base_prices) else 3500
+        carriers.append({
+            "name": carrier_name,
+            "logo": get_carrier_logo(carrier_name),
+            "annual_cost": annual_cost,
+            "monthly_cost": annual_cost // 12,
+            "notes": "Competitive rates and service"
+        })
+
+    return JSONResponse(
+        {
+            "carriers": carriers,
+            "zip_code": request.query_params.get("zip_code", "90210"),
+            "city": request.query_params.get("city", "Beverly Hills"),
+            "state": state
+        },
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
+
+
+@app.route("/assets/images/{filename}", methods=["GET"])
+async def serve_image(request: Request):
+    """Serve static images and widget HTML from assets/images directory."""
+    from pathlib import Path
+    from starlette.responses import FileResponse, HTMLResponse
+    from .widget_registry import BASE_URL
+
+    filename = request.path_params["filename"]
+    file_path = Path(__file__).parent / "assets" / "images" / filename
+
+    if not file_path.exists():
+        return JSONResponse({"error": "File not found"}, status_code=404)
+
+    # Serve HTML files with CSP headers for ChatGPT compatibility
+    if filename.endswith('.html'):
+        with open(file_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+
+        return HTMLResponse(
+            html_content,
+            headers={
+                "Content-Security-Policy": (
+                    f"default-src 'none'; "
+                    f"script-src 'self' 'unsafe-inline'; "
+                    f"style-src 'self' 'unsafe-inline'; "
+                    f"img-src 'self' data:; "
+                    f"font-src 'self'; "
+                    f"connect-src 'self' {BASE_URL}; "
+                    f"frame-ancestors https://chatgpt.com https://chat.openai.com;"
+                ),
+                "Access-Control-Allow-Origin": "https://chatgpt.com",
+                "X-Content-Type-Options": "nosniff",
+                "Cache-Control": "public, max-age=3600",
+            }
+        )
+
+    # Serve images normally
+    return FileResponse(
+        file_path,
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
+
+
+@app.route("/test-widget", methods=["GET"])
+async def test_widget(request: Request):
+    """Serve the quick quote widget HTML for testing."""
+    from starlette.responses import HTMLResponse
+    from .quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
+
+    return HTMLResponse(
+        QUICK_QUOTE_RESULTS_WIDGET_HTML,
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
+
+
+@app.route("/preview", methods=["GET"])
+async def preview_widget(request: Request):
+    """Serve a comprehensive widget preview page with embedded data."""
+    from starlette.responses import HTMLResponse
+    from .quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
+
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Quick Quote Widget - Live Preview</title>
+        <style>
+            body {{
+                margin: 0;
+                padding: 20px;
+                background: #f5f5f5;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }}
+            .preview-container {{
+                max-width: 1400px;
+                margin: 0 auto;
+            }}
+            h1 {{
+                text-align: center;
+                margin-bottom: 30px;
+                color: #333;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="preview-container">
+            <h1>Quick Quote Widget - Live Preview (Normal State)</h1>
+            {QUICK_QUOTE_RESULTS_WIDGET_HTML}
+        </div>
+
+        <script>
+            // Set up the OpenAI globals object with sample data
+            window.openai = {{
+                toolOutput: {{
+                    carriers: [
+                        {{
+                            name: "Geico",
+                            logo: "/assets/images/mercury-logo.png",
+                            annual_cost: 3100,
+                            monthly_cost: 258
+                        }},
+                        {{
+                            name: "Progressive Insurance",
+                            logo: "/assets/images/progressive.png",
+                            annual_cost: 3600,
+                            monthly_cost: 300
+                        }},
+                        {{
+                            name: "Safeco Insurance",
+                            logo: "/assets/images/orion.png",
+                            annual_cost: 3800,
+                            monthly_cost: 317
+                        }}
+                    ],
+                    zip_code: "92821",
+                    city: "Brea",
+                    state: "CA",
+                    num_drivers: 1,
+                    num_vehicles: 1
+                }}
+            }};
+
+            // Trigger hydration after a brief delay
+            setTimeout(() => {{
+                console.log('Triggering widget hydration with data:', window.openai.toolOutput);
+                const event = new CustomEvent('openai:set_globals', {{
+                    detail: {{
+                        globals: window.openai
+                    }}
+                }});
+                window.dispatchEvent(event);
+            }}, 100);
+        </script>
+    </body>
+    </html>
     """
 
-    try:
-        payload = await request.json()
-    except json.JSONDecodeError as exc:
-        return JSONResponse(
-            {
-                "jsonrpc": "2.0",
-                "id": None,
-                "error": {
-                    "code": -32700,
-                    "message": f"Parse error: {exc}",
-                },
-            },
-            status_code=400,
-        )
-
-    method = payload.get("method")
-    if method != "callTool":
-        return JSONResponse(
-            {
-                "jsonrpc": "2.0",
-                "id": payload.get("id"),
-                "error": {
-                    "code": -32601,
-                    "message": f"Unsupported method: {method}",
-                },
-            },
-            status_code=405,
-        )
-
-    # Clone the payload but swap in the protocol-compliant method name so we
-    # can delegate back to the shared handler.
-    normalized_payload = {**payload, "method": "tools/call"}
-
-    try:
-        call_request = types.CallToolRequest.model_validate(normalized_payload)
-    except ValidationError as exc:
-        return JSONResponse(
-            {
-                "jsonrpc": "2.0",
-                "id": payload.get("id"),
-                "error": {
-                    "code": -32602,
-                    "message": "Invalid request parameters",
-                    "data": exc.errors(),
-                },
-            },
-            status_code=400,
-        )
-
-    server_result = await _call_tool_request(call_request)
-    response_payload = server_result.model_dump(mode="json")
-
-    # Legacy clients expect a JSON-RPC response envelope with either ``result``
-    # or ``error``. ``ServerResult`` always wraps a ``CallToolResult`` so we
-    # surface it as a ``result`` here.
-    return JSONResponse({"jsonrpc": "2.0", "id": payload.get("id"), "result": response_payload})
+    return HTMLResponse(html)
 
 
-# Add legacy route
-app.add_route("/mcp/messages", _legacy_call_tool_route, methods=["POST"])
+@app.route("/preview-phone", methods=["GET"])
+async def preview_phone_widget(request: Request):
+    """Serve a preview of the phone-only state widget."""
+    from starlette.responses import HTMLResponse
+    from .quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
+
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Quick Quote Widget - Phone-Only State Preview</title>
+        <style>
+            body {{
+                margin: 0;
+                padding: 20px;
+                background: #f5f5f5;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }}
+            .preview-container {{
+                max-width: 1400px;
+                margin: 0 auto;
+            }}
+            h1 {{
+                text-align: center;
+                margin-bottom: 30px;
+                color: #333;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="preview-container">
+            <h1>Quick Quote Widget - Phone-Only State (Alaska)</h1>
+            {QUICK_QUOTE_RESULTS_WIDGET_HTML}
+        </div>
+
+        <script>
+            // Set up the OpenAI globals object with phone-only state (Alaska)
+            window.openai = {{
+                toolOutput: {{
+                    carriers: [],  // Empty carriers array for phone-only states
+                    zip_code: "99501",
+                    city: "Anchorage",
+                    state: "AK",
+                    num_drivers: 1,
+                    num_vehicles: 1,
+                    lookup_failed: false
+                }}
+            }};
+
+            // Trigger hydration after a brief delay
+            setTimeout(() => {{
+                console.log('Triggering phone-only widget hydration with data:', window.openai.toolOutput);
+                const event = new CustomEvent('openai:set_globals', {{
+                    detail: {{
+                        globals: window.openai
+                    }}
+                }});
+                window.dispatchEvent(event);
+            }}, 100);
+        </script>
+    </body>
+    </html>
+    """
+
+    return HTMLResponse(html)
+
 
 # Add CORS middleware
 try:
@@ -319,4 +773,4 @@ except Exception:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("insurance_server_python.main:app", host="0.0.0.0", port=8000)
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000)

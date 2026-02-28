@@ -1,5 +1,5 @@
 {
-  "BumpLimits": "Bump Up",
+  "BumpLimits": "No Bumping",
   "CarrierInformation": {
     "Products": [
       {
@@ -59,28 +59,26 @@
   },
   "Customer": {
     "Address": {
-      "City": "Beverly Hills",
+      "City": "San Francisco",
       "State": "California",
-      "Street1": "123 Boulevard Ave",
-      "ZipCode": "90210"
+      "Street1": "123 Main St",
+      "ZipCode": "94105"
     },
     "ContactInformation": {},
     "DeclinedEmail": false,
     "DeclinedPhone": false,
     "FirstName": "John",
-    "Identifier": "CA-John-1771274433910",
-    "LastName": "Smith",
-    "MiddleName": "",
+    "Identifier": "cust-1",
+    "LastName": "Doe",
     "MonthsAtResidence": 24,
     "PriorInsuranceInformation": {
       "PriorInsurance": false,
       "ReasonForNoInsurance": "Other"
     }
   },
-  "CustomerDeclinedCredit": false,
-  "EffectiveDate": "2026-02-16T00:00:00Z",
-  "Identifier": "quote-1771274433910",
-  "PaymentMethod": "Standard",
+  "EffectiveDate": "2026-06-01T00:00:00Z",
+  "Identifier": "quote-123456789",
+  "PaymentMethod": "Default",
   "PolicyCoverages": {
     "AccidentalDeathLimit": "None",
     "LiabilityBiLimit": "30000/60000",
@@ -93,34 +91,17 @@
   "RatedDrivers": [
     {
       "Attributes": {
-        "MilesToWork": 0,
         "OccasionalOperator": false,
         "PropertyInsurance": false,
         "Relation": "Insured",
         "ResidencyStatus": "Own",
         "ResidencyType": "Home"
       },
-      "DateOfBirth": "1996-10-15T00:00:00Z",
-      "Discounts": {
-        "DefensiveDriving": false,
-        "DistantStudent": "None",
-        "DriversTraining": false,
-        "DrugAwareness": false,
-        "GoodStudent": false,
-        "MultiplePolicies": false,
-        "SeniorDriverDiscount": false,
-        "SingleParent": false
-      },
+      "DateOfBirth": "1990-01-01T00:00:00Z",
       "DriverId": 1,
-      "FinancialResponsibilityInformation": {
-        "Sr22": false,
-        "Sr22Date": "2026-02-16T20:40:33.910Z",
-        "Sr22Reason": "Other",
-        "Sr22State": "California"
-      },
       "FirstName": "John",
       "Gender": "Male",
-      "LastName": "Smith",
+      "LastName": "Doe",
       "LicenseInformation": {
         "CountryOfOrigin": "None",
         "ForeignNational": false,
@@ -134,14 +115,12 @@
         "MonthsSuspended": 0,
         "StateLicensed": "California"
       },
-      "MaritalStatus": "Single",
-      "MiddleName": ""
+      "MaritalStatus": "Single"
     }
   ],
   "Term": "Semi Annual",
   "Vehicles": [
     {
-      "AnnualMiles": 10000,
       "AssignedDriverId": 1,
       "CoverageInformation": {
         "CollisionDeductible": "None",
@@ -153,23 +132,17 @@
         "TowingLimit": "None"
       },
       "GaragingAddress": {
-        "City": "Beverly Hills",
+        "City": "San Francisco",
         "State": "California",
-        "Street1": "123 Boulevard Ave",
-        "ZipCode": "90210"
+        "Street1": "123 Main St",
+        "ZipCode": "94105"
       },
       "LeasedVehicle": false,
-      "Make": "Honda",
-      "MilesToWork": 0,
-      "Model": "Civic",
-      "Odometer": 0,
-      "PercentToWork": 0,
       "RideShare": false,
       "Salvaged": false,
       "Usage": "Work School",
       "VehicleId": 1,
-      "Vin": "2FMPK4J99J",
-      "Year": 2020
+      "Vin": "2FMPK4J99J"
     }
   ]
 }

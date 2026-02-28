@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Flow Configurations - Define collection flows without code changes",
+  "flows": [
+    {
+      "name": "quick_quote_v1",
+      "flow_type": "quick_quote",
+      "stages": [
+        {
+          "name": "initial",
+          "stage_type": "collection",
+          "fields": ["ZipCode", "NumberOfDrivers"],
+          "optional_fields": [],
+          "description": "Minimal info for quote range",
+          "allow_corrections": true
+        }
+      ],
+      "submission_criteria": {
+        "required_fields": ["ZipCode", "NumberOfDrivers"],
+        "generate_scenarios": true,
+        "review_required": false
+      },
+      "metadata": {
+        "version": "1.0",
+        "active": true,
+        "description": "Original minimal quick quote",
+        "use_case": "Fastest path, minimal friction"
+      }
+    },
+    {
+      "name": "quick_quote_v2",
+      "flow_type": "quick_quote",
+      "stages": [
+        {
+          "name": "initial",
+          "stage_type": "collection",
+          "fields": ["ZipCode", "NumberOfDrivers", "EmailAddress"],
+          "optional_fields": ["EmailAddress"],
+          "description": "Quick quote with optional email for follow-up",
+          "allow_corrections": true
+        }
+      ],
+      "submission_criteria": {
+        "required_fields": ["ZipCode", "NumberOfDrivers"],
+        "generate_scenarios": true,
+        "review_required": false
+      },
+      "metadata": {
+        "version": "2.0",
+        "active": false,
+        "ab_test": "email_capture",
+        "description": "Quick quote with email collection",
+        "use_case": "Lead capture, follow-up emails"
+      }
+    },
+    {
+      "name": "quick_quote_v3",
+      "flow_type": "quick_quote",
+      "stages": [
+        {
+          "name": "initial",
+          "stage_type": "collection",
+          "fields": [
+            "ZipCode",
+            "NumberOfDrivers",
+            "FirstName",
+            "LastName",
+            "DateOfBirth"
+          ],
+          "optional_fields": ["EmailAddress"],
+          "description": "Quick quote with credit-based pricing",
+          "allow_corrections": true
+        }
+      ],
+      "submission_criteria": {
+        "required_fields": [
+          "ZipCode",
+          "NumberOfDrivers",
+          "FirstName",
+          "LastName",
+          "DateOfBirth"
+        ],
+        "generate_scenarios": false,
+        "run_credit_check": true,
+        "review_required": false
+      },
+      "metadata": {
+        "version": "3.0",
+        "active": false,
+        "description": "Quick quote with credit check for more accurate pricing",
+        "use_case": "Credit-based pricing, more accurate quotes"
+      }
+    },
+    {
+      "name": "quick_quote_v1_with_review",
+      "flow_type": "quick_quote",
+      "stages": [
+        {
+          "name": "collect",
+          "stage_type": "collection",
+          "fields": ["ZipCode", "NumberOfDrivers"],
+          "optional_fields": [],
+          "description": "Collect minimal info",
+          "allow_corrections": true
+        },
+        {
+          "name": "review",
+          "stage_type": "review",
+          "fields": ["ZipCode", "NumberOfDrivers"],
+          "optional_fields": [],
+          "description": "Review and confirm your information",
+          "allow_corrections": true
+        }
+      ],
+      "submission_criteria": {
+        "required_fields": ["ZipCode", "NumberOfDrivers"],
+        "generate_scenarios": true,
+        "review_required": true
+      },
+      "metadata": {
+        "version": "1.1",
+        "active": false,
+        "includes_review": true,
+        "description": "Quick quote with mandatory review step",
+        "use_case": "Higher accuracy, user verification"
+      }
+    },
+    {
+      "name": "enhanced_quick_quote_v1",
+      "flow_type": "enhanced_quick_quote",
+      "stages": [
+        {
+          "name": "vehicles_stage",
+          "stage_type": "collection",
+          "fields": [
+            "Vehicle1Year",
+            "Vehicle1Make",
+            "Vehicle1Model",
+            "CoverageType"
+          ],
+          "optional_fields": [
+            "Vehicle2Year",
+            "Vehicle2Make",
+            "Vehicle2Model"
+          ],
+          "description": "FIRST: Collect vehicle details and coverage type",
+          "allow_corrections": true
+        },
+        {
+          "name": "drivers_stage",
+          "stage_type": "collection",
+          "fields": [
+            "PrimaryDriverAge",
+            "PrimaryDriverMaritalStatus",
+            "ZipCode"
+          ],
+          "optional_fields": [
+            "AdditionalDriverAge",
+            "AdditionalDriverMaritalStatus"
+          ],
+          "description": "THEN: Collect driver information and location",
+          "allow_corrections": true
+        }
+      ],
+      "submission_criteria": {
+        "required_fields": [
+          "Vehicle1Year",
+          "Vehicle1Make",
+          "Vehicle1Model",
+          "CoverageType",
+          "PrimaryDriverAge",
+          "PrimaryDriverMaritalStatus",
+          "ZipCode"
+        ],
+        "generate_enhanced_scenarios": true,
+        "review_required": false
+      },
+      "metadata": {
+        "version": "1.0",
+        "active": true,
+        "description": "Enhanced quick quote with grouped collection: vehicles first, then drivers",
+        "use_case": "Organized information collection in logical groups for better UX"
+      }
+    }
+  ]
+}

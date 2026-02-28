@@ -762,6 +762,26 @@ INSURANCE_STATE_WIDGET_HTML = """
     description.textContent =
       "Complete all steps to get your personalized insurance quote: policy setup, customer info, vehicle details, driver info, and review.";
 
+    // Required fields notice
+    const toggleContainer = document.createElement("div");
+    toggleContainer.style.cssText = "margin: 16px 0; padding: 12px; background: rgba(240, 249, 255, 0.6); border: 1px solid rgba(186, 230, 253, 0.5); border-radius: 8px; text-align: center;";
+
+    const toggleText = document.createElement("span");
+    toggleText.style.cssText = "font-weight: 500; font-size: 14px; color: #334155;";
+    toggleText.id = "requiredFieldsNote";
+
+    const textBefore = document.createTextNode("Required fields are marked with a red asterisk (");
+    const asterisk = document.createElement("span");
+    asterisk.style.cssText = "color: #ef4444; font-weight: bold;";
+    asterisk.textContent = "*";
+    const textAfter = document.createTextNode(")");
+
+    toggleText.appendChild(textBefore);
+    toggleText.appendChild(asterisk);
+    toggleText.appendChild(textAfter);
+
+    toggleContainer.appendChild(toggleText);
+
     // Stepper UI
     const stepper = document.createElement("div");
     stepper.className = "insurance-widget__stepper";
@@ -1027,15 +1047,30 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     // Name fields
     const firstNameField = createInputField("customer-first-name", "First Name", "text", "Enter first name");
+    firstNameField.setAttribute("data-section", "customer");
+    firstNameField.setAttribute("data-field", "FirstName");
+
     const middleNameField = createInputField("customer-middle-name", "Middle Name", "text", "Enter middle name (optional)");
+    middleNameField.setAttribute("data-section", "customer");
+    middleNameField.setAttribute("data-field", "MiddleName");
+
     const lastNameField = createInputField("customer-last-name", "Last Name", "text", "Enter last name");
+    lastNameField.setAttribute("data-section", "customer");
+    lastNameField.setAttribute("data-field", "LastName");
 
     // Toggles
     const declinedEmailField = createToggleField("declined-email", "Declined Email?");
+    declinedEmailField.setAttribute("data-section", "customer");
+    declinedEmailField.setAttribute("data-field", "DeclinedEmail");
+
     const declinedPhoneField = createToggleField("declined-phone", "Declined Phone?");
+    declinedPhoneField.setAttribute("data-section", "customer");
+    declinedPhoneField.setAttribute("data-field", "DeclinedPhone");
 
     // Months at Residence
     const monthsAtResidenceField = createInputField("months-at-residence", "Months at Residence", "number", "Enter months");
+    monthsAtResidenceField.setAttribute("data-section", "customer");
+    monthsAtResidenceField.setAttribute("data-field", "MonthsAtResidence");
 
     // Address section
     const addressTitle = document.createElement("h4");
@@ -1043,11 +1078,18 @@ INSURANCE_STATE_WIDGET_HTML = """
     addressTitle.textContent = "Address";
 
     const streetField = createInputField("address-street", "Street", "text", "Enter street address");
+    streetField.setAttribute("data-section", "customer");
+    streetField.setAttribute("data-field", "Address.Street1");
+
     const cityField = createInputField("address-city", "City", "text", "Enter city");
+    cityField.setAttribute("data-section", "customer");
+    cityField.setAttribute("data-field", "Address.City");
 
     // State dropdown
     const stateField = document.createElement("div");
     stateField.className = "insurance-widget__field";
+    stateField.setAttribute("data-section", "customer");
+    stateField.setAttribute("data-field", "Address.State");
     const stateLabel = document.createElement("label");
     stateLabel.className = "insurance-widget__label";
     stateLabel.setAttribute("for", "address-state");
@@ -1071,7 +1113,12 @@ INSURANCE_STATE_WIDGET_HTML = """
     stateField.appendChild(stateWrapper);
 
     const countyField = createInputField("address-county", "County", "text", "Enter county");
+    countyField.setAttribute("data-section", "customer");
+    countyField.setAttribute("data-field", "Address.County");
+
     const zipCodeField = createInputField("address-zip", "ZIP Code", "text", "Enter ZIP code");
+    zipCodeField.setAttribute("data-section", "customer");
+    zipCodeField.setAttribute("data-field", "Address.ZipCode");
 
     // Contact Info section
     const contactTitle = document.createElement("h4");
@@ -1079,9 +1126,20 @@ INSURANCE_STATE_WIDGET_HTML = """
     contactTitle.textContent = "Contact Information";
 
     const mobilePhoneField = createInputField("mobile-phone", "Mobile Phone", "tel", "Enter mobile phone");
+    mobilePhoneField.setAttribute("data-section", "customer");
+    mobilePhoneField.setAttribute("data-field", "MobilePhone");
+
     const homePhoneField = createInputField("home-phone", "Home Phone", "tel", "Enter home phone");
+    homePhoneField.setAttribute("data-section", "customer");
+    homePhoneField.setAttribute("data-field", "HomePhone");
+
     const workPhoneField = createInputField("work-phone", "Work Phone", "tel", "Enter work phone");
+    workPhoneField.setAttribute("data-section", "customer");
+    workPhoneField.setAttribute("data-field", "WorkPhone");
+
     const emailField = createInputField("email", "Email Address", "email", "Enter email address");
+    emailField.setAttribute("data-section", "customer");
+    emailField.setAttribute("data-field", "Email");
 
     // Prior Insurance section
     const priorInsuranceTitle = document.createElement("h4");
@@ -1089,7 +1147,12 @@ INSURANCE_STATE_WIDGET_HTML = """
     priorInsuranceTitle.textContent = "Prior Insurance";
 
     const priorInsuranceField = createToggleField("prior-insurance", "Prior Insurance?");
+    priorInsuranceField.setAttribute("data-section", "customer");
+    priorInsuranceField.setAttribute("data-field", "PriorInsuranceInformation.PriorInsurance");
+
     const noInsuranceReasonField = createInputField("no-insurance-reason", "Reason for No Insurance", "text", "Enter reason (if applicable)");
+    noInsuranceReasonField.setAttribute("data-section", "customer");
+    noInsuranceReasonField.setAttribute("data-field", "PriorInsuranceInformation.ReasonForNoInsurance");
 
     // Append all fields to step 2 content
     step2Content.appendChild(step2Title);
@@ -1153,19 +1216,47 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     // Vehicle basic info
     const makeField = createInputField("vehicle-make", "Make", "text", "Enter make");
+    makeField.setAttribute("data-section", "vehicle");
+    makeField.setAttribute("data-field", "Make");
+
     const modelField = createInputField("vehicle-model", "Model", "text", "Enter model");
+    modelField.setAttribute("data-section", "vehicle");
+    modelField.setAttribute("data-field", "Model");
+
     const yearField = createInputField("vehicle-year", "Year", "number", "Enter year");
+    yearField.setAttribute("data-section", "vehicle");
+    yearField.setAttribute("data-field", "Year");
+
     const annualMilesField = createInputField("vehicle-annual-miles", "Annual Miles", "number", "Enter annual miles");
+    annualMilesField.setAttribute("data-section", "vehicle");
+    annualMilesField.setAttribute("data-field", "AnnualMiles");
+
     const milesToWorkField = createInputField("vehicle-miles-to-work", "Miles to Work", "number", "Enter miles to work");
+    milesToWorkField.setAttribute("data-section", "vehicle");
+    milesToWorkField.setAttribute("data-field", "MilesToWork");
 
     // Toggles
     const leasedVehicleField = createToggleField("vehicle-leased", "Leased Vehicle?");
+    leasedVehicleField.setAttribute("data-section", "vehicle");
+    leasedVehicleField.setAttribute("data-field", "LeasedVehicle");
 
     // Additional fields
     const percentToWorkField = createInputField("vehicle-percent-to-work", "Percent To Work", "number", "Enter percentage");
+    percentToWorkField.setAttribute("data-section", "vehicle");
+    percentToWorkField.setAttribute("data-field", "PercentToWork");
+
     const purchaseTypeField = createSelectField("vehicle-purchase-type", "Purchase Type", ["New", "Used", "Lease"]);
+    purchaseTypeField.setAttribute("data-section", "vehicle");
+    purchaseTypeField.setAttribute("data-field", "PurchaseType");
+
     const rideShareField = createToggleField("vehicle-rideshare", "RideShare?");
+    rideShareField.setAttribute("data-section", "vehicle");
+    rideShareField.setAttribute("data-field", "RideShare");
+
     const salvagedField = createToggleField("vehicle-salvaged", "Salvaged?");
+    salvagedField.setAttribute("data-section", "vehicle");
+    salvagedField.setAttribute("data-field", "Salvaged");
+
     const usageField = createSelectField("vehicle-usage", "Usage", [
       { value: "Artisan Use", label: "Artisan Use" },
       { value: "Business Use", label: "Business Use" },
@@ -1173,7 +1264,12 @@ INSURANCE_STATE_WIDGET_HTML = """
       { value: "Pleasure", label: "Pleasure" },
       { value: "Work School", label: "Work School" }
     ]);
+    usageField.setAttribute("data-section", "vehicle");
+    usageField.setAttribute("data-field", "UseType");
+
     const odometerField = createInputField("vehicle-odometer", "Odometer", "number", "Enter odometer reading");
+    odometerField.setAttribute("data-section", "vehicle");
+    odometerField.setAttribute("data-field", "Odometer");
 
     // Garaging Address section
     const garagingTitle = document.createElement("h4");
@@ -1181,9 +1277,20 @@ INSURANCE_STATE_WIDGET_HTML = """
     garagingTitle.textContent = "Garaging Address";
 
     const garagingStreetField = createInputField("garaging-street", "Street", "text", "Same as customer address or enter new");
+    garagingStreetField.setAttribute("data-section", "vehicle");
+    garagingStreetField.setAttribute("data-field", "GaragingAddress.Street");
+
     const garagingCityField = createInputField("garaging-city", "City", "text", "Enter city");
+    garagingCityField.setAttribute("data-section", "vehicle");
+    garagingCityField.setAttribute("data-field", "GaragingAddress.City");
+
     const garagingStateField = createSelectField("garaging-state", "State", STATES.map(s => ({ value: s.code, label: s.name })));
+    garagingStateField.setAttribute("data-section", "vehicle");
+    garagingStateField.setAttribute("data-field", "GaragingAddress.State");
+
     const garagingZipField = createInputField("garaging-zip", "ZIP Code", "text", "Enter ZIP code");
+    garagingZipField.setAttribute("data-section", "vehicle");
+    garagingZipField.setAttribute("data-field", "GaragingAddress.ZipCode");
 
     // Coverage Info section
     const coverageInfoTitle = document.createElement("h4");
@@ -1191,12 +1298,32 @@ INSURANCE_STATE_WIDGET_HTML = """
     coverageInfoTitle.textContent = "Coverage Information";
 
     const collisionDeductibleField = createSelectField("collision-deductible", "Collision Deductible", ["$250", "$500", "$1,000", "$2,500"]);
+    collisionDeductibleField.setAttribute("data-section", "vehicle");
+    collisionDeductibleField.setAttribute("data-field", "CoverageInformation.CollisionDeductible");
+
     const comprehensiveDeductibleField = createSelectField("comprehensive-deductible", "Comprehensive Deductible", ["$250", "$500", "$1,000", "$2,500"]);
+    comprehensiveDeductibleField.setAttribute("data-section", "vehicle");
+    comprehensiveDeductibleField.setAttribute("data-field", "CoverageInformation.ComprehensiveDeductible");
+
     const rentalLimitField = createSelectField("rental-limit", "Rental Limit", ["$30/day", "$50/day", "$75/day", "$100/day"]);
+    rentalLimitField.setAttribute("data-section", "vehicle");
+    rentalLimitField.setAttribute("data-field", "CoverageInformation.RentalLimit");
+
     const gapCoverageField = createToggleField("gap-coverage", "Gap Coverage?");
+    gapCoverageField.setAttribute("data-section", "vehicle");
+    gapCoverageField.setAttribute("data-field", "CoverageInformation.GapCoverage");
+
     const customEquipmentField = createInputField("custom-equipment-value", "Custom Equipment Value", "number", "Enter value");
+    customEquipmentField.setAttribute("data-section", "vehicle");
+    customEquipmentField.setAttribute("data-field", "CoverageInformation.CustomEquipmentValue");
+
     const safetyGlassField = createToggleField("safety-glass-coverage", "Safety Glass Coverage?");
+    safetyGlassField.setAttribute("data-section", "vehicle");
+    safetyGlassField.setAttribute("data-field", "CoverageInformation.SafetyGlassCoverage");
+
     const towingLimitField = createSelectField("towing-limit", "Towing Limit", ["$50", "$100", "$150", "$200"]);
+    towingLimitField.setAttribute("data-section", "vehicle");
+    towingLimitField.setAttribute("data-field", "CoverageInformation.TowingLimit");
 
     // Append all fields to step 3 content
     step3Content.appendChild(step3Title);
@@ -1237,14 +1364,40 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     // Driver basic info
     const driverFirstNameField = createInputField("driver-first-name", "First Name", "text", "Enter first name");
+    driverFirstNameField.setAttribute("data-section", "driver");
+    driverFirstNameField.setAttribute("data-field", "FirstName");
+
     const driverMiddleNameField = createInputField("driver-middle-name", "Middle Name", "text", "Enter middle name");
+    driverMiddleNameField.setAttribute("data-section", "driver");
+    driverMiddleNameField.setAttribute("data-field", "MiddleName");
+
     const driverLastNameField = createInputField("driver-last-name", "Last Name", "text", "Enter last name");
+    driverLastNameField.setAttribute("data-section", "driver");
+    driverLastNameField.setAttribute("data-field", "LastName");
+
     const dobField = createInputField("driver-dob", "Date of Birth", "date", "");
+    dobField.setAttribute("data-section", "driver");
+    dobField.setAttribute("data-field", "DateOfBirth");
+
     const genderField = createSelectField("driver-gender", "Gender", ["Male", "Female", "Non-Binary"]);
+    genderField.setAttribute("data-section", "driver");
+    genderField.setAttribute("data-field", "Gender");
+
     const maritalStatusField = createSelectField("driver-marital-status", "Marital Status", ["Single", "Married", "Divorced", "Widowed", "Separated", "Domestic Partner"]);
+    maritalStatusField.setAttribute("data-section", "driver");
+    maritalStatusField.setAttribute("data-field", "MaritalStatus");
+
     const occupationField = createInputField("driver-occupation", "Occupation", "text", "Enter occupation");
+    occupationField.setAttribute("data-section", "driver");
+    occupationField.setAttribute("data-field", "Occupation");
+
     const industryField = createInputField("driver-industry", "Industry", "text", "Enter industry");
+    industryField.setAttribute("data-section", "driver");
+    industryField.setAttribute("data-field", "Industry");
+
     const monthsEmployedField = createInputField("driver-months-employed", "Months Employed", "number", "Enter months");
+    monthsEmployedField.setAttribute("data-section", "driver");
+    monthsEmployedField.setAttribute("data-field", "MonthsEmployed");
 
     // License Info section
     const licenseTitle = document.createElement("h4");
@@ -1252,12 +1405,32 @@ INSURANCE_STATE_WIDGET_HTML = """
     licenseTitle.textContent = "License Information";
 
     const licenseStatusField = createSelectField("license-status", "License Status", ["Valid", "Suspended", "Expired", "Learner's Permit"]);
+    licenseStatusField.setAttribute("data-section", "driver");
+    licenseStatusField.setAttribute("data-field", "LicenseInformation.LicenseStatus");
+
     const monthsLicensedField = createInputField("months-licensed", "Months Licensed", "number", "Enter months");
+    monthsLicensedField.setAttribute("data-section", "driver");
+    monthsLicensedField.setAttribute("data-field", "LicenseInformation.MonthsLicensed");
+
     const stateLicensedField = createSelectField("state-licensed", "State Licensed", STATES.map(s => ({ value: s.code, label: s.name })));
+    stateLicensedField.setAttribute("data-section", "driver");
+    stateLicensedField.setAttribute("data-field", "LicenseInformation.StateLicensed");
+
     const mvrExperienceField = createInputField("mvr-experience", "MVR Experience", "text", "Enter MVR experience");
+    mvrExperienceField.setAttribute("data-section", "driver");
+    mvrExperienceField.setAttribute("data-field", "LicenseInformation.MvrExperience");
+
     const suspendedMonthsField = createInputField("suspended-months", "Suspended Months", "number", "Enter suspended months (if any)");
+    suspendedMonthsField.setAttribute("data-section", "driver");
+    suspendedMonthsField.setAttribute("data-field", "LicenseInformation.SuspendedMonths");
+
     const foreignNationalField = createToggleField("foreign-national", "Foreign National?");
+    foreignNationalField.setAttribute("data-section", "driver");
+    foreignNationalField.setAttribute("data-field", "LicenseInformation.ForeignNational");
+
     const internationalLicenseField = createToggleField("international-license", "International License?");
+    internationalLicenseField.setAttribute("data-section", "driver");
+    internationalLicenseField.setAttribute("data-field", "LicenseInformation.InternationalLicense");
 
     // Attributes section
     const attributesTitle = document.createElement("h4");
@@ -1265,11 +1438,28 @@ INSURANCE_STATE_WIDGET_HTML = """
     attributesTitle.textContent = "Attributes";
 
     const educationLevelField = createSelectField("education-level", "Education Level", ["High School", "Some College", "Associate's", "Bachelor's", "Master's", "Doctorate"]);
+    educationLevelField.setAttribute("data-section", "driver");
+    educationLevelField.setAttribute("data-field", "Attributes.EducationLevel");
+
     const relationField = createSelectField("relation", "Relation to Insured", ["Self", "Spouse", "Child", "Parent", "Other"]);
+    relationField.setAttribute("data-section", "driver");
+    relationField.setAttribute("data-field", "Attributes.Relation");
+
     const residencyStatusField = createSelectField("residency-status", "Residency Status", ["Own", "Rent", "Lease"]);
+    residencyStatusField.setAttribute("data-section", "driver");
+    residencyStatusField.setAttribute("data-field", "Attributes.ResidencyStatus");
+
     const residencyTypeField = createSelectField("residency-type", "Residency Type", ["Home", "Apartment", "Condo", "Mobile Home", "Fixed Mobile Home"]);
+    residencyTypeField.setAttribute("data-section", "driver");
+    residencyTypeField.setAttribute("data-field", "Attributes.ResidencyType");
+
     const driverMilesToWorkField = createInputField("driver-miles-to-work", "Miles To Work", "number", "Enter miles to work");
+    driverMilesToWorkField.setAttribute("data-section", "driver");
+    driverMilesToWorkField.setAttribute("data-field", "Attributes.MilesToWork");
+
     const propertyInsuranceField = createToggleField("property-insurance", "Property Insurance?");
+    propertyInsuranceField.setAttribute("data-section", "driver");
+    propertyInsuranceField.setAttribute("data-field", "Attributes.PropertyInsurance");
 
     // Discounts section
     const discountsTitle = document.createElement("h4");
@@ -1277,9 +1467,20 @@ INSURANCE_STATE_WIDGET_HTML = """
     discountsTitle.textContent = "Discounts";
 
     const defensiveDrivingField = createToggleField("discount-defensive-driving", "Defensive Driving");
+    defensiveDrivingField.setAttribute("data-section", "driver");
+    defensiveDrivingField.setAttribute("data-field", "Discounts.DefensiveDriving");
+
     const goodStudentField = createToggleField("discount-good-student", "Good Student");
+    goodStudentField.setAttribute("data-section", "driver");
+    goodStudentField.setAttribute("data-field", "Discounts.GoodStudent");
+
     const seniorField = createToggleField("discount-senior", "Senior");
+    seniorField.setAttribute("data-section", "driver");
+    seniorField.setAttribute("data-field", "Discounts.Senior");
+
     const multiplePoliciesField = createToggleField("discount-multiple-policies", "Multiple Policies");
+    multiplePoliciesField.setAttribute("data-section", "driver");
+    multiplePoliciesField.setAttribute("data-field", "Discounts.MultiplePolicies");
 
     // SR-22 Info section
     const sr22Title = document.createElement("h4");
@@ -1287,9 +1488,20 @@ INSURANCE_STATE_WIDGET_HTML = """
     sr22Title.textContent = "SR-22 Information";
 
     const sr22RequiredField = createToggleField("sr22-required", "SR-22 Required?");
+    sr22RequiredField.setAttribute("data-section", "driver");
+    sr22RequiredField.setAttribute("data-field", "SR22Information.SR22Required");
+
     const sr22ReasonField = createInputField("sr22-reason", "SR-22 Reason", "text", "Enter reason (if applicable)");
+    sr22ReasonField.setAttribute("data-section", "driver");
+    sr22ReasonField.setAttribute("data-field", "SR22Information.SR22Reason");
+
     const sr22StateField = createSelectField("sr22-state", "SR-22 State", STATES.map(s => ({ value: s.code, label: s.name })));
+    sr22StateField.setAttribute("data-section", "driver");
+    sr22StateField.setAttribute("data-field", "SR22Information.SR22State");
+
     const sr22DateField = createInputField("sr22-date", "SR-22 Date", "date", "");
+    sr22DateField.setAttribute("data-section", "driver");
+    sr22DateField.setAttribute("data-field", "SR22Information.SR22Date");
 
     // Append all fields to step 4 content
     step4Content.appendChild(step4Title);
@@ -1384,6 +1596,7 @@ INSURANCE_STATE_WIDGET_HTML = """
     container.appendChild(eyebrow);
     container.appendChild(title);
     container.appendChild(description);
+    container.appendChild(toggleContainer);
     container.appendChild(stepper);
     container.appendChild(step1Content);
     container.appendChild(step2Content);
@@ -1398,6 +1611,142 @@ INSURANCE_STATE_WIDGET_HTML = """
 
     let isSending = false;
     let currentStep = 1;
+
+    // ============================================================
+    // MINIMAL FIELDS CONFIGURATION
+    // Update this object to change which fields are required (marked with *)
+    // ============================================================
+    const minimalFieldsConfig = {
+      customer: {
+        required: [
+          "FirstName",
+          "LastName",
+          "Address.Street1",
+          "Address.City",
+          "Address.State",
+          "Address.ZipCode",
+          "MonthsAtResidence",
+          "PriorInsuranceInformation.PriorInsurance"
+        ]
+      },
+      driver: {
+        required: [
+          "FirstName",
+          "LastName",
+          "DateOfBirth",
+          "Gender",
+          "MaritalStatus",
+          "LicenseInformation.LicenseStatus",
+          "Attributes.PropertyInsurance",
+          "Attributes.Relation",
+          "Attributes.ResidencyStatus",
+          "Attributes.ResidencyType"
+        ]
+      },
+      vehicle: {
+        required: [
+          "Vin",
+          "Year",
+          "Make",
+          "Model",
+          "BodyType",
+          "UseType",
+          "AssignedDriverId",
+          "CoverageInformation.CollisionDeductible",
+          "CoverageInformation.ComprehensiveDeductible",
+          "CoverageInformation.RentalLimit",
+          "CoverageInformation.TowingLimit",
+          "CoverageInformation.SafetyGlassCoverage",
+          "PercentToWork",
+          "MilesToWork",
+          "AnnualMiles"
+        ]
+      }
+    };
+
+    // Helper function to check if a field is required
+    function isFieldRequired(section, fieldPath) {
+      if (!minimalFieldsConfig) {
+        console.log(`${LOG_PREFIX} [isFieldRequired] Config not loaded yet`);
+        return false;
+      }
+
+      const sectionConfig = minimalFieldsConfig[section];
+      if (!sectionConfig) {
+        console.log(`${LOG_PREFIX} [isFieldRequired] No config for section: ${section}`);
+        return false;
+      }
+
+      const isRequired = sectionConfig.required && sectionConfig.required.includes(fieldPath);
+      console.log(`${LOG_PREFIX} [isFieldRequired] section=${section}, fieldPath=${fieldPath}, isRequired=${isRequired}`);
+      return isRequired;
+    }
+
+    // Function to mark required fields with red asterisks
+    function markRequiredFields() {
+      console.log(`${LOG_PREFIX} ========== START markRequiredFields ==========`);
+      console.log(`${LOG_PREFIX} Config loaded:`, minimalFieldsConfig ? 'YES' : 'NO');
+
+      let requiredCount = 0;
+      let optionalCount = 0;
+      let noLabelCount = 0;
+
+      // Find all fields with data-section and data-field attributes
+      const fields = container.querySelectorAll('[data-section][data-field]');
+      console.log(`${LOG_PREFIX} Found ${fields.length} fields with data attributes`);
+
+      fields.forEach((field, index) => {
+        const section = field.getAttribute('data-section');
+        const fieldPath = field.getAttribute('data-field');
+        console.log(`${LOG_PREFIX} [Field ${index + 1}/${fields.length}] section="${section}", fieldPath="${fieldPath}"`);
+
+        const isRequired = isFieldRequired(section, fieldPath);
+
+        // Find the label element within this field
+        const label = field.querySelector('label');
+        console.log(`${LOG_PREFIX} [Field ${index + 1}] Label found:`, label ? 'YES' : 'NO');
+
+        if (label) {
+          console.log(`${LOG_PREFIX} [Field ${index + 1}] Label text: "${label.textContent}"`);
+
+          // Remove any existing asterisk
+          const existingAsterisk = label.querySelector('.required-asterisk');
+          if (existingAsterisk) {
+            existingAsterisk.remove();
+            console.log(`${LOG_PREFIX} [Field ${index + 1}] Removed existing asterisk`);
+          }
+
+          if (isRequired) {
+            // Add red asterisk to required fields
+            const asterisk = document.createElement('span');
+            asterisk.className = 'required-asterisk';
+            asterisk.style.cssText = 'color: #ef4444; margin-left: 4px; font-weight: bold;';
+            asterisk.textContent = '*';
+            label.appendChild(asterisk);
+            console.log(`${LOG_PREFIX} [Field ${index + 1}] ✅ Added asterisk to "${label.textContent}"`);
+            requiredCount++;
+          } else {
+            console.log(`${LOG_PREFIX} [Field ${index + 1}] ⏭️  Skipped (optional)`);
+            optionalCount++;
+          }
+        } else {
+          console.log(`${LOG_PREFIX} [Field ${index + 1}] ❌ No label element found`);
+          noLabelCount++;
+        }
+      });
+
+      console.log(`${LOG_PREFIX} ========== END markRequiredFields ==========`);
+      console.log(`${LOG_PREFIX} Summary: ${requiredCount} required, ${optionalCount} optional, ${noLabelCount} without labels`);
+    }
+
+    // Mark required fields with asterisks
+    console.log(`${LOG_PREFIX} ========================================`);
+    console.log(`${LOG_PREFIX} Minimal fields config loaded (hardcoded)`);
+    console.log(`${LOG_PREFIX} Required customer fields (${minimalFieldsConfig.customer?.required?.length || 0}):`, minimalFieldsConfig.customer?.required);
+    console.log(`${LOG_PREFIX} Required driver fields (${minimalFieldsConfig.driver?.required?.length || 0}):`, minimalFieldsConfig.driver?.required);
+    console.log(`${LOG_PREFIX} Required vehicle fields (${minimalFieldsConfig.vehicle?.required?.length || 0}):`, minimalFieldsConfig.vehicle?.required);
+    console.log(`${LOG_PREFIX} Calling markRequiredFields()...`);
+    markRequiredFields();
 
     function goToStep(stepNumber) {
       currentStep = stepNumber;
