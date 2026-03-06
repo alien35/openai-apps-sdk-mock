@@ -191,7 +191,8 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
     meta = handler_payload.get("meta") or registration.default_meta
 
     # Log what we're sending for key tools
-    if req.params.name in ["request-personal-auto-rate", "retrieve-personal-auto-rate-results", "get-enhanced-quick-quote"]:
+    if req.params.name in ["request-personal-auto-rate", "retrieve-personal-auto-rate-results", "get-enhanced-quick-quote", "get-simple-quote", "simple-test"]:
+        logger.info("=" * 80)
         logger.info("=== TOOL HANDLER SENDING RESPONSE FOR %s ===", req.params.name)
         logger.info("Content array length: %s", len(content))
         for idx, item in enumerate(content):
@@ -201,6 +202,7 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
             if hasattr(item, 'annotations') and item.annotations:
                 logger.info("Content[%s] annotations: %s", idx, item.annotations.model_dump(mode="json"))
         logger.info("Structured content keys: %s", list(structured_content.keys()))
+        logger.info("Structured content: %s", structured_content)
 
         # Log carriers if present
         if "carriers" in structured_content:
@@ -209,8 +211,8 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
             for i, carrier in enumerate(carriers):
                 logger.info("  Carrier %s: %s - $%s/year ($%s/month)",
                            i+1, carrier.get('name'), carrier.get('annual_cost'), carrier.get('monthly_cost'))
-        else:
-            logger.warning("!!! NO CARRIERS IN STRUCTURED_CONTENT !!!")
+        elif "pizzaTopping" in structured_content:
+            logger.info("!!! PIZZA TOPPING IN STRUCTURED_CONTENT: %s", structured_content["pizzaTopping"])
 
         if "rate_results" in structured_content:
             rate_results = structured_content["rate_results"]
@@ -218,7 +220,10 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
             if isinstance(rate_results, dict):
                 logger.info("rate_results keys: %s", list(rate_results.keys()))
         logger.info("Meta keys: %s", list(meta.keys()) if meta else "None")
+        if meta:
+            logger.info("Meta content: %s", meta)
         logger.info("=== END TOOL HANDLER RESPONSE ===")
+        logger.info("=" * 80)
 
     return types.ServerResult(
         types.CallToolResult(

@@ -474,13 +474,25 @@ def _register_simple_quote_tool() -> None:
 
     def _simple_quote_handler(arguments):
         """Simple handler that returns pizza topping to test with pizzaz widget."""
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info("=" * 80)
+        logger.info("🎯 get-simple-quote CALLED")
+        logger.info(f"Arguments: {arguments}")
+        logger.info(f"Widget template_uri: {quote_widget.template_uri}")
+        logger.info(f"Widget HTML length: {len(quote_widget.html)}")
+        logger.info(f"Widget HTML preview: {quote_widget.html[:200]}")
+        logger.info("=" * 80)
+
         # For now, just return pizza data to test with pizzaz widget
-        return {
+        result = {
             "response_text": "Here's your quote!",
             "structured_content": {
                 "pizzaTopping": "pepperoni"  # Pizzaz widget expects this
             },
         }
+        logger.info(f"Returning: {result}")
+        return result
 
     register_tool(
         ToolRegistration(
