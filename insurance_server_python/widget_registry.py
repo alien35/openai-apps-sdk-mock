@@ -69,7 +69,7 @@ def register_tool(registration: ToolRegistration) -> None:
 INSURANCE_STATE_WIDGET_IDENTIFIER = "insurance-state-selector"
 INSURANCE_STATE_WIDGET_TEMPLATE_URI = f"{WIDGET_BASE_URL}/insurance-state.html"
 QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER = "quick-quote-results"
-QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI = "ui://widget/quick-quote-results.html"  # Using ui:// like pizzaz
+QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI = f"{WIDGET_BASE_URL}/quick-quote-results.html"
 PHONE_ONLY_WIDGET_IDENTIFIER = "phone-only"
 PHONE_ONLY_WIDGET_TEMPLATE_URI = f"{WIDGET_BASE_URL}/phone-only.html"
 SIMPLE_TEST_WIDGET_IDENTIFIER = "simple-test"
@@ -103,14 +103,14 @@ DEFAULT_WIDGETS: Tuple[WidgetDefinition, ...] = (
     ),
 )
 
-PIZZAZ_TEST_WIDGET_HTML = f"""<!doctype html>
+INSURANCE_WIDGET_HTML = f"""<!doctype html>
 <html>
 <head>
-  <script type="module" src="{BASE_URL}/assets/images/pizzaz-2d2b.js"></script>
-  <link rel="stylesheet" href="{BASE_URL}/assets/images/pizzaz-2d2b.css">
+  <script type="module" src="{BASE_URL}/assets/images/insurance-widget.js"></script>
+  <link rel="stylesheet" href="{BASE_URL}/assets/images/insurance-widget.css">
 </head>
 <body>
-  <div id="pizzaz-root"></div>
+  <div id="insurance-root"></div>
 </body>
 </html>
 """
@@ -133,7 +133,7 @@ ADDITIONAL_WIDGETS: Tuple[WidgetDefinition, ...] = (
         template_uri=QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI,
         invoking="Generating quick quote estimate",
         invoked="Displayed quick quote estimate",
-        html=PIZZAZ_TEST_WIDGET_HTML,  # Using pizzaz widget to test rendering
+        html=INSURANCE_WIDGET_HTML,  # Using insurance widget
         response_text="Here's your quick quote estimate based on your location and driver count.",
         input_schema=None,
         tool_description=(
@@ -484,11 +484,25 @@ def _register_simple_quote_tool() -> None:
         logger.info(f"Widget HTML preview: {quote_widget.html[:200]}")
         logger.info("=" * 80)
 
-        # For now, just return pizza data to test with pizzaz widget
+        # Get values with defaults
+        zip_code = arguments.get("zip_code", "90210")
+        num_vehicles = arguments.get("num_vehicles", 1)
+        num_drivers = arguments.get("num_drivers", 1)
+
+        # Return insurance data
         result = {
             "response_text": "Here's your quote!",
             "structured_content": {
-                "pizzaTopping": "pepperoni"  # Pizzaz widget expects this
+                "carriers": [
+                    {"name": "Geico", "monthly_cost": 258, "annual_cost": 3100},
+                    {"name": "Progressive", "monthly_cost": 300, "annual_cost": 3600},
+                    {"name": "State Farm", "monthly_cost": 317, "annual_cost": 3800},
+                ],
+                "zip_code": zip_code,
+                "city": "Beverly Hills",
+                "state": "CA",
+                "num_vehicles": num_vehicles,
+                "num_drivers": num_drivers,
             },
         }
         logger.info(f"Returning: {result}")

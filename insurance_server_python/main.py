@@ -571,9 +571,9 @@ async def serve_image(request: Request):
             headers={
                 "Content-Security-Policy": (
                     f"default-src 'none'; "
-                    f"script-src 'self' 'unsafe-inline'; "
-                    f"style-src 'self' 'unsafe-inline'; "
-                    f"img-src 'self' data:; "
+                    f"script-src 'self' 'unsafe-inline' {BASE_URL}; "
+                    f"style-src 'self' 'unsafe-inline' {BASE_URL}; "
+                    f"img-src 'self' data: {BASE_URL}; "
                     f"font-src 'self'; "
                     f"connect-src 'self' {BASE_URL}; "
                     f"frame-ancestors https://chatgpt.com https://chat.openai.com;"
