@@ -4,7 +4,7 @@ IMPORTANT: This widget is specifically for states where online quoting is not av
 and customers must call to speak with a licensed agent.
 """
 
-from .widget_assets import PHONE_BACKGROUND_BASE64, POWERED_BY_LOGO_BASE64
+from insurance_server_python.widget_assets import PHONE_BACKGROUND_BASE64, POWERED_BY_LOGO_BASE64
 
 PHONE_ONLY_WIDGET_HTML = f"""
 <style>

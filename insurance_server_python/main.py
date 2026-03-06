@@ -19,7 +19,7 @@ from pydantic import ValidationError
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from .widget_registry import (
+from insurance_server_python.widget_registry import (
     TOOL_REGISTRY,
     WIDGETS_BY_URI,
     widgets,
@@ -509,8 +509,8 @@ def redoc_ui(request: Request):
 @app.route("/api/quick-quote-carriers", methods=["GET"])
 async def get_quick_quote_carriers(request: Request):
     """Serve carrier estimates for quick quote widget based on state."""
-    from .carrier_logos import get_carrier_logo
-    from .carrier_mapping import get_carriers_for_state
+    from insurance_server_python.carrier_logos import get_carrier_logo
+    from insurance_server_python.carrier_mapping import get_carriers_for_state
 
     # Get state from query params (default to California)
     state = request.query_params.get("state", "CA")
@@ -548,7 +548,7 @@ async def serve_image(request: Request):
     """Serve static images and widget HTML from assets/images directory."""
     from pathlib import Path
     from starlette.responses import FileResponse, HTMLResponse
-    from .widget_registry import BASE_URL
+    from insurance_server_python.widget_registry import BASE_URL
 
     filename = request.path_params["filename"]
     file_path = Path(__file__).parent / "assets" / "images" / filename
@@ -590,7 +590,7 @@ async def serve_image(request: Request):
 async def test_widget(request: Request):
     """Serve the quick quote widget HTML for testing."""
     from starlette.responses import HTMLResponse
-    from .quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
+    from insurance_server_python.quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
 
     return HTMLResponse(
         QUICK_QUOTE_RESULTS_WIDGET_HTML,
@@ -602,7 +602,7 @@ async def test_widget(request: Request):
 async def preview_widget(request: Request):
     """Serve a comprehensive widget preview page with embedded data."""
     from starlette.responses import HTMLResponse
-    from .quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
+    from insurance_server_python.quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
 
     html = f"""
     <!DOCTYPE html>
@@ -689,7 +689,7 @@ async def preview_widget(request: Request):
 async def preview_phone_widget(request: Request):
     """Serve a preview of the phone-only state widget."""
     from starlette.responses import HTMLResponse
-    from .quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
+    from insurance_server_python.quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
 
     html = f"""
     <!DOCTYPE html>

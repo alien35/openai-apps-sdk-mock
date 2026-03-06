@@ -21,7 +21,7 @@ from pydantic import (
 )
 import mcp.types as types
 
-from .constants import (
+from insurance_server_python.constants import (
     LiabilityBiLimit,
     PropertyDamageLimit,
     MedicalPaymentsLimit,

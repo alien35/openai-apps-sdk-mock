@@ -5,24 +5,25 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional, Tuple
 import mcp.types as types
 
-from .insurance_state_widget import INSURANCE_STATE_WIDGET_HTML
-from .quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
-from .phone_only_widget import PHONE_ONLY_WIDGET_HTML
-from .constants import MIME_TYPE
-from .models import ToolHandler
+from insurance_server_python.insurance_state_widget import INSURANCE_STATE_WIDGET_HTML
+from insurance_server_python.quick_quote_results_widget import QUICK_QUOTE_RESULTS_WIDGET_HTML
+from insurance_server_python.phone_only_widget import PHONE_ONLY_WIDGET_HTML
+from insurance_server_python.simple_test_widget import SIMPLE_TEST_WIDGET_HTML
+from insurance_server_python.constants import MIME_TYPE
+from insurance_server_python.models import ToolHandler
 
 
 # ============================================================================
 # BASE URL CONFIGURATION - Change this for testing/deployment
 # ============================================================================
 # For local/ngrok testing, set to your ngrok URL:
-# BASE_URL = "https://08e6-2601-985-4101-d2b0-53c-2a7-2aa4-cabf.ngrok-free.app"
+# BASE_URL = "https://differential-quantity-shell-bag.trycloudflare.com"
 # For staging:
 # BASE_URL = "https://stg-api.mercuryinsurance.com"
 # For production:
 # BASE_URL = "https://api.mercuryinsurance.com"
 
-BASE_URL = "https://08e6-2601-985-4101-d2b0-53c-2a7-2aa4-cabf.ngrok-free.app"
+BASE_URL = "https://differential-quantity-shell-bag.trycloudflare.com"
 
 # Derived URLs
 WIDGET_BASE_URL = f"{BASE_URL}/assets/images"
@@ -71,6 +72,8 @@ QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER = "quick-quote-results"
 QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI = f"{WIDGET_BASE_URL}/quick-quote-results.html"
 PHONE_ONLY_WIDGET_IDENTIFIER = "phone-only"
 PHONE_ONLY_WIDGET_TEMPLATE_URI = f"{WIDGET_BASE_URL}/phone-only.html"
+SIMPLE_TEST_WIDGET_IDENTIFIER = "simple-test"
+SIMPLE_TEST_WIDGET_TEMPLATE_URI = f"{WIDGET_BASE_URL}/simple-test.html"
 
 # Input schema for insurance state selector
 INSURANCE_STATE_INPUT_SCHEMA: Dict[str, Any] = {
@@ -101,6 +104,17 @@ DEFAULT_WIDGETS: Tuple[WidgetDefinition, ...] = (
 )
 
 ADDITIONAL_WIDGETS: Tuple[WidgetDefinition, ...] = (
+    WidgetDefinition(
+        identifier=SIMPLE_TEST_WIDGET_IDENTIFIER,
+        title="Simple Test Widget",
+        template_uri=SIMPLE_TEST_WIDGET_TEMPLATE_URI,
+        invoking="Loading test widget",
+        invoked="Test widget loaded",
+        html=SIMPLE_TEST_WIDGET_HTML,
+        response_text="Showing simple test widget.",
+        input_schema=None,
+        tool_description="Minimal test widget for debugging Android rendering issues.",
+    ),
     WidgetDefinition(
         identifier=QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER,
         title="Display quick quote estimate",
@@ -183,19 +197,13 @@ def _tool_meta(widget: WidgetDefinition) -> Dict[str, Any]:
         "openai/toolInvocation/invoking": widget.invoking,
         "openai/toolInvocation/invoked": widget.invoked,
         "openai/widgetAccessible": True,
-        "openai/resultCanProduceWidget": True,
-        "annotations": {
-            "destructiveHint": False,
-            "openWorldHint": False,
-            "readOnlyHint": True,
+        # OpenAI-specific CSP format (what Python MCP SDK supports)
+        "openai/widgetCSP": {
+            "connect_domains": API_DOMAINS,
+            "resource_domains": API_DOMAINS,
         },
-        "ui": {
-            "domain": WIDGET_BASE_URL,
-            "prefersBorder": False,
-            "csp": {
-                "connectDomains": API_DOMAINS,
-            },
-        }
+        # Domain without https:// prefix
+        "openai/domain": BASE_URL.replace("https://", "").replace("http://", ""),
     }
 
 
@@ -214,7 +222,7 @@ def _embedded_widget_resource(widget: WidgetDefinition) -> types.EmbeddedResourc
 
 def _register_default_tools() -> None:
     """Register default widget tools."""
-    from .tool_handlers import _insurance_state_tool_handler
+    from insurance_server_python.tool_handlers import _insurance_state_tool_handler
 
     for widget in DEFAULT_WIDGETS:
         if widget.identifier in TOOL_REGISTRY:
@@ -258,15 +266,15 @@ def _register_default_tools() -> None:
 
 def _register_personal_auto_intake_tools() -> None:
     """Register personal auto insurance intake tools."""
-    from .tool_handlers import (
+    from insurance_server_python.tool_handlers import (
         _get_enhanced_quick_quote,
         _submit_carrier_estimates,
     )
-    from .models import (
+    from insurance_server_python.models import (
         QuickQuoteIntake,
         CarrierEstimatesSubmission,
     )
-    from .utils import _model_schema
+    from insurance_server_python.utils import _model_schema
 
     # Register quick quote tool (Initial step)
     quick_quote_widget = WIDGETS_BY_ID[QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER]
@@ -401,6 +409,43 @@ def _register_personal_auto_intake_tools() -> None:
     )
 
 
+def _register_simple_test_tool() -> None:
+    """Register the simple test widget tool."""
+    test_widget = WIDGETS_BY_ID[SIMPLE_TEST_WIDGET_IDENTIFIER]
+    test_meta = _tool_meta(test_widget)
+    test_default_meta = {
+        **test_meta,
+        "openai.com/widget": _embedded_widget_resource(test_widget).model_dump(mode="json"),
+    }
+
+    def _simple_test_handler(arguments):
+        """Simple test handler that returns test data."""
+        return {
+            "response_text": "Showing simple test widget.",
+            "structured_content": {
+                "test": "data",
+                "message": "Hello from simple test widget!",
+                "timestamp": "2024-01-01T00:00:00Z"
+            },
+        }
+
+    register_tool(
+        ToolRegistration(
+            tool=types.Tool(
+                name=SIMPLE_TEST_WIDGET_IDENTIFIER,
+                title="Simple Test Widget",
+                description="Minimal test widget for debugging Android rendering issues.",
+                inputSchema={"type": "object", "properties": {}, "additionalProperties": False},
+                _meta=test_meta,
+            ),
+            handler=_simple_test_handler,
+            default_response_text="Showing simple test widget.",
+            default_meta=test_default_meta,
+        )
+    )
+
+
 # Initialize the registry
+_register_simple_test_tool()
 # _register_default_tools()  # DISABLED - insurance state selector form not used in simplified flow
 _register_personal_auto_intake_tools()

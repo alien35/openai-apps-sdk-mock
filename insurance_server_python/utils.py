@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from typing import Type, cast
 import logging
 
-from .constants import (
+from insurance_server_python.constants import (
     STATE_ABBREVIATION_TO_NAME,
     STATE_NAME_TO_CANONICAL,
     STATE_NAME_TO_ABBREVIATION,

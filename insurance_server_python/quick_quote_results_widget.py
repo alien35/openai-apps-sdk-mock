@@ -5,7 +5,7 @@ rendering context where external HTTP requests for images are not supported.
 All image assets should be converted to base64 and embedded directly in the HTML.
 """
 
-from .widget_assets import CAR_BACKGROUND_BASE64, POWERED_BY_LOGO_BASE64, PHONE_BACKGROUND_BASE64
+from insurance_server_python.widget_assets import CAR_BACKGROUND_BASE64, POWERED_BY_LOGO_BASE64, PHONE_BACKGROUND_BASE64
 
 QUICK_QUOTE_RESULTS_WIDGET_HTML = f"""
 <style>
