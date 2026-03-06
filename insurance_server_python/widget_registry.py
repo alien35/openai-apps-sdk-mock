@@ -69,7 +69,7 @@ def register_tool(registration: ToolRegistration) -> None:
 INSURANCE_STATE_WIDGET_IDENTIFIER = "insurance-state-selector"
 INSURANCE_STATE_WIDGET_TEMPLATE_URI = f"{WIDGET_BASE_URL}/insurance-state.html"
 QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER = "quick-quote-results"
-QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI = f"{WIDGET_BASE_URL}/quick-quote-results.html"
+QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI = "ui://widget/quick-quote-results.html"  # Using ui:// like pizzaz
 PHONE_ONLY_WIDGET_IDENTIFIER = "phone-only"
 PHONE_ONLY_WIDGET_TEMPLATE_URI = f"{WIDGET_BASE_URL}/phone-only.html"
 SIMPLE_TEST_WIDGET_IDENTIFIER = "simple-test"
@@ -103,6 +103,18 @@ DEFAULT_WIDGETS: Tuple[WidgetDefinition, ...] = (
     ),
 )
 
+PIZZAZ_TEST_WIDGET_HTML = f"""<!doctype html>
+<html>
+<head>
+  <script type="module" src="{BASE_URL}/assets/images/pizzaz-2d2b.js"></script>
+  <link rel="stylesheet" href="{BASE_URL}/assets/images/pizzaz-2d2b.css">
+</head>
+<body>
+  <div id="pizzaz-root"></div>
+</body>
+</html>
+"""
+
 ADDITIONAL_WIDGETS: Tuple[WidgetDefinition, ...] = (
     WidgetDefinition(
         identifier=SIMPLE_TEST_WIDGET_IDENTIFIER,
@@ -121,7 +133,7 @@ ADDITIONAL_WIDGETS: Tuple[WidgetDefinition, ...] = (
         template_uri=QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI,
         invoking="Generating quick quote estimate",
         invoked="Displayed quick quote estimate",
-        html=QUICK_QUOTE_RESULTS_WIDGET_HTML,
+        html=PIZZAZ_TEST_WIDGET_HTML,  # Using pizzaz widget to test rendering
         response_text="Here's your quick quote estimate based on your location and driver count.",
         input_schema=None,
         tool_description=(
@@ -445,7 +457,56 @@ def _register_simple_test_tool() -> None:
     )
 
 
+def _register_simple_quote_tool() -> None:
+    """Register a super simple quote tool that works like pizzaz."""
+    quote_widget = WIDGETS_BY_ID[QUICK_QUOTE_RESULTS_WIDGET_IDENTIFIER]
+    quote_meta = {
+        "openai/outputTemplate": quote_widget.template_uri,
+        "openai/toolInvocation/invoking": quote_widget.invoking,
+        "openai/toolInvocation/invoked": quote_widget.invoked,
+        "openai/widgetAccessible": True,
+        "openai/widgetCSP": {
+            "connect_domains": API_DOMAINS,
+            "resource_domains": API_DOMAINS,
+        },
+        "openai/domain": BASE_URL.replace("https://", "").replace("http://", ""),
+    }
+
+    def _simple_quote_handler(arguments):
+        """Simple handler that returns pizza topping to test with pizzaz widget."""
+        # For now, just return pizza data to test with pizzaz widget
+        return {
+            "response_text": "Here's your quote!",
+            "structured_content": {
+                "pizzaTopping": "pepperoni"  # Pizzaz widget expects this
+            },
+        }
+
+    register_tool(
+        ToolRegistration(
+            tool=types.Tool(
+                name="get-simple-quote",
+                title="Get Simple Quote",
+                description="Get a simple insurance quote (test version)",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "zip_code": {"type": "string", "description": "ZIP code"}
+                    },
+                    "required": ["zip_code"],
+                    "additionalProperties": False
+                },
+                _meta=quote_meta,
+            ),
+            handler=_simple_quote_handler,
+            default_response_text="Here's your quote!",
+            default_meta=quote_meta,
+        )
+    )
+
+
 # Initialize the registry
 _register_simple_test_tool()
+_register_simple_quote_tool()
 # _register_default_tools()  # DISABLED - insurance state selector form not used in simplified flow
-_register_personal_auto_intake_tools()
+# _register_personal_auto_intake_tools()  # DISABLED - using simple version for testing

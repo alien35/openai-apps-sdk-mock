@@ -573,15 +573,26 @@ async def serve_image(request: Request):
                     f"connect-src 'self' {BASE_URL}; "
                     f"frame-ancestors https://chatgpt.com https://chat.openai.com;"
                 ),
-                "Access-Control-Allow-Origin": "https://chatgpt.com",
+                "Access-Control-Allow-Origin": "*",
                 "X-Content-Type-Options": "nosniff",
                 "Cache-Control": "public, max-age=3600",
             }
         )
 
-    # Serve images normally
+    # Serve JS/CSS/images with proper MIME types
+    media_type = None
+    if filename.endswith('.js'):
+        media_type = "application/javascript"
+    elif filename.endswith('.css'):
+        media_type = "text/css"
+    elif filename.endswith('.png'):
+        media_type = "image/png"
+    elif filename.endswith('.jpg') or filename.endswith('.jpeg'):
+        media_type = "image/jpeg"
+
     return FileResponse(
         file_path,
+        media_type=media_type,
         headers={"Access-Control-Allow-Origin": "*"}
     )
 
