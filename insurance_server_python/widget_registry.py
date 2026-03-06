@@ -483,23 +483,62 @@ def _register_simple_quote_tool() -> None:
         num_vehicles = arguments.get("num_vehicles", 1)
         num_drivers = arguments.get("num_drivers", 1)
 
+        # Get optional vehicle details
+        vehicle_year = arguments.get("vehicle_year")
+        vehicle_make = arguments.get("vehicle_make")
+        vehicle_model = arguments.get("vehicle_model")
+        coverage_type = arguments.get("coverage_type")
+
+        # Get optional driver details
+        driver_age = arguments.get("driver_age")
+        marital_status = arguments.get("marital_status")
+
+        # Build structured content with whatever we have
+        structured_content = {
+            "carriers": [
+                {"name": "Geico", "monthly_cost": 258, "annual_cost": 3100},
+                {"name": "Progressive", "monthly_cost": 300, "annual_cost": 3600},
+                {"name": "State Farm", "monthly_cost": 317, "annual_cost": 3800},
+            ],
+            "zip_code": zip_code,
+            "city": "Beverly Hills",
+            "state": "CA",
+            "num_vehicles": num_vehicles,
+            "num_drivers": num_drivers,
+        }
+
+        # Add vehicle details if provided
+        if vehicle_year or vehicle_make or vehicle_model:
+            structured_content["vehicle"] = {}
+            if vehicle_year:
+                structured_content["vehicle"]["year"] = vehicle_year
+            if vehicle_make:
+                structured_content["vehicle"]["make"] = vehicle_make
+            if vehicle_model:
+                structured_content["vehicle"]["model"] = vehicle_model
+
+        # Add coverage type if provided
+        if coverage_type:
+            structured_content["coverage_type"] = coverage_type
+
+        # Add driver details if provided
+        if driver_age:
+            structured_content["driver_age"] = driver_age
+        if marital_status:
+            structured_content["marital_status"] = marital_status
+
         # Return minimal insurance data with user's info
         result = {
             "response_text": "Here's your quote!",
-            "structured_content": {
-                "carriers": [
-                    {"name": "Geico", "monthly_cost": 258, "annual_cost": 3100},
-                    {"name": "Progressive", "monthly_cost": 300, "annual_cost": 3600},
-                    {"name": "State Farm", "monthly_cost": 317, "annual_cost": 3800},
-                ],
-                "zip_code": zip_code,
-                "city": "Beverly Hills",
-                "state": "CA",
-                "num_vehicles": num_vehicles,
-                "num_drivers": num_drivers,
-            },
+            "structured_content": structured_content,
         }
         logger.info(f"Returning quote with {num_drivers} driver(s), {num_vehicles} vehicle(s)")
+        if vehicle_year or vehicle_make or vehicle_model:
+            logger.info(f"Vehicle: {vehicle_year} {vehicle_make} {vehicle_model}")
+        if coverage_type:
+            logger.info(f"Coverage: {coverage_type}")
+        if driver_age or marital_status:
+            logger.info(f"Driver: age {driver_age}, status {marital_status}")
         return result
 
     register_tool(
@@ -509,20 +548,31 @@ def _register_simple_quote_tool() -> None:
                 title="Get Insurance Quote",
                 description=(
                     "Get auto insurance quotes. Ask the user for:\n"
-                    "- ZIP code (required)\n"
-                    "- Number of vehicles\n"
-                    "- Number of drivers\n"
                     "\n"
-                    "Feel free to ask follow-up questions to get more details, but you can show quotes with just the ZIP code."
+                    "ZIP code\n"
+                    "Number of vehicles (1 or 2)\n"
+                    "Year, make, and model for each vehicle\n"
+                    "Coverage preference (full coverage or liability only)\n"
+                    "\n"
+                    "Number of drivers: 1 or 2\n"
+                    "Age of the primary driver, marital status (single, married, etc.)\n"
+                    "\n"
+                    "Only ZIP code is required. Call the tool with whatever info the user provides."
                 ),
                 inputSchema={
                     "type": "object",
                     "properties": {
                         "zip_code": {"type": "string", "description": "ZIP code"},
                         "num_vehicles": {"type": "integer", "description": "Number of vehicles (1 or 2)"},
+                        "vehicle_year": {"type": "integer", "description": "Vehicle year (e.g., 2020)"},
+                        "vehicle_make": {"type": "string", "description": "Vehicle make (e.g., Honda)"},
+                        "vehicle_model": {"type": "string", "description": "Vehicle model (e.g., Civic)"},
+                        "coverage_type": {"type": "string", "description": "Coverage type: 'full coverage' or 'liability only'"},
                         "num_drivers": {"type": "integer", "description": "Number of drivers (1 or 2)"},
+                        "driver_age": {"type": "integer", "description": "Primary driver's age"},
+                        "marital_status": {"type": "string", "description": "Marital status (single, married, divorced, widowed)"},
                     },
-                    "required": ["zip_code"],  # Only ZIP required
+                    "required": ["zip_code"],  # Only ZIP required, everything else optional
                     "additionalProperties": False
                 },
                 _meta=quote_meta,

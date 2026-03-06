@@ -74,18 +74,46 @@
 
       // Build subtitle with whatever info we have
       const parts = [];
+
+      // Add location
       if (data.city) {
         parts.push(data.city);
       } else if (data.zip_code) {
         parts.push(`ZIP ${data.zip_code}`);
       }
 
-      const numDrivers = data.num_drivers || 1;
-      const numVehicles = data.num_vehicles || 1;
-      const driverText = numDrivers === 1 ? '1 driver' : `${numDrivers} drivers`;
-      const vehicleText = numVehicles === 1 ? '1 vehicle' : `${numVehicles} vehicles`;
-      parts.push(driverText);
-      parts.push(vehicleText);
+      // Add vehicle info if available
+      if (data.vehicle && (data.vehicle.year || data.vehicle.make || data.vehicle.model)) {
+        const vehicleParts = [];
+        if (data.vehicle.year) vehicleParts.push(data.vehicle.year);
+        if (data.vehicle.make) vehicleParts.push(data.vehicle.make);
+        if (data.vehicle.model) vehicleParts.push(data.vehicle.model);
+        parts.push(vehicleParts.join(' '));
+      } else {
+        // Just show vehicle count if no details
+        const numVehicles = data.num_vehicles || 1;
+        const vehicleText = numVehicles === 1 ? '1 vehicle' : `${numVehicles} vehicles`;
+        parts.push(vehicleText);
+      }
+
+      // Add coverage type if available
+      if (data.coverage_type) {
+        parts.push(data.coverage_type);
+      }
+
+      // Add driver info if available
+      if (data.driver_age) {
+        const driverParts = [`Age ${data.driver_age}`];
+        if (data.marital_status) {
+          driverParts.push(data.marital_status);
+        }
+        parts.push(driverParts.join(', '));
+      } else {
+        // Just show driver count if no details
+        const numDrivers = data.num_drivers || 1;
+        const driverText = numDrivers === 1 ? '1 driver' : `${numDrivers} drivers`;
+        parts.push(driverText);
+      }
 
       subtitle.textContent = parts.join(' • ');
 
