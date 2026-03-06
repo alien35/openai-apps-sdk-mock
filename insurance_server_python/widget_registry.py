@@ -103,17 +103,14 @@ DEFAULT_WIDGETS: Tuple[WidgetDefinition, ...] = (
     ),
 )
 
-PIZZAZ_TEST_WIDGET_HTML = f"""<!doctype html>
-<html>
-<head>
-  <script type="module" src="{BASE_URL}/assets/images/pizzaz-2d2b.js"></script>
-  <link rel="stylesheet" href="{BASE_URL}/assets/images/pizzaz-2d2b.css">
-</head>
-<body>
-  <div id="pizzaz-root"></div>
-</body>
-</html>
-"""
+# Load the minimal insurance widget HTML
+from pathlib import Path
+_insurance_html_path = Path(__file__).parent / "assets" / "images" / "quick-quote-results.html"
+if _insurance_html_path.exists():
+    MINIMAL_INSURANCE_WIDGET_HTML = _insurance_html_path.read_text(encoding="utf-8")
+else:
+    # Fallback if file doesn't exist yet
+    MINIMAL_INSURANCE_WIDGET_HTML = "<!DOCTYPE html><html><body>Widget not found</body></html>"
 
 ADDITIONAL_WIDGETS: Tuple[WidgetDefinition, ...] = (
     WidgetDefinition(
@@ -133,7 +130,7 @@ ADDITIONAL_WIDGETS: Tuple[WidgetDefinition, ...] = (
         template_uri=QUICK_QUOTE_RESULTS_WIDGET_TEMPLATE_URI,
         invoking="Generating quick quote estimate",
         invoked="Displayed quick quote estimate",
-        html=PIZZAZ_TEST_WIDGET_HTML,  # Using pizzaz widget to test rendering
+        html=MINIMAL_INSURANCE_WIDGET_HTML,  # Using minimal insurance widget
         response_text="Here's your quick quote estimate based on your location and driver count.",
         input_schema=None,
         tool_description=(
@@ -473,22 +470,27 @@ def _register_simple_quote_tool() -> None:
     }
 
     def _simple_quote_handler(arguments):
-        """Simple handler that returns pizza topping to test with pizzaz widget."""
+        """Simple handler that returns minimal insurance quote data."""
         import logging
         logger = logging.getLogger(__name__)
         logger.info("=" * 80)
         logger.info("🎯 get-simple-quote CALLED")
         logger.info(f"Arguments: {arguments}")
         logger.info(f"Widget template_uri: {quote_widget.template_uri}")
-        logger.info(f"Widget HTML length: {len(quote_widget.html)}")
-        logger.info(f"Widget HTML preview: {quote_widget.html[:200]}")
         logger.info("=" * 80)
 
-        # For now, just return pizza data to test with pizzaz widget
+        # Return minimal insurance data
         result = {
             "response_text": "Here's your quote!",
             "structured_content": {
-                "pizzaTopping": "pepperoni"  # Pizzaz widget expects this
+                "carriers": [
+                    {"name": "Geico", "monthly_cost": 258, "annual_cost": 3100},
+                    {"name": "Progressive", "monthly_cost": 300, "annual_cost": 3600},
+                    {"name": "State Farm", "monthly_cost": 317, "annual_cost": 3800},
+                ],
+                "zip_code": arguments.get("zip_code", "90210"),
+                "city": "Beverly Hills",
+                "state": "CA",
             },
         }
         logger.info(f"Returning: {result}")
