@@ -68,18 +68,31 @@
     
     function render(data) {
       console.log("📦 Rendering with data:", data);
-      
+
       const subtitle = document.getElementById('subtitle');
       const carriersDiv = document.getElementById('carriers');
-      
-      // Update subtitle
-      const city = data.city || 'your area';
-      subtitle.textContent = `Estimates for ${city}`;
-      
+
+      // Build subtitle with whatever info we have
+      const parts = [];
+      if (data.city) {
+        parts.push(data.city);
+      } else if (data.zip_code) {
+        parts.push(`ZIP ${data.zip_code}`);
+      }
+
+      const numDrivers = data.num_drivers || 1;
+      const numVehicles = data.num_vehicles || 1;
+      const driverText = numDrivers === 1 ? '1 driver' : `${numDrivers} drivers`;
+      const vehicleText = numVehicles === 1 ? '1 vehicle' : `${numVehicles} vehicles`;
+      parts.push(driverText);
+      parts.push(vehicleText);
+
+      subtitle.textContent = parts.join(' • ');
+
       // Render carriers
       const carriers = data.carriers || [];
       carriersDiv.innerHTML = '';
-      
+
       carriers.forEach(carrier => {
         const div = document.createElement('div');
         div.className = 'carrier';

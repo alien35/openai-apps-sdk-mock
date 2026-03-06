@@ -476,10 +476,14 @@ def _register_simple_quote_tool() -> None:
         logger.info("=" * 80)
         logger.info("🎯 get-simple-quote CALLED")
         logger.info(f"Arguments: {arguments}")
-        logger.info(f"Widget template_uri: {quote_widget.template_uri}")
         logger.info("=" * 80)
 
-        # Return minimal insurance data
+        # Get values with defaults
+        zip_code = arguments.get("zip_code", "90210")
+        num_vehicles = arguments.get("num_vehicles", 1)
+        num_drivers = arguments.get("num_drivers", 1)
+
+        # Return minimal insurance data with user's info
         result = {
             "response_text": "Here's your quote!",
             "structured_content": {
@@ -488,26 +492,37 @@ def _register_simple_quote_tool() -> None:
                     {"name": "Progressive", "monthly_cost": 300, "annual_cost": 3600},
                     {"name": "State Farm", "monthly_cost": 317, "annual_cost": 3800},
                 ],
-                "zip_code": arguments.get("zip_code", "90210"),
+                "zip_code": zip_code,
                 "city": "Beverly Hills",
                 "state": "CA",
+                "num_vehicles": num_vehicles,
+                "num_drivers": num_drivers,
             },
         }
-        logger.info(f"Returning: {result}")
+        logger.info(f"Returning quote with {num_drivers} driver(s), {num_vehicles} vehicle(s)")
         return result
 
     register_tool(
         ToolRegistration(
             tool=types.Tool(
                 name="get-simple-quote",
-                title="Get Simple Quote",
-                description="Get a simple insurance quote (test version)",
+                title="Get Insurance Quote",
+                description=(
+                    "Get auto insurance quotes. Ask the user for:\n"
+                    "- ZIP code (required)\n"
+                    "- Number of vehicles\n"
+                    "- Number of drivers\n"
+                    "\n"
+                    "Feel free to ask follow-up questions to get more details, but you can show quotes with just the ZIP code."
+                ),
                 inputSchema={
                     "type": "object",
                     "properties": {
-                        "zip_code": {"type": "string", "description": "ZIP code"}
+                        "zip_code": {"type": "string", "description": "ZIP code"},
+                        "num_vehicles": {"type": "integer", "description": "Number of vehicles (1 or 2)"},
+                        "num_drivers": {"type": "integer", "description": "Number of drivers (1 or 2)"},
                     },
-                    "required": ["zip_code"],
+                    "required": ["zip_code"],  # Only ZIP required
                     "additionalProperties": False
                 },
                 _meta=quote_meta,
