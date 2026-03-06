@@ -74,23 +74,30 @@ function render(data) {
   const disclaimerText = disclaimerParts.join(' ') + coverageText + '. Final rates may differ.';
 
   // Build carrier cards
-  const carrierCards = carriers.map(carrier => `
-    <div class="quote-card">
-      <div class="carrier-logo-section">
-        <div class="carrier-name">${carrier.name}</div>
-      </div>
-      <div class="price-section">
-        <div class="monthly-price">
-          <div class="price-value">${formatCurrency(carrier.monthly_cost)}/mo</div>
-          <div class="price-label">Avg. Price</div>
+  const carrierCards = carriers.map(carrier => {
+    const logoHtml = carrier.logo
+      ? `<img src="${carrier.logo}" alt="${carrier.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+         <div class="carrier-name" style="display:none;">${carrier.name}</div>`
+      : `<div class="carrier-name">${carrier.name}</div>`;
+
+    return `
+      <div class="quote-card">
+        <div class="carrier-logo-section">
+          ${logoHtml}
         </div>
-        <div class="annual-price">
-          <div class="price-value">${formatCurrency(carrier.annual_cost)}</div>
-          <div class="price-label">Est. Annual Cost</div>
+        <div class="price-section">
+          <div class="monthly-price">
+            <div class="price-value">${formatCurrency(carrier.monthly_cost)}/mo</div>
+            <div class="price-label">Avg. Price</div>
+          </div>
+          <div class="annual-price">
+            <div class="price-value">${formatCurrency(carrier.annual_cost)}</div>
+            <div class="price-label">Est. Annual Cost</div>
+          </div>
         </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 
   // Render the complete widget
   container.innerHTML = `

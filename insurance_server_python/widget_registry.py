@@ -496,9 +496,24 @@ def _register_simple_quote_tool() -> None:
         # Build structured content with whatever we have
         structured_content = {
             "carriers": [
-                {"name": "Geico", "monthly_cost": 258, "annual_cost": 3100},
-                {"name": "Progressive", "monthly_cost": 300, "annual_cost": 3600},
-                {"name": "State Farm", "monthly_cost": 317, "annual_cost": 3800},
+                {
+                    "name": "Mercury Insurance",
+                    "monthly_cost": 258,
+                    "annual_cost": 3100,
+                    "logo": f"{BASE_URL}/assets/images/mercury-logo.png"
+                },
+                {
+                    "name": "Progressive",
+                    "monthly_cost": 300,
+                    "annual_cost": 3600,
+                    "logo": f"{BASE_URL}/assets/images/progressive.png"
+                },
+                {
+                    "name": "Orion Indemnity",
+                    "monthly_cost": 317,
+                    "annual_cost": 3800,
+                    "logo": f"{BASE_URL}/assets/images/orion.png"
+                },
             ],
             "zip_code": zip_code,
             "city": "Beverly Hills",
