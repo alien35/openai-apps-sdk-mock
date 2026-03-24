@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 from dataclasses import dataclass
+import os
 from typing import Any, Dict, Optional, Tuple
 import mcp.types as types
 
@@ -14,16 +15,13 @@ from insurance_server_python.models import ToolHandler
 
 
 # ============================================================================
-# BASE URL CONFIGURATION - Change this for testing/deployment
+# BASE URL CONFIGURATION
 # ============================================================================
-# For local/ngrok testing, set to your ngrok URL:
-# BASE_URL = "https://cooked-establish-steps-cloud.trycloudflare.com"
-# For staging:
-# BASE_URL = "https://stg-api.mercuryinsurance.com"
-# For production:
-# BASE_URL = "https://api.mercuryinsurance.com"
-
-BASE_URL = "https://cooked-establish-steps-cloud.trycloudflare.com"
+# SERVER_BASE_URL should point to the same origin that serves this API and
+# widget assets (for example: https://api.example.com).
+# Keeping API and widget assets on one origin avoids Chrome cross-origin
+# frame navigation issues in sandboxed widget contexts.
+BASE_URL = os.getenv("SERVER_BASE_URL", "http://localhost:8000").rstrip("/")
 
 # Derived URLs
 WIDGET_BASE_URL = f"{BASE_URL}/assets/images"
@@ -113,10 +111,12 @@ console.log("🟢 Insurance widget JS loaded");
 function render(data) {{
   console.log("📦 Rendering insurance data:", data);
 
-  const container = document.getElementById('insurance-root');
+  let container = document.getElementById('insurance-root');
   if (!container) {{
-    console.error("❌ Container not found");
-    return;
+    console.warn("⚠️ #insurance-root not found, creating fallback container");
+    container = document.createElement('div');
+    container.id = 'insurance-root';
+    document.body.appendChild(container);
   }}
 
   const parts = [];
@@ -157,7 +157,11 @@ function render(data) {{
 
 if (window.openai && window.openai.toolOutput) {{
   console.log("✅ Found window.openai.toolOutput");
-  render(window.openai.toolOutput);
+  if (document.readyState === "loading") {{
+    document.addEventListener("DOMContentLoaded", () => render(window.openai.toolOutput), {{ once: true }});
+  }} else {{
+    render(window.openai.toolOutput);
+  }}
 }}
 
 window.addEventListener('openai:set_globals', (event) => {{
