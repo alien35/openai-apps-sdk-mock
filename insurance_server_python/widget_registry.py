@@ -111,10 +111,12 @@ console.log("🟢 Insurance widget JS loaded");
 function render(data) {{
   console.log("📦 Rendering insurance data:", data);
 
-  const container = document.getElementById('insurance-root');
+  let container = document.getElementById('insurance-root');
   if (!container) {{
-    console.error("❌ Container not found");
-    return;
+    console.warn("⚠️ #insurance-root not found, creating fallback container");
+    container = document.createElement('div');
+    container.id = 'insurance-root';
+    document.body.appendChild(container);
   }}
 
   const parts = [];
@@ -155,7 +157,11 @@ function render(data) {{
 
 if (window.openai && window.openai.toolOutput) {{
   console.log("✅ Found window.openai.toolOutput");
-  render(window.openai.toolOutput);
+  if (document.readyState === "loading") {{
+    document.addEventListener("DOMContentLoaded", () => render(window.openai.toolOutput), {{ once: true }});
+  }} else {{
+    render(window.openai.toolOutput);
+  }}
 }}
 
 window.addEventListener('openai:set_globals', (event) => {{
