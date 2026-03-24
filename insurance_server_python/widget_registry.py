@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 from dataclasses import dataclass
+import os
 from typing import Any, Dict, Optional, Tuple
 import mcp.types as types
 
@@ -14,16 +15,13 @@ from insurance_server_python.models import ToolHandler
 
 
 # ============================================================================
-# BASE URL CONFIGURATION - Change this for testing/deployment
+# BASE URL CONFIGURATION
 # ============================================================================
-# For local/ngrok testing, set to your ngrok URL:
-# BASE_URL = "https://cooked-establish-steps-cloud.trycloudflare.com"
-# For staging:
-# BASE_URL = "https://stg-api.mercuryinsurance.com"
-# For production:
-# BASE_URL = "https://api.mercuryinsurance.com"
-
-BASE_URL = "https://cooked-establish-steps-cloud.trycloudflare.com"
+# SERVER_BASE_URL should point to the same origin that serves this API and
+# widget assets (for example: https://api.example.com).
+# Keeping API and widget assets on one origin avoids Chrome cross-origin
+# frame navigation issues in sandboxed widget contexts.
+BASE_URL = os.getenv("SERVER_BASE_URL", "http://localhost:8000").rstrip("/")
 
 # Derived URLs
 WIDGET_BASE_URL = f"{BASE_URL}/assets/images"
