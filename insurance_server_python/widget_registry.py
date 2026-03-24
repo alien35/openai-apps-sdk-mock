@@ -17,13 +17,13 @@ from insurance_server_python.models import ToolHandler
 # BASE URL CONFIGURATION - Change this for testing/deployment
 # ============================================================================
 # For local/ngrok testing, set to your ngrok URL:
-# BASE_URL = "https://differential-quantity-shell-bag.trycloudflare.com"
+# BASE_URL = "https://cooked-establish-steps-cloud.trycloudflare.com"
 # For staging:
 # BASE_URL = "https://stg-api.mercuryinsurance.com"
 # For production:
 # BASE_URL = "https://api.mercuryinsurance.com"
 
-BASE_URL = "https://differential-quantity-shell-bag.trycloudflare.com"
+BASE_URL = "https://cooked-establish-steps-cloud.trycloudflare.com"
 
 # Derived URLs
 WIDGET_BASE_URL = f"{BASE_URL}/assets/images"
@@ -106,8 +106,67 @@ DEFAULT_WIDGETS: Tuple[WidgetDefinition, ...] = (
 INSURANCE_WIDGET_HTML = f"""<!doctype html>
 <html>
 <head>
-  <script type="module" src="{BASE_URL}/assets/images/insurance-widget.js"></script>
   <link rel="stylesheet" href="{BASE_URL}/assets/images/insurance-widget.css">
+  <script>
+console.log("🟢 Insurance widget JS loaded");
+
+function render(data) {{
+  console.log("📦 Rendering insurance data:", data);
+
+  const container = document.getElementById('insurance-root');
+  if (!container) {{
+    console.error("❌ Container not found");
+    return;
+  }}
+
+  const parts = [];
+  if (data.city) {{
+    parts.push(data.city);
+  }} else if (data.zip_code) {{
+    parts.push(`ZIP ${{data.zip_code}}`);
+  }}
+
+  const numVehicles = data.num_vehicles || 1;
+  const numDrivers = data.num_drivers || 1;
+  parts.push(numVehicles === 1 ? '1 vehicle' : `${{numVehicles}} vehicles`);
+  parts.push(numDrivers === 1 ? '1 driver' : `${{numDrivers}} drivers`);
+
+  const subtitle = parts.join(' • ');
+
+  const carriers = data.carriers || [];
+  const carrierHtml = carriers.map(c => `
+    <div class="carrier">
+      <div class="carrier-name">${{c.name}}</div>
+      <div class="price">
+        <div class="monthly">$${{c.monthly_cost}}/mo</div>
+        <div class="annual">$${{c.annual_cost}}/year</div>
+      </div>
+    </div>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="container">
+      <div class="title">Your Insurance Quote</div>
+      <div class="subtitle">${{subtitle}}</div>
+      ${{carrierHtml}}
+    </div>
+  `;
+
+  console.log("✅ Rendered");
+}}
+
+if (window.openai && window.openai.toolOutput) {{
+  console.log("✅ Found window.openai.toolOutput");
+  render(window.openai.toolOutput);
+}}
+
+window.addEventListener('openai:set_globals', (event) => {{
+  console.log("🎯 Received openai:set_globals");
+  if (event.detail && event.detail.globals && event.detail.globals.toolOutput) {{
+    render(event.detail.globals.toolOutput);
+  }}
+}});
+  </script>
 </head>
 <body>
   <div id="insurance-root"></div>
